@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "tsc: build - tsconfig.debug.json",
+      "type": "shell",
+      "command": "npx tsc -p tsconfig.debug.json",
+      "group": "build",
+      "problemMatcher": ["$tsc"],
+      "presentation": {
+        "reveal": "always"
+      }
+    }
+  ]
+}
