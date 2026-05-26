@@ -231,7 +231,7 @@ export function MainDashboard({ initialSection, roleGroup: roleGroupOverride, on
             roleGroup={roleGroup}
             defaultSection={defaultSection}
             onNavigateHome={onNavigateHome}
-            user={user}
+            user={user ?? undefined}
           />
         </Suspense>
       </SidebarProvider>
@@ -267,12 +267,13 @@ function DashboardShell({
 
   // Legacy sidebar URLs → unified Images hub with tab deep-link
   useEffect(() => {
-    if (querySection !== "add-image" && querySection !== "manage-images") return
+    const rawSection = searchParams.get("section")
+    if (rawSection !== "add-image" && rawSection !== "manage-images") return
     const params = new URLSearchParams(searchParams.toString())
     params.set("section", "images")
-    params.set("tab", querySection === "add-image" ? "add" : "manage")
+    params.set("tab", rawSection === "add-image" ? "add" : "manage")
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-  }, [pathname, querySection, router, searchParams])
+  }, [pathname, searchParams, router])
 
   const setActiveSection = (sectionId: DashboardSection) => {
     const params = new URLSearchParams(searchParams.toString())

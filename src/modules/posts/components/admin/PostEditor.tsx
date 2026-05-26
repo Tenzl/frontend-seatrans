@@ -48,9 +48,9 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
   const categoryDropdownRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<any>(null)
 
-  const handleImageUpload = async (blobInfo: any, progress: any) => {
+  const handleImageUpload = async (blobInfo: any, _progress: any) => {
     try {
-      const url = await postService.uploadImage(blobInfo.blob(), postId)
+      const url = await postService.uploadImage(blobInfo.blob())
       return url
     } catch (error) {
       console.error('Image upload failed:', error)

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ColumnDef } from '@tanstack/react-table'
-import { Card, CardContent, CardDescription, CardHeader } from '@/shared/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Loader2, AlertCircle, RefreshCw, FileText, ArrowUpDown } from 'lucide-react'
@@ -30,6 +30,7 @@ interface BaseInquiryHistoryLayoutProps {
   serviceType?: string
   serviceLabel?: string
   isAdmin?: boolean
+  title?: string
   description?: string
 }
 
@@ -37,6 +38,7 @@ export function BaseInquiryHistoryLayout({
   serviceType,
   serviceLabel,
   isAdmin = false,
+  title,
   description = 'View and manage your inquiry submissions',
 }: BaseInquiryHistoryLayoutProps) {
   const router = useRouter()
@@ -380,18 +382,21 @@ export function BaseInquiryHistoryLayout({
     <>
       <Card>
         <CardHeader className="border-b border-border/50 pb-4">
-          <div className="flex items-center justify-between gap-4">
-            {description ? (
-              <CardDescription className="max-w-2xl text-sm leading-relaxed">{description}</CardDescription>
-            ) : (
-              <span />
-            )}
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1.5">
+              {title ? (
+                <CardTitle className="text-lg font-semibold tracking-tight">{title}</CardTitle>
+              ) : null}
+              {description ? (
+                <CardDescription className="max-w-2xl text-sm leading-relaxed">{description}</CardDescription>
+              ) : null}
+            </div>
             <Button
               variant="outline"
               size="sm"
               onClick={fetchInquiries}
               disabled={isLoading}
-              className="gap-2"
+              className="gap-2 shrink-0"
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Reload

@@ -112,7 +112,7 @@ export const portService = {
     for (let page = 0; page < maxPages; page += 1) {
       const batch = await this.listPortsPaginated({ page, size: PORTS_PAGE_SIZE })
       items.push(...batch.content)
-      if (batch.page >= batch.totalPages - 1 || !batch.content.length) break
+      if (page >= batch.totalPages - 1 || !batch.content.length) break
     }
     return items
   },

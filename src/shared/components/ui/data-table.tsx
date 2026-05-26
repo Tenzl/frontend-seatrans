@@ -29,6 +29,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu"
 import { Input } from "@/shared/components/ui/input"
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
