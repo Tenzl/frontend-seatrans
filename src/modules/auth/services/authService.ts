@@ -3,7 +3,7 @@ import { API_CONFIG } from '@/shared/config/api.config'
 import { User } from '@/shared/types/dashboard'
 
 interface LoginRequest {
-  email: string
+  identifier: string
   password: string
 }
 
@@ -77,11 +77,11 @@ const getActiveStorage = (): Storage => {
 }
 
 export const authService = {
-  login: async (email: string, password: string, remember = true): Promise<LoginResponse> => {
+  login: async (identifier: string, password: string, remember = true): Promise<LoginResponse> => {
     try {
       // Skip auth for login endpoint
       const response = await apiClient.post(API_CONFIG.AUTH.LOGIN, 
-        { email, password } satisfies LoginRequest,
+        { identifier, password } satisfies LoginRequest,
         { skipAuth: true }
       )
 

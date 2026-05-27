@@ -24,6 +24,19 @@ import {
   CommandList,
 } from '@/shared/components/ui/command'
 import { inquiryService } from '@/modules/inquiries/services/inquiryService'
+import {
+  buildCargoNameSelectOptions,
+  buildCargoTypeSelectOptions,
+  CARGO_NAME_OTHER,
+  isTallyFeeEligibleCargoType,
+  type CargoSelectOption,
+} from '@/modules/gallery/shippingAgencyCargoCatalog'
+import {
+  commodityService,
+  type Commodity,
+} from '@/modules/gallery/services/commodityService'
+import { portService, type Port } from '@/modules/logistics/services/portService'
+import { buildPortOfCallSelectOptions } from '@/modules/logistics/shippingAgencyPortCatalog'
 
 export interface FormField {
   id: string
@@ -32,6 +45,7 @@ export interface FormField {
   placeholder?: string
   required?: boolean
   options?: string[]
+  selectOptions?: CargoSelectOption[]
   gridSpan?: 1 | 2
   identity?: boolean
   helperText?: string
@@ -54,6 +68,7 @@ function ComboboxSelect({
   value,
   onChange,
   options,
+  selectOptions,
   placeholder,
   disabled,
   enableSearch = true,
@@ -62,13 +77,16 @@ function ComboboxSelect({
   value: string
   onChange: (v: string) => void
   options?: string[]
+  selectOptions?: CargoSelectOption[]
   placeholder?: string
   disabled?: boolean
   enableSearch?: boolean
 }) {
   const [open, setOpen] = useState(false)
-  const normalizedOptions = (options || []).map(opt => ({ label: opt, value: opt.toLowerCase() }))
-  const selected = normalizedOptions.find(opt => opt.value === (value || '').toLowerCase())
+  const normalizedOptions: CargoSelectOption[] =
+    selectOptions ??
+    (options || []).map((opt) => ({ label: opt, value: opt }))
+  const selected = normalizedOptions.find((opt) => opt.value === (value || ''))
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -130,6 +148,10 @@ export function FormSection({
   }
 }) {
   const [formData, setFormData] = useState<Record<string, string>>({})
+  const [shippingCargoCatalog, setShippingCargoCatalog] = useState<Commodity[]>([])
+  const [isLoadingShippingCargo, setIsLoadingShippingCargo] = useState(false)
+  const [shippingPorts, setShippingPorts] = useState<Port[]>([])
+  const [isLoadingShippingPorts, setIsLoadingShippingPorts] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -148,6 +170,99 @@ export function FormSection({
   }, [form.sections, form.fields])
 
   const otherFields = allFields
+  const isShippingAgencyForm = form.serviceTypeSlug === 'shipping-agency'
+
+  useEffect(() => {
+    if (!isShippingAgencyForm || !form.serviceTypeId) {
+      setShippingCargoCatalog([])
+      return
+    }
+    let cancelled = false
+    setIsLoadingShippingCargo(true)
+    commodityService
+      .getCommoditiesByServiceType(form.serviceTypeId)
+      .then((rows) => {
+        if (!cancelled) setShippingCargoCatalog(rows)
+      })
+      .catch(() => {
+        if (!cancelled) setShippingCargoCatalog([])
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingShippingCargo(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isShippingAgencyForm, form.serviceTypeId])
+
+  useEffect(() => {
+    if (!isShippingAgencyForm) {
+      setShippingPorts([])
+      return
+    }
+    let cancelled = false
+    setIsLoadingShippingPorts(true)
+    portService
+      .getAllPorts()
+      .then((rows) => {
+        if (!cancelled) setShippingPorts(rows)
+      })
+      .catch(() => {
+        if (!cancelled) setShippingPorts([])
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingShippingPorts(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isShippingAgencyForm])
+
+  const resolvedFields = useMemo(() => {
+    if (!isShippingAgencyForm) {
+      return allFields
+    }
+    const portOptions =
+      shippingPorts.length > 0 ? buildPortOfCallSelectOptions(shippingPorts) : undefined
+    if (shippingCargoCatalog.length === 0 && !portOptions?.length) {
+      return allFields
+    }
+    const cargoTypeOptions = buildCargoTypeSelectOptions(shippingCargoCatalog)
+    const cargoNameOptions = formData.cargoType
+      ? [
+          ...buildCargoNameSelectOptions(shippingCargoCatalog, formData.cargoType),
+          { value: CARGO_NAME_OTHER, label: 'Other (specify)' },
+        ]
+      : []
+    return allFields.map((field) => {
+      if (field.id === 'cargoType' && cargoTypeOptions.length > 0) {
+        return { ...field, selectOptions: cargoTypeOptions, options: undefined }
+      }
+      if (field.id === 'cargoName' && cargoNameOptions.length > 0) {
+        return { ...field, selectOptions: cargoNameOptions, options: undefined }
+      }
+      if (field.id === 'portOfCall' && field.type === 'port' && portOptions?.length) {
+        return { ...field, selectOptions: portOptions, options: undefined }
+      }
+      return field
+    })
+  }, [allFields, isShippingAgencyForm, shippingCargoCatalog, shippingPorts, formData.cargoType])
+
+  const resolvedFieldById = useMemo(() => {
+    const map = new Map<string, FormField>()
+    for (const field of resolvedFields) {
+      map.set(field.id, field)
+    }
+    return map
+  }, [resolvedFields])
+
+  const resolvedSections = useMemo(() => {
+    if (!form.sections?.length) return null
+    return form.sections.map((section) => ({
+      ...section,
+      fields: section.fields.map((field) => resolvedFieldById.get(field.id) ?? field),
+    }))
+  }, [form.sections, resolvedFieldById])
 
   useEffect(() => {
     const initial: Record<string, string> = {}
@@ -168,7 +283,17 @@ export function FormSection({
   // Port fields are free-text; no province/port loading needed
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value }
+      if (field === 'cargoType' && isShippingAgencyForm && prev.cargoType !== value) {
+        next.cargoName = ''
+        next.cargoNameOther = ''
+      }
+      if (field === 'cargoName' && value !== CARGO_NAME_OTHER) {
+        next.cargoNameOther = ''
+      }
+      return next
+    })
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -224,17 +349,6 @@ export function FormSection({
     const isFreight = serviceTypeSlug === 'freight-forwarding'
     const isLogistics = serviceTypeSlug === 'total-logistics'
 
-    const normalizeCargoTypeCode = (value?: string) =>
-      (value || '')
-        .trim()
-        .toUpperCase()
-        .replace(/[\s-]+/g, '_')
-
-    const isTallyFeeEligibleCargo = (value?: string) => {
-      const normalized = normalizeCargoTypeCode(value)
-      return normalized.includes('IN_BAGS') || normalized.includes('EQUIPMENT')
-    }
-
     // Map to backend DTO shape for shipping agency
     const shippingAgencyPayload = isShippingAgency
       ? {
@@ -260,7 +374,9 @@ export function FormSection({
           portOfCall: formData.portOfCall,
           dischargeLoadingLocation: formData.dischargeLoadingLocation,
           boatHireAmount: formData.dischargeLoadingLocation === 'Anchorage' ? toDecimal(formData.boatHireAmount) : null,
-          tallyFeeAmount: isTallyFeeEligibleCargo(formData.cargoType) ? toDecimal(formData.tallyFeeAmount) : null,
+          tallyFeeAmount: isTallyFeeEligibleCargoType(formData.cargoType)
+            ? toDecimal(formData.tallyFeeAmount)
+            : null,
           transportLs: toDecimal(formData.transportLs),
           transportQuarantine: toDecimal(formData.transportQuarantine),
         }
@@ -408,8 +524,20 @@ export function FormSection({
           value={value}
           onChange={v => onChange(field.id, v)}
           options={field.options}
-          placeholder={field.placeholder}
-          disabled={disabled}
+          selectOptions={field.selectOptions}
+          placeholder={
+            field.id === 'cargoType' || field.id === 'cargoName'
+              ? isLoadingShippingCargo
+                ? 'Loading catalog…'
+                : field.placeholder
+              : field.placeholder
+          }
+          disabled={
+            disabled ||
+            (isShippingAgencyForm &&
+              (field.id === 'cargoType' || field.id === 'cargoName') &&
+              (isLoadingShippingCargo || shippingCargoCatalog.length === 0))
+          }
           enableSearch={field.enableSearch}
         />
       )
@@ -463,6 +591,21 @@ export function FormSection({
     }
     
     if (field.type === 'port') {
+      if (field.selectOptions?.length) {
+        return (
+          <ComboboxSelect
+            id={field.id}
+            value={value}
+            onChange={(v) => onChange(field.id, v)}
+            selectOptions={field.selectOptions}
+            placeholder={
+              isLoadingShippingPorts ? 'Loading ports…' : field.placeholder || 'Select port of call'
+            }
+            disabled={disabled || isLoadingShippingPorts}
+            enableSearch
+          />
+        )
+      }
       return (
         <Input
           id={field.id}
@@ -613,10 +756,10 @@ export function FormSection({
                 )}
                 
                 {/* Render sections if provided */}
-                {form.sections && form.sections.length > 0 ? (
+                {resolvedSections && resolvedSections.length > 0 ? (
                   <>
                     {/* Render each section */}
-                    {form.sections.map((section, sectionIdx) => {
+                    {resolvedSections.map((section, sectionIdx) => {
                       const sectionFields = section.fields
                       if (sectionFields.length === 0) return null
 

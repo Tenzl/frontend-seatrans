@@ -82,7 +82,11 @@ export function Coverage() {
   useEffect(() => {
     const loadGeoData = async () => {
       try {
-        const response = await fetch('/geo/newvn.json')
+        // Avoid browser disk-cache issues in dev (ERR_CACHE_WRITE_FAILURE / 304)
+        const response = await fetch('/geo/newvn.json', {
+          cache: 'no-store',
+          headers: { pragma: 'no-cache', 'cache-control': 'no-cache' },
+        })
         if (!response.ok) {
           console.error('Failed to load map data', response.status)
           return

@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { quoteFormFromStored } from '@/features/admin/components/invoice/epda/quoteFormFromArea'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
@@ -14,8 +15,8 @@ import {
   inquiryService,
   INQUIRY_SERVICE_DISPLAY,
 } from '@/modules/inquiries/services/inquiryService'
+import { shippingAgencyEpdaService } from '@/modules/inquiries/services/shippingAgencyEpdaService'
 import { AlertCircle, ArrowLeft, Download, FileText, Loader2, RefreshCw } from 'lucide-react'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,6 +69,8 @@ interface ShippingAgencyInquiry {
   berthHours?: number
   anchorageHours?: number
   pilotage3rdMiles?: number
+  epdaDocumentDate?: string
+  epdaSnapshot?: Record<string, unknown>
 }
 
 const formatDate = (value?: string, fallback = '—') => {
@@ -91,7 +94,9 @@ const mapToQuoteData = (inquiry: ShippingAgencyInquiry): InvoiceQuoteData => {
 
   return {
     to_shipowner: inquiry.toName || inquiry.company || inquiry.fullName,
-    date: formatInvoiceDate(inquiry.submittedAt),
+    date: inquiry.epdaDocumentDate
+      ? formatInvoiceDate(inquiry.epdaDocumentDate)
+      : formatInvoiceDate(inquiry.submittedAt),
     ref: `CHHH_QN`,
     mv: inquiry.mv,
     dwt: inquiry.dwt !== undefined && inquiry.dwt !== null ? String(inquiry.dwt) : undefined,
@@ -134,8 +139,6 @@ export default function ShippingAgencyPdfPage() {
   const [template, setTemplate] = useState<string | null>(null)
   const [quoteHtml, setQuoteHtml] = useState<string | null>(null)
   const [loadingQuote, setLoadingQuote] = useState(false)
-  const [quoteForm, setQuoteForm] = useState<'HCM' | 'QN'>('HCM')
-  const [pendingForm, setPendingForm] = useState<'HCM' | 'QN'>('HCM')
   const [berthHours, setBerthHours] = useState<number>(96)
   const [berthHoursInput, setBerthHoursInput] = useState('96')
   const [anchorageHours, setAnchorageHours] = useState<number>(24)
@@ -145,6 +148,11 @@ export default function ShippingAgencyPdfPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [showBackAlert, setShowBackAlert] = useState(false)
 
+  const quoteForm = useMemo(
+    () => quoteFormFromStored(inquiry?.quoteForm),
+    [inquiry?.quoteForm],
+  )
+
   const fetchInquiry = useCallback(async (id: string) => {
     setIsLoading(true)
     setQuoteHtml(null)
@@ -152,9 +160,7 @@ export default function ShippingAgencyPdfPage() {
     try {
       const data = await inquiryService.getShippingAgencyDetail<ShippingAgencyInquiry>(Number(id))
       setInquiry(data)
-      const formValue = (data.quoteForm || '').toUpperCase() === 'QN' ? 'QN' : 'HCM'
-      setQuoteForm(formValue)
-      setPendingForm(formValue)
+      const formValue = quoteFormFromStored(data.quoteForm)
 
       const berth = data.berthHours ?? 96
       const anchorage = data.anchorageHours ?? 24
@@ -235,30 +241,36 @@ export default function ShippingAgencyPdfPage() {
     return value ? `Yes${suffix}` : 'No'
   }
 
-  const persistQuoteForm = async (form: 'HCM' | 'QN') => {
-    if (!inquiryId) return
-    await inquiryService.updateForm(
-      INQUIRY_SERVICE_DISPLAY.SHIPPING_AGENCY,
-      Number(inquiryId),
-      form,
-    )
-  }
+  const buildQuoteSnapshot = useCallback((): Record<string, unknown> => {
+    if (!inquiry) return {}
+    const base = mapToQuoteData(inquiry)
+    return {
+      ...base,
+      berth_hours: berthHours,
+      anchorage_hours: anchorageHours,
+      pilotage_miles: quoteForm === 'QN' ? pilotageThirdMiles : undefined,
+      pilotage_third_miles: quoteForm === 'HCM' ? pilotageThirdMiles : undefined,
+    }
+  }, [inquiry, berthHours, anchorageHours, pilotageThirdMiles, quoteForm])
 
   const transferToUser = async () => {
     if (!quoteHtml || !inquiryId) return
     
     try {
-      await inquiryService.updateStatus(
-        INQUIRY_SERVICE_DISPLAY.SHIPPING_AGENCY,
-        Number(inquiryId),
-        'QUOTED',
-      )
+      const id = Number(inquiryId)
+      const snapshot = buildQuoteSnapshot()
+      await shippingAgencyEpdaService.updateEpda(id, {
+        quoteForm,
+        berthHours,
+        anchorageHours,
+        pilotage3rdMiles: pilotageThirdMiles,
+        epdaSnapshot: snapshot,
+      })
+      await shippingAgencyEpdaService.issueEpda(id, snapshot)
       
-      // Update local state
       setInquiry(prev => (prev ? { ...prev, status: 'QUOTED' } : prev))
       
-      // Show success notification
-      toast({ title: 'Success', description: 'Status updated to QUOTED' })
+      toast({ title: 'Success', description: 'EPDA issued to customer (QUOTED)' })
       
       // TODO: PDF Export (temporarily disabled)
       /*
@@ -321,38 +333,19 @@ export default function ShippingAgencyPdfPage() {
       setPilotageThirdMilesInput(String(pilotageThirdMiles))
     }
 
-    // Save hours to database
     try {
-      await inquiryService.updateHours(
-        INQUIRY_SERVICE_DISPLAY.SHIPPING_AGENCY,
-        Number(inquiryId),
-        {
-          berthHours: validBerth ? nextBerth : berthHours,
-          anchorageHours: validAnchorage ? nextAnchorage : anchorageHours,
-          pilotage3rdMiles: validPilotage ? nextPilotageThird : pilotageThirdMiles,
-        },
-      )
+      await shippingAgencyEpdaService.updateEpda(Number(inquiryId), {
+        berthHours: validBerth ? nextBerth : berthHours,
+        anchorageHours: validAnchorage ? nextAnchorage : anchorageHours,
+        pilotage3rdMiles: validPilotage ? nextPilotageThird : pilotageThirdMiles,
+      })
 
-      // Update local state after successful save
       if (validBerth) setBerthHours(nextBerth)
       if (validAnchorage) setAnchorageHours(nextAnchorage)
       if (validPilotage) setPilotageThirdMiles(nextPilotageThird)
     } catch (err) {
-      console.error('Failed to save hours', err)
-      setError('Could not save hours to database')
-    }
-
-    const nextForm = pendingForm
-    const shouldUpdateForm = nextForm !== quoteForm
-    if (shouldUpdateForm) {
-      try {
-        await persistQuoteForm(nextForm)
-        setQuoteForm(nextForm)
-        setInquiry(prev => (prev ? { ...prev, quoteForm: nextForm } : prev))
-      } catch (err) {
-        console.error('Failed to update form', err)
-        setError('Could not update form')
-      }
+      console.error('Failed to save EPDA settings', err)
+      setError('Could not save EPDA settings to database')
     }
 
     setIsEditing(false)
@@ -374,7 +367,6 @@ export default function ShippingAgencyPdfPage() {
       }
     }
 
-    setPendingForm(quoteForm)
     setBerthHoursInput(String(berthHours))
     setAnchorageHoursInput(String(anchorageHours))
     setPilotageThirdMilesInput(String(pilotageThirdMiles))
@@ -382,7 +374,6 @@ export default function ShippingAgencyPdfPage() {
   }
 
   const cancelEdit = () => {
-    setPendingForm(quoteForm)
     setBerthHoursInput(String(berthHours))
     setAnchorageHoursInput(String(anchorageHours))
     setPilotageThirdMilesInput(String(pilotageThirdMiles))
@@ -406,14 +397,18 @@ export default function ShippingAgencyPdfPage() {
   }
 
   const confirmBackTransfer = async () => {
-    // Perform transfer then navigate back
-    if (!inquiryId) return
+    if (!inquiryId || !inquiry) return
     try {
-      await inquiryService.updateStatus(
-        INQUIRY_SERVICE_DISPLAY.SHIPPING_AGENCY,
-        Number(inquiryId),
-        'QUOTED',
-      )
+      const id = Number(inquiryId)
+      const snapshot = buildQuoteSnapshot()
+      await shippingAgencyEpdaService.updateEpda(id, {
+        quoteForm,
+        berthHours,
+        anchorageHours,
+        pilotage3rdMiles: pilotageThirdMiles,
+        epdaSnapshot: snapshot,
+      })
+      await shippingAgencyEpdaService.issueEpda(id, snapshot)
       toast({ title: 'Success', description: 'Transferred to User (QUOTED)' })
       navigateBack()
     } catch (error) {
@@ -435,9 +430,27 @@ export default function ShippingAgencyPdfPage() {
             <ArrowLeft className="h-4 w-4" />
             Back to Inquiries
           </Button>
-          <div className="text-right">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Shipping Agency Inquiry</p>
-            <p className="text-lg font-semibold">Manage PDF</p>
+          <div className="flex flex-col items-end gap-2">
+            <div className="text-right">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Shipping Agency Inquiry</p>
+              <p className="text-lg font-semibold">Manage PDF</p>
+            </div>
+            {inquiryId ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="active:scale-[0.98]"
+                onClick={() => {
+                  const params = new URLSearchParams({
+                    section: 'shipping-agency-inquiry-detail',
+                    inquiryId: String(inquiryId),
+                  })
+                  router.push(`/admin?${params.toString()}`)
+                }}
+              >
+                Open full EPDA editor
+              </Button>
+            ) : null}
           </div>
         </div>
 

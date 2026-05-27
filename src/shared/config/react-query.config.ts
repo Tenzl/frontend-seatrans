@@ -46,4 +46,7 @@ export const queryKeys = {
   /** Cached port typeahead */
   portOptionsSearch: (q = "") => [...queryKeys.ports(), "options", "search", q] as const,
   portOptionsByIds: (idsKey: string) => [...queryKeys.ports(), "options", "ids", idsKey] as const,
+  adminUsers: (params: { roleGroup: string; q?: string; roleName?: string }) =>
+    ['adminUsers', params.roleGroup, params.q ?? '', params.roleName ?? ''] as const,
+  adminUserRoles: (roleGroup: string) => ['adminUserRoles', roleGroup] as const,
 }

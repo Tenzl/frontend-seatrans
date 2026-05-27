@@ -15,7 +15,7 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -28,7 +28,7 @@ export function LoginForm({
     setIsLoading(true)
 
     try {
-      const result = await login(email, password)
+      const result = await login(identifier, password)
 
       if (result.success) {
         router.push('/')
@@ -48,7 +48,7 @@ export function LoginForm({
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Login to your account</h1>
         <p className="text-balance text-sm text-muted-foreground">
-          Enter your email below to login to your account
+          Enter your email or username below to login to your account
         </p>
       </div>
       <div className="grid gap-6">
@@ -59,14 +59,14 @@ export function LoginForm({
           </Alert>
         )}
         <div className="grid gap-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="identifier">Email or username</Label>
           <Input 
-            id="email" 
-            type="email" 
-            placeholder="m@example.com" 
+            id="identifier"
+            type="text"
+            placeholder="email@example.com or username"
             required 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
           />
         </div>
         <div className="grid gap-2">

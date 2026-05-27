@@ -24,11 +24,13 @@ export type SectionRole = "ADMIN" | "EMPLOYEE" | "CUSTOMER"
 export type DashboardSection =
   | "profile"
   | "create-epda"
+  | "shipping-agency-inquiry-detail"
   | "shipping-agency-inquiries"
   | "freight-forwarding-inquiries"
   | "logistics-inquiries"
   | "chartering-inquiries"
   | "special-request-inquiries"
+  | "users"
   | "images"
   | "services"
   | "ports"
@@ -50,11 +52,18 @@ export interface SectionConfig {
   category: string
   title: string
   description?: string
+  /** Deep-link screen only (e.g. inquiry detail); omitted from sidebar */
+  navHidden?: boolean
 }
 
 // Lazy loaded components
 const EditProfileTab = lazy(() => import("@/features/admin/components/EditProfileTab").then(m => ({ default: m.EditProfileTab })))
 const CreateInvoiceTab = lazy(() => import("@/features/admin/components/CreateInvoiceTab").then(m => ({ default: m.CreateInvoiceTab })))
+const ShippingAgencyInquiryDetailTab = lazy(() =>
+  import("@/features/admin/components/ShippingAgencyInquiryDetailTab").then(m => ({
+    default: m.ShippingAgencyInquiryDetailTab,
+  })),
+)
 const ShippingAgencyInquiriesTab = lazy(() => import("@/features/admin/components/ShippingAgencyInquiriesTab").then(m => ({ default: m.ShippingAgencyInquiriesTab })))
 const FreightForwardingInquiriesTab = lazy(() => import("@/features/admin/components/FreightForwardingInquiriesTab").then(m => ({ default: m.FreightForwardingInquiriesTab })))
 const LogisticsInquiriesTab = lazy(() => import("@/features/admin/components/LogisticsInquiriesTab").then(m => ({ default: m.LogisticsInquiriesTab })))
@@ -69,6 +78,7 @@ const ManageCategories = lazy(() => import("@/modules/categories/components/admi
 const ManagePosts = lazy(() => import("@/modules/posts/components/admin/PostManagement").then(m => ({ default: m.ManagePosts })))
 const PartnerManagementTab = lazy(() => import("@/features/admin/components/PartnerManagementTab").then(m => ({ default: m.PartnerManagementTab })))
 const BookingShippingTab = lazy(() => import("@/features/admin/components/BookingShippingTab").then(m => ({ default: m.BookingShippingTab })))
+const ManageUsers = lazy(() => import("@/features/admin/components/ManageUsers").then(m => ({ default: m.ManageUsers })))
 
 const UserInquiriesPage = lazy(() => import("@/features/user/component/UserInquiriesPage").then(m => ({ default: m.UserInquiriesPage })))
 
@@ -92,6 +102,17 @@ export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
     roleGroups: ["INTERNAL"],
     category: "Port Charge",
     title: "Create EPDA",
+  },
+  "shipping-agency-inquiry-detail": {
+    id: "shipping-agency-inquiry-detail",
+    label: "Inquiry detail",
+    icon: ListChecks,
+    component: ShippingAgencyInquiryDetailTab,
+    roles: ["ADMIN", "EMPLOYEE"],
+    roleGroups: ["INTERNAL"],
+    category: "Inquiries",
+    title: "Shipping Agency Inquiry",
+    navHidden: true,
   },
   "shipping-agency-inquiries": {
     id: "shipping-agency-inquiries",
@@ -153,6 +174,17 @@ export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
     category: "Data Management",
     title: "Gallery Images",
     description: "Upload and manage field gallery images by area, port, and cargo type.",
+  },
+  users: {
+    id: "users",
+    label: "Users",
+    icon: User,
+    component: ManageUsers,
+    roles: ["ADMIN"],
+    roleGroups: ["INTERNAL"],
+    category: "Data Management",
+    title: "Manage Users",
+    description: "Manage internal accounts and view external customer accounts.",
   },
   services: {
     id: "services",
@@ -256,6 +288,10 @@ export function listSectionsByRole(role: SectionRole): SectionConfig[] {
 
 export function listSectionsByRoleGroup(roleGroup: RoleGroup): SectionConfig[] {
   return Object.values(SECTION_REGISTRY).filter((section) => section.roleGroups.includes(roleGroup))
+}
+
+export function listNavSectionsByRoleGroup(roleGroup: RoleGroup): SectionConfig[] {
+  return listSectionsByRoleGroup(roleGroup).filter((section) => !section.navHidden)
 }
 
 export function canAccessSection(section: DashboardSection, role: SectionRole): boolean {

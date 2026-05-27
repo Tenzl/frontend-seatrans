@@ -184,7 +184,7 @@ function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -316,7 +316,7 @@ function LoginPage() {
     NProgress.start();
 
     try {
-      const result = await login(email, password, rememberMe);
+      const result = await login(identifier, password, rememberMe);
 
       if (result.success) {
         router.push("/");
@@ -553,20 +553,20 @@ function LoginPage() {
           {/* Header */}
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold tracking-tight mb-2">Welcome back!</h1>
-            <p className="text-muted-foreground text-sm">Please enter your details</p>
+            <p className="text-muted-foreground text-sm">Please enter your email or username</p>
           </div>
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+              <Label htmlFor="identifier" className="text-sm font-medium">Email or username</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="anna@gmail.com"
-                value={email}
+                id="identifier"
+                type="text"
+                placeholder="anna@gmail.com or username"
+                value={identifier}
                 autoComplete="off"
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => setIdentifier(e.target.value)}
                 onFocus={() => setIsTyping(true)}
                 onBlur={() => setIsTyping(false)}
                 required

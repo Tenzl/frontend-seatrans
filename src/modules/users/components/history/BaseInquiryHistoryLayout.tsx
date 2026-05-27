@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { ColumnDef } from '@tanstack/react-table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { QuotePreview } from '@/modules/inquiries/components/common/Quote-hcm'
 import { InquiryDataTable } from './InquiryDataTable'
 import { InquiryDetailDrawer } from './InquiryDetailDrawer'
+import { buildDashboardUrl } from '@/shared/utils/dashboardNavigation'
 import { useInquiryData } from './useInquiryData'
 import { useInvoicePreview } from './useInvoicePreview'
 import {
@@ -42,13 +43,12 @@ export function BaseInquiryHistoryLayout({
   description = 'View and manage your inquiry submissions',
 }: BaseInquiryHistoryLayoutProps) {
   const router = useRouter()
-
-  const { inquiries, isLoading, error, fetchInquiries, deleteInquiries, updateStatus, updateForm, formUpdatingId } = useInquiryData({
+  const pathname = usePathname()
+  const { inquiries, isLoading, error, fetchInquiries, deleteInquiries, updateStatus } = useInquiryData({
     serviceType,
     isAdmin,
   })
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null)
-  const [pdfOpeningId, setPdfOpeningId] = useState<number | null>(null)
   
   const { quoteHtml, isLoading: loadingQuote, generateInvoicePreview, clearPreview } = useInvoicePreview()
   
@@ -80,28 +80,17 @@ export function BaseInquiryHistoryLayout({
     }
   }
 
-  const handleManagePdf = async (inquiry: any) => {
+  const handleOpenDetail = (inquiry: any) => {
     const slug = getServiceSlugFromInquiry(inquiry) || serviceType
-
-    if (slug === 'shipping-agency' && isAdmin) {
-      setPdfOpeningId(inquiry.id)
-      try {
-        if (inquiry.status !== STATUS_PROCESSING) {
-          await updateStatus(inquiry.id, STATUS_PROCESSING, slug)
-        }
-        router.push(`/admin/inquiries/${slug}/${inquiry.id}/pdf`)
-      } catch (err) {
-        console.error('Failed to open PDF manager', err)
-      } finally {
-        setPdfOpeningId(null)
-      }
+    if (isAdmin && slug === 'shipping-agency') {
+      router.push(
+        buildDashboardUrl(pathname, 'shipping-agency-inquiry-detail', {
+          inquiryId: inquiry.id,
+        }),
+        { scroll: false },
+      )
       return
     }
-
-    handleViewQuote(inquiry)
-  }
-
-  const handleOpenDetail = (inquiry: any) => {
     setDetailInquiry(inquiry)
   }
 
@@ -221,46 +210,6 @@ export function BaseInquiryHistoryLayout({
         },
       }
     )
-    
-    // Form column only for admin
-    if (isAdmin) {
-      columns.push({
-        id: 'form',
-        header: 'Form',
-        cell: ({ row }) => {
-          const inq = row.original
-          const current = (inq.quoteForm || '').toUpperCase() || 'HCM'
-          const options = ['HCM', 'QN']
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" disabled={formUpdatingId === inq.id} className="px-2">
-                  {formUpdatingId === inq.id ? <Loader2 className="h-4 w-4 animate-spin" /> : current}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                {options.map(opt => (
-                  <DropdownMenuItem
-                    key={opt}
-                    disabled={formUpdatingId === inq.id || opt === current}
-                    onSelect={async () => {
-                      if (opt === current) return
-                      try {
-                        await updateForm(inq.id, opt, getServiceSlugFromInquiry(inq) || serviceType)
-                      } catch (err) {
-                        console.error('Failed to update form', err)
-                      }
-                    }}
-                  >
-                    {opt}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )
-        },
-      })
-    }
   }
   
   columns.push(
@@ -305,28 +254,15 @@ export function BaseInquiryHistoryLayout({
               </Button>
             )
           }
-          // Shipping agency: both View Details and Manage PDF
           return (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleOpenDetail(inq)}
-                className="gap-2"
-              >
-                View Details
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleManagePdf(inq)}
-                className="gap-2"
-                disabled={pdfOpeningId === inq.id}
-              >
-                {pdfOpeningId === inq.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                Manage PDF
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleOpenDetail(inq)}
+              className="gap-2"
+            >
+              View Details
+            </Button>
           )
         }
 

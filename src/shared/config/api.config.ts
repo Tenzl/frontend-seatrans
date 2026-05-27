@@ -107,6 +107,12 @@ export const API_CONFIG = {
     ADMIN_BY_ID: (id: number) => `/admin/categories/${id}`,
   },
 
+  USERS: {
+    ADMIN_EXTERNAL_CUSTOMERS: '/admin/users/external-customers',
+    ADMIN_USERS: '/admin/users',
+    ADMIN_USER_ROLES: '/admin/users/roles',
+  },
+
   INQUIRIES: {
     SUBMIT: '/inquiries',
     USER_HISTORY: (userId: number) => `/inquiries/user/${userId}`,
@@ -119,6 +125,11 @@ export const API_CONFIG = {
       `/admin/inquiries/${encodeURIComponent(serviceType)}/${id}/form`,
     ADMIN_HOURS: (serviceType: string, id: number) =>
       `/admin/inquiries/${encodeURIComponent(serviceType)}/${id}/hours`,
+    ADMIN_SHIPPING_AGENCY_CREATE: '/admin/inquiries/shipping-agency',
+    ADMIN_SHIPPING_AGENCY_EPDA: (id: number) =>
+      `/admin/inquiries/shipping-agency/${id}/epda`,
+    ADMIN_SHIPPING_AGENCY_EPDA_ISSUE: (id: number) =>
+      `/admin/inquiries/shipping-agency/${id}/epda/issue`,
     USER_BATCH_DELETE: '/inquiries/batch',
     ADMIN_BATCH_DELETE: '/admin/inquiries/batch',
   },

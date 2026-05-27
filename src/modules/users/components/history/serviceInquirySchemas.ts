@@ -42,6 +42,7 @@ const formatBoolean = (value: any): string => {
  */
 export const SERVICE_SCHEMAS: Record<string, InquiryFieldSchema[]> = {
   'shipping-agency': [
+    { key: 'toName', label: 'To (Shipowner / Principal)', type: 'text', format: formatText },
     { key: 'mv', label: 'M/V', type: 'text', format: formatText },
     { key: 'dwt', label: 'DWT (tons)', type: 'number', format: formatNumber },
     { key: 'grt', label: 'GRT (tons)', type: 'number', format: formatNumber },
@@ -49,15 +50,20 @@ export const SERVICE_SCHEMAS: Record<string, InquiryFieldSchema[]> = {
     { key: 'eta', label: 'ETA', type: 'date', format: (v) => v ? formatDate(v) : 'TBN' },
     { key: 'cargoType', label: 'Cargo Type', type: 'text', format: formatText },
     { key: 'cargoName', label: 'Cargo Name', type: 'text', format: formatText },
+    { key: 'cargoNameOther', label: 'Cargo Name (other)', type: 'text', format: formatText },
     { key: 'cargoQuantity', label: 'Cargo Quantity (MT)', type: 'number', format: formatNumber },
+    { key: 'frtTaxType', label: 'Freight Tax', type: 'text', format: formatText },
+    { key: 'purposeOfCalling', label: 'Purpose of Calling', type: 'text', format: formatText },
     { key: 'portOfCall', label: 'Port of Call', type: 'text', format: formatText },
-    { key: 'dischargeLoadingLocation', label: 'Discharge/Loading Location', type: 'text', format: formatText },
+    { key: 'dischargeLoadingLocation', label: 'Operation at', type: 'text', format: formatText },
     { key: 'transportLs', label: 'Transport L/S', type: 'text', format: formatText },
+    { key: 'transportQuarantine', label: 'Transport (quarantine)', type: 'number', format: formatNumber },
     { key: 'boatHireAmount', label: 'Boat Hire Amount', type: 'number', format: formatNumber },
     { key: 'tallyFeeAmount', label: 'Tally Fee Amount', type: 'number', format: formatNumber },
     { key: 'berthHours', label: 'Berth Due (hours)', type: 'number', format: formatNumber },
     { key: 'anchorageHours', label: 'Anchorage Hours', type: 'number', format: formatNumber },
     { key: 'pilotage3rdMiles', label: 'Pilotage 3rd Miles', type: 'number', format: formatNumber },
+    { key: 'notes', label: 'Notes', type: 'text', format: formatText },
   ],
 
   'chartering': [
@@ -141,6 +147,11 @@ export const getServiceSlugFromInquiry = (inquiry: {
 export const getFieldValue = (inquiry: any, key: string): any => {
   if (!inquiry) return undefined
   
+  if (key === 'cargoQuantity') {
+    const qty = inquiry.cargoQuantity ?? inquiry.quantityTons
+    if (qty !== undefined && qty !== null && qty !== '') return qty
+  }
+
   // Simple property access
   if (key in inquiry) {
     return inquiry[key]

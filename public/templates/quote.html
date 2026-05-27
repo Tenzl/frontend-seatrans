@@ -5,17 +5,47 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Estimated Port Disbursements</title>
   <style>
-    /* ===== Print setup ===== */
-    @page { size: A3; margin: 12mm; }
+    /* ===== Print setup (Narrow — Word preset) ===== */
+    @page {
+      size: A4;
+      margin-top: 1.91cm;
+      margin-bottom: 1.91cm;
+      margin-left: 0.64cm;
+      margin-right: 0.64cm;
+    }
     html, body { height: 100%; }
     body {
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 12px;
+      font-size: 10.5px;
       color: #000;
       margin: 0;
-      line-height: 1.5;
+      line-height: 1.35;
     }
-    .page { width: 100%; }
+    /* Banner: 18.7×3.21cm. .page là khung BỌC chuẩn — mọi nội dung con đều = width frame. */
+    :root {
+      --epda-banner-width: 18.7cm;
+      --epda-banner-height: 3.21cm;
+      --epda-banner-ratio: 1075 / 206;
+    }
+
+    .page {
+      width: var(--epda-banner-width);
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    .page > * {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    @media print {
+      html, body { margin: 0; padding: 0; }
+      .page { width: var(--epda-banner-width); max-width: none; }
+    }
     .muted { color: #222; }
     .right { text-align: right; }
     .center { text-align: center; }
@@ -38,28 +68,48 @@
     .top-lines .line { white-space: nowrap; }
     .top-lines .line span.label { display: inline-block; width: 34px; }
     .title {
-      margin: 10px 0 8px;
-      font-size: 16px;
+      margin: 8px 0 6px;
+      font-size: 14px;
       font-weight: 800;
       letter-spacing: 0.4px;
     }
 
     /* ===== Vessel + Port boxes ===== */
-    table { border-collapse: collapse; width: 100%; }
-    .box {
-      border: 1px solid #000;
+    .page table {
       border-collapse: collapse;
       width: 100%;
+      max-width: 100%;
+      table-layout: fixed;
+      box-sizing: border-box;
+    }
+    .box {
+      border: 1px solid #000;
+    }
+    .box td,
+    .box th,
+    .charges td,
+    .charges th {
+      overflow: hidden;
+      word-wrap: break-word;
+      word-break: break-word;
     }
     .box td,
     .box th {
       border: 1px solid #000;
-      padding: 3px 5px;
+      padding: 2px 4px;
       vertical-align: top;
     }
-    .box .label { width: 58px; white-space: nowrap; }
-    .box .value { font-weight: 700; }
-    .box .port-label { width: 180px; }
+    /*
+     * Vessel/port box căn đúng theo bảng AA:
+     *   - label: giữ nguyên (11%)
+     *   - value kết thúc tại dải cuối cột Details của AA  → 5 + 22 + 30 = 57%
+     *   - port-label kết thúc tại dải cuối cột Remark của AA → 57 + 7 + 18 = 82%
+     *   - value-right: 100 - 82 = 18% (mặc định)
+     */
+    .box .label       { width: 11%; white-space: nowrap; }
+    .box .value       { width: 46%; font-weight: 700; }
+    .box .port-label  { width: 25%; }
+    .box .value-right { width: 18%; font-weight: 700; }
 
     /* ===== Section titles ===== */
     .section-title {
@@ -70,22 +120,27 @@
     /* ===== Charges table ===== */
     .charges th, .charges td {
       border: 1px solid #000;
-      padding: 3px 5px;
+      padding: 2px 4px;
       vertical-align: top;
     }
     .charges th {
       font-weight: 800;
       text-align: left;
     }
-    .charges .col-no { width: 28px; text-align: center; }
-    .charges .col-item { width: 160px; }
-    .charges .col-details { width: 230px; }
-    .charges .col-add { width: 60px; text-align: center; }
-    .charges .col-remark { width: 110px; }
-    .charges .col-amount { width: 90px; text-align: right; white-space: nowrap; }
+    /* Item rộng hơn, Details thu nhỏ — tổng 6 cột = 100% */
+    .charges .col-no      { width: 5%;  text-align: center; }
+    .charges .col-item    { width: 22%; }
+    .charges .col-details { width: 30%; }
+    .charges .col-add     { width: 7%;  text-align: center; }
+    .charges .col-remark  { width: 18%; }
+    .charges .col-amount  { width: 18%; text-align: right; white-space: nowrap; }
 
     /* BB table (no item column) */
-    /* .bb-table styles removed to align with AA table */
+    .bb th, .bb td { vertical-align: top; }
+    /* BB = 3 cột để chỉnh % */
+    .bb .bb-no { width: 5%; text-align: center; }
+    .bb .bb-details { width: 77%; }
+    .bb .bb-amount { width: 18%; text-align: right; white-space: nowrap; }
 
     .total-row td {
       font-weight: 800;
@@ -97,7 +152,7 @@
 
     /* ===== Remark & footer blocks ===== */
     .remark-row td {
-      font-size: 12px;
+      font-size: 10.5px;
       font-style: italic;
     }
 
@@ -107,8 +162,8 @@
       height: 0;
     }
     .footer-lines {
-      font-size: 10px;
-      line-height: 1.35;
+      font-size: 9.5px;
+      line-height: 1.25;
     }
     .footer-sep {
       font-family: "Courier New", Courier, monospace;
@@ -116,27 +171,35 @@
       margin: 6px 0;
     }
     .signature-block {
-      margin-top: 16px;
+      margin-top: 10px;
       text-align: left;
-      padding-left: 30px;
+      padding-left: 18px;
       font-weight: 700;
       letter-spacing: 0.3px;
     }
     .signature-block img {
-      margin-top: 8px;
-      max-height: 110px;
+      margin-top: 6px;
+      max-height: 80px;
     }
     .indent { padding-left: 10px; }
+
+    .author-header {
+      width: 100%;
+      margin: 0 0 4px;
+      line-height: 0;
+    }
     .author-header img {
       display: block;
       width: 100%;
       height: auto;
+      aspect-ratio: var(--epda-banner-ratio);
     }
   </style>
 </head>
 <body>
   <div class="page">
 
+    <!-- Banner: làm chuẩn chiều ngang cho toàn bộ nội dung bên dưới -->
     <div class="author-header">
       <img src="/landing-image/authorHeader.png" alt="Author header" />
     </div>
@@ -158,37 +221,37 @@
         <td class="label bold">MV</td>
         <td class="value">{{mv}}</td>
         <td class="port-label bold">Discharging/loading port</td>
-        <td class="value right">{{port_upper}}</td>
+        <td class="value-right right">{{port_upper}}</td>
       </tr>
       <tr>
         <td class="label bold">DWT</td>
         <td class="red">{{dwt}}</td>
         <td class="port-label bold">Discharging/loading term</td>
-        <td class="value right">F.O</td>
+        <td class="value-right right">F.O</td>
       </tr>
       <tr>
         <td class="label bold">GRT</td>
         <td class="red">{{grt}}</td>
         <td class="port-label bold">Dis/loading at anchorage</td>
-        <td class="value right">{{at_anchorage}}</td>
+        <td class="value-right right">{{at_anchorage}}</td>
       </tr>
       <tr>
         <td class="label bold">LOA</td>
         <td class="red">{{loa}}</td>
         <td class="port-label bold">Discharging/loading at berth</td>
-        <td class="value right">{{at_berth}}</td>
+        <td class="value-right right">{{at_berth}}</td>
       </tr>
       <tr>
         <td class="label bold">ETA</td>
         <td class="red">{{eta}}</td>
         <td class="port-label bold"></td>
-        <td class="value right"></td>
+        <td class="value-right right"></td>
       </tr>
       <tr>
         <td class="label bold">Cargo/Q'ty</td>
         <td class="value">{{cargo_qty_mt}} MT OF {{cargo_name_upper}}</td>
         <td class="port-label bold"></td>
-        <td class="value right"></td>
+        <td class="value-right right"></td>
       </tr>
     </table>
 
@@ -212,28 +275,28 @@
       </tr>
     </table>
 
-    <!-- ===== BB TABLE ===== -->
+    <!-- ===== BB TABLE (3 columns) ===== -->
     <div class="section-title mt-10">BB. Agency fees and expenses :</div>
-    <table class="charges">
+    <table class="charges bb">
       <tr>
-        <th class="col-no">No.</th>
-        <th colspan="4" style="text-align: left; padding-left: 5px;">Details</th>
-        <th class="col-amount">Amount (USD)</th>
+        <th class="bb-no">No.</th>
+        <th class="bb-details" style="text-align: left;">Details</th>
+        <th class="bb-amount">Amount (USD)</th>
       </tr>
 
       {{BB_ROWS}}
 
       <tr class="total-row">
-        <td colspan="5" class="right">TOTAL B : (II)</td>
-        <td>{{total_b}}</td>
+        <td colspan="2" class="right">TOTAL B : (II)</td>
+        <td class="bb-amount">{{total_b}}</td>
       </tr>
       <tr class="total-row">
-        <td colspan="5" class="right">G. TOTAL : (I)+(II)</td>
-        <td class="red">{{grand_total}}</td>
+        <td colspan="2" class="right">G. TOTAL : (I)+(II)</td>
+        <td class="bb-amount red">{{grand_total}}</td>
       </tr>
       <tr class="remark-row">
-        <td class="col-no"></td>
-        <td class="col-details" colspan="5">
+        <td class="bb-no"></td>
+        <td class="bb-details" colspan="2">
           <span class="bold u">Remark</span> :
           All the port charges/dues are subject to the Govmn't tariff and will be settled basing on the original
           invoices & vouchers issued by parties concerned

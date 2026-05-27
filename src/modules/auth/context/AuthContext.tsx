@@ -49,8 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refreshUser()
   }, [])
 
-  const login = async (email: string, password: string, remember = true) => {
-    const response = await authService.login(email, password, remember)
+  const login = async (identifier: string, password: string, remember = true) => {
+    const response = await authService.login(identifier, password, remember)
     if (response.success && response.data) {
       setUser(response.data.user)
       return { success: true }

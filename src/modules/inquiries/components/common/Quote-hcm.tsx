@@ -83,6 +83,9 @@ const formatAmount = (value: unknown) => {
   return rounded.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+const formatCbm = (value: number) =>
+  value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+
 const formatLoaDisplay = (value: unknown) => {
   const raw = String(value || '').trim()
   if (!raw) return ''
@@ -388,7 +391,7 @@ const buildAARows = (
     const garbageCbmNumeric = toNumber(options?.garbageCbmAmount)
     const garbageCbmAmount = garbageCbmNumeric !== null && garbageCbmNumeric > 0 ? garbageCbmNumeric : 1
     const garbageRemovalValueFinal = garbageRemovalValue * Math.ceil(berthDaysNumeric / 2) * garbageCbmAmount
-    const garbageCbmAddText = garbageCbmAmount > 1 ? `${garbageCbmAmount} cbm` : ''
+    const garbageCbmAddText = garbageCbmAmount > 1 ? `${formatCbm(garbageCbmAmount)} cbm` : ''
     const garbageRemoval = formatAmount(garbageRemovalValueFinal)
     
     const defaultRows: QuoteRow[] = []
@@ -543,9 +546,9 @@ const buildBBRows = (
     const detailText = [itemHtml, detailsHtml].filter(Boolean).join(itemHtml && detailsHtml ? ': ' : '')
     return `
       <tr>
-        <td class="col-no">${index + 1}</td>
-        <td class="col-details" colspan="4"><span class="bold">${detailText}</span></td>
-        <td class="col-amount">${formatAmount(row.amount)}</td>
+        <td class="bb-no">${index + 1}</td>
+        <td class="bb-details"><span class="bold">${detailText}</span></td>
+        <td class="bb-amount">${formatAmount(row.amount)}</td>
       </tr>`
   }
 
@@ -742,6 +745,7 @@ export const renderQuoteHtml = (template: string, data: QuoteData) => {
   const replacements: Record<string, string> = {
     to_shipowner: escapeHtml(normalizedData.to_shipowner),
     date: escapeHtml(normalizedData.date),
+    fm_department: 'SEATRANS - SHIPPING AGENCY',
     ref: escapeHtml(normalizedData.ref),
     mv: escapeHtml(normalizedData.mv),
     dwt: escapeHtml(normalizedData.dwt),

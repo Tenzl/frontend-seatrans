@@ -30,6 +30,7 @@ export interface ProjectItem {
 export interface User {
   id: number
   email: string
+  username?: string | null
   fullName: string
   nation?: string
   phone?: string

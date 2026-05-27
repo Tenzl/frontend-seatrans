@@ -121,9 +121,9 @@ export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
         {
           title: 'Cargo',
           fields: [
-            { id: 'cargoType', label: 'Cargo type', type: 'select', required: true, options: ['IN BULK', 'IN BAGS', 'IN EQUIPMENT'], gridSpan: 1 },
-            { id: 'cargoName', label: 'Cargo name', type: 'select', required: true, options: ['WOOD PELLET', 'WOODCHIP', 'EQUIPMENT', 'OTHER'], placeholder: 'Select or OTHER', gridSpan: 1 },
-            { id: 'cargoNameOther', label: 'Cargo name (specify)', type: 'text', placeholder: 'Enter cargo name', gridSpan: 2, showWhen: { field: 'cargoName', value: 'other' } },
+            { id: 'cargoType', label: 'Cargo type', type: 'select', required: true, placeholder: 'Select cargo type', gridSpan: 1 },
+            { id: 'cargoName', label: 'Cargo name', type: 'select', required: true, placeholder: 'Select cargo name', gridSpan: 1 },
+            { id: 'cargoNameOther', label: 'Cargo name (specify)', type: 'text', placeholder: 'Enter cargo name', gridSpan: 2, showWhen: { field: 'cargoName', value: 'OTHER' } },
             { id: 'quantityTons', label: 'Quantity (MT)', type: 'number', required: true, placeholder: 'e.g. 12,500', gridSpan: 1 },
           ],
         },
@@ -132,7 +132,7 @@ export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
           fields: [
             { id: 'frtTaxType', label: 'Freight tax (import / export)', type: 'select', required: true, options: ['Import', 'Export'], gridSpan: 1, helperText: 'Export cargo may incur freight tax; import typically does not.', enableSearch: false },
             { id: 'purposeOfCalling', label: 'Purpose of calling', type: 'select', required: true, options: ['NHAP_XUAT', 'NHAP_CHUYEN_CANG', 'CHUYEN_CANG_XUAT', 'CHUYEN_CANG_CHUYEN_CANG', 'MUC_DICH_KHAC'], gridSpan: 1, enableSearch: false },
-            { id: 'portOfCall', label: 'Port of call', type: 'port', required: true, placeholder: 'e.g. Quy Nhon, HCMC…', gridSpan: 1 },
+            { id: 'portOfCall', label: 'Port of call', type: 'port', required: true, placeholder: 'Select port of call', gridSpan: 1 },
             { id: 'dischargeLoadingLocation', label: 'Operation at', type: 'select', required: true, options: ['Berth', 'Anchorage'], gridSpan: 1, enableSearch: false },
           ],
         },
@@ -140,7 +140,7 @@ export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
           title: 'Service options',
           fields: [
             { id: 'boatHireAmount', label: 'Boat-hire for agency (USD)', type: 'number', placeholder: '0', gridSpan: 1, required: false, showWhen: { field: 'dischargeLoadingLocation', value: 'Anchorage' } },
-            { id: 'tallyFeeAmount', label: "Ship's side tally fee (USD)", type: 'number', placeholder: '0', gridSpan: 1, required: false, showWhen: { field: 'cargoType', value: ['IN BAGS', 'IN EQUIPMENT'] } },
+            { id: 'tallyFeeAmount', label: "Ship's side tally fee (USD)", type: 'number', placeholder: '0', gridSpan: 1, required: false, showWhen: { field: 'cargoType', value: 'IN_BAG_PACK' } },
             { id: 'transportLs', label: 'Taxi / courier / communication (USD)', type: 'number', placeholder: '0', gridSpan: 2 },
             { id: 'transportQuarantine', label: 'Transport for quarantine formality (optional)', type: 'number', placeholder: '0', gridSpan: 2 },
           ],

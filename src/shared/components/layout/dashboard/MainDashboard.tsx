@@ -24,6 +24,7 @@ import { DashboardContent } from "@/shared/components/layout/dashboard/Dashboard
 import {
   DashboardSection,
   getSectionConfig,
+  listNavSectionsByRoleGroup,
   listSectionsByRoleGroup,
   SectionRole,
 } from "@/shared/config/dashboard-registry"
@@ -51,6 +52,10 @@ import { Separator } from "@/shared/components/ui/separator"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { cn } from "@/shared/lib/utils"
+import {
+  buildDashboardUrl,
+  isShippingAgencyInquiryDetailSection,
+} from "@/shared/utils/dashboardNavigation"
 
 interface MainDashboardProps {
   initialSection?: DashboardSection
@@ -193,10 +198,15 @@ export function MainDashboard({ initialSection, roleGroup: roleGroupOverride, on
     return listSectionsByRoleGroup(roleGroup).filter((s) => (userRole ? s.roles.includes(userRole) : true))
   }, [roleGroup, userRole])
 
+  const navSections = useMemo(() => {
+    if (!roleGroup) return []
+    return listNavSectionsByRoleGroup(roleGroup).filter((s) => (userRole ? s.roles.includes(userRole) : true))
+  }, [roleGroup, userRole])
+
   const defaultSection = useMemo(() => {
     if (initialSection && sections.some((s) => s.id === initialSection)) return initialSection
-    return sections[0]?.id
-  }, [initialSection, sections])
+    return navSections[0]?.id ?? sections[0]?.id
+  }, [initialSection, sections, navSections])
 
   const queryClient = useMemo(() => createQueryClient(), [])
 
@@ -209,7 +219,7 @@ export function MainDashboard({ initialSection, roleGroup: roleGroupOverride, on
     )
   }
 
-  const categories = buildCategories(sections)
+  const categories = buildCategories(navSections)
 
   if (categories.length === 0) {
     return (
@@ -227,6 +237,7 @@ export function MainDashboard({ initialSection, roleGroup: roleGroupOverride, on
           <DashboardShell
             categories={categories}
             sections={sections}
+            navSections={navSections}
             userRole={userRole}
             roleGroup={roleGroup}
             defaultSection={defaultSection}
@@ -242,6 +253,7 @@ export function MainDashboard({ initialSection, roleGroup: roleGroupOverride, on
 function DashboardShell({
   categories,
   sections,
+  navSections,
   userRole,
   roleGroup,
   defaultSection,
@@ -250,6 +262,7 @@ function DashboardShell({
 }: {
   categories: CategoryGroup[]
   sections: ReturnType<typeof listSectionsByRoleGroup>
+  navSections: ReturnType<typeof listNavSectionsByRoleGroup>
   userRole?: SectionRole
   roleGroup: RoleGroup
   defaultSection?: DashboardSection
@@ -262,8 +275,30 @@ function DashboardShell({
   const { state: sidebarState } = useSidebar()
 
   const querySection = searchParams.get("section") as DashboardSection | null
-  const isValidSection = querySection && sections.some((s) => s.id === querySection)
-  const activeSection = isValidSection ? querySection : defaultSection
+  const queryInquiryId = searchParams.get("inquiryId")
+
+  const activeSection = useMemo((): DashboardSection | undefined => {
+    const isValid = (id: DashboardSection | null | undefined): id is DashboardSection =>
+      Boolean(id && sections.some((s) => s.id === id))
+
+    if (isShippingAgencyInquiryDetailSection(querySection)) {
+      if (!queryInquiryId) {
+        return isValid(defaultSection) ? defaultSection : "shipping-agency-inquiries"
+      }
+      const shippingContext =
+        !defaultSection ||
+        defaultSection === "shipping-agency-inquiries" ||
+        defaultSection === "shipping-agency-inquiry-detail" ||
+        defaultSection === "profile"
+      if (!shippingContext && isValid(defaultSection)) {
+        return defaultSection
+      }
+      return "shipping-agency-inquiry-detail"
+    }
+
+    if (isValid(querySection)) return querySection
+    return isValid(defaultSection) ? defaultSection : undefined
+  }, [querySection, queryInquiryId, sections, defaultSection])
 
   // Legacy sidebar URLs → unified Images hub with tab deep-link
   useEffect(() => {
@@ -275,11 +310,41 @@ function DashboardShell({
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }, [pathname, searchParams, router])
 
-  const setActiveSection = (sectionId: DashboardSection) => {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set("section", sectionId)
-    router.push(`${pathname}?${params.toString()}`)
+  const navigateDashboard = (
+    sectionId: DashboardSection,
+    extra?: Record<string, string | number | null | undefined>,
+    options?: { replace?: boolean },
+  ) => {
+    const href = buildDashboardUrl(pathname, sectionId, extra)
+    if (options?.replace) {
+      router.replace(href, { scroll: false })
+    } else {
+      router.push(href)
+    }
   }
+
+  const setActiveSection = (sectionId: DashboardSection) => {
+    const leavingInquiryDetail =
+      isShippingAgencyInquiryDetailSection(activeSection ?? null) &&
+      !isShippingAgencyInquiryDetailSection(sectionId)
+    navigateDashboard(sectionId, undefined, { replace: leavingInquiryDetail })
+  }
+
+  useEffect(() => {
+    const section = searchParams.get("section")
+    const inquiryId = searchParams.get("inquiryId")
+    if (!inquiryId) return
+    if (isShippingAgencyInquiryDetailSection(section)) return
+    if (!activeSection) return
+
+    router.replace(buildDashboardUrl(pathname, activeSection), { scroll: false })
+  }, [searchParams, activeSection, pathname, router])
+
+  const inquiryIdParam = searchParams.get("inquiryId")
+  const isShippingAgencyInquiryDetail = activeSection === "shipping-agency-inquiry-detail"
+  const sidebarHighlightSection: DashboardSection | undefined =
+    isShippingAgencyInquiryDetail ? "shipping-agency-inquiries" : activeSection
+  const shippingAgencyListConfig = getSectionConfig("shipping-agency-inquiries")
 
   const activeConfig = activeSection ? getSectionConfig(activeSection) : undefined
   const activeCategory = findCategoryForSection(categories, activeSection)
@@ -360,7 +425,7 @@ function DashboardShell({
                     <CollapsibleContent className="CollapsibleContent">
                       <SidebarMenuSub className="mr-0 border-l border-sidebar-border/80 pl-2">
                         {category.items.map((item) => {
-                          const isActive = activeSection === item.id
+                          const isActive = sidebarHighlightSection === item.id
                           return (
                             <SidebarMenuSubItem key={item.id}>
                               <SidebarMenuSubButton
@@ -411,20 +476,41 @@ function DashboardShell({
               <Badge variant="secondary" className="shrink-0 font-medium tabular-nums">
                 {ROLE_GROUP_LABEL[roleGroup]}
               </Badge>
-              {activeCategory ? (
+              {isShippingAgencyInquiryDetail ? (
                 <>
                   <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" aria-hidden />
-                  <span className="truncate">{activeCategory}</span>
-                </>
-              ) : null}
-              {activeConfig ? (
-                <>
+                  <span className="truncate">Inquiries</span>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" aria-hidden />
+                  <button
+                    type="button"
+                    className="truncate transition-colors hover:text-foreground"
+                    onClick={() => navigateDashboard("shipping-agency-inquiries")}
+                  >
+                    {shippingAgencyListConfig?.title ?? "Shipping Agency Inquiries"}
+                  </button>
                   <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" aria-hidden />
                   <span className="truncate font-medium text-foreground">
-                    {activeConfig.title ?? activeConfig.label}
+                    {inquiryIdParam ? `Inquiry #${inquiryIdParam}` : "Inquiry detail"}
                   </span>
                 </>
-              ) : null}
+              ) : (
+                <>
+                  {activeCategory ? (
+                    <>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" aria-hidden />
+                      <span className="truncate">{activeCategory}</span>
+                    </>
+                  ) : null}
+                  {activeConfig ? (
+                    <>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" aria-hidden />
+                      <span className="truncate font-medium text-foreground">
+                        {activeConfig.title ?? activeConfig.label}
+                      </span>
+                    </>
+                  ) : null}
+                </>
+              )}
             </nav>
             {onNavigateHome && (
               <Button

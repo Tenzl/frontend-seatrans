@@ -9,6 +9,12 @@ import {
 } from '@/shared/components/ui/select'
 import { DatePicker } from '@/shared/components/ui/date-picker'
 import type { CargoType, CargoTypeCatalogItem, Commodity } from '@/modules/gallery/services/commodityService'
+import {
+  EpdaComputedSummary,
+  EpdaFormSection,
+  epdaFieldGridClass,
+  type EpdaSummaryItem,
+} from './EpdaFormLayout'
 
 export type FormVariant = 'QN' | 'HCM'
 
@@ -163,7 +169,7 @@ export function CreateInvoiceVariantForm({
   const onCargoRate = isEquipmentCargo ? 0.1 : isInBagsCargo ? 0.06 : 0.05
   const onCargoBaseAmount = onCargoRate * cargoQtyForDisplay
 
-  const onGrtLabel = `On GRT: ${agencyFeeByGrt.label}`
+  const onGrtLabel = `On GRT (${agencyFeeByGrt.label})`
   const onGrtAmountDisplay = `USD ${agencyFeeByGrt.amount.toLocaleString('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
@@ -173,24 +179,46 @@ export function CreateInvoiceVariantForm({
     maximumFractionDigits: 2,
   })}${subAgencySuffix}`
   const onCargoLabel = isEquipmentCargo
-    ? `Equipment: USD 0.1/MT X ${cargoQtyForDisplay} MTS`
-    : `On Cargo: USD${onCargoRate.toFixed(2)}/MT X ${cargoQtyForDisplay}MTS`
+    ? `On cargo — USD 0.1/MT x ${cargoQtyForDisplay} MT`
+    : `On cargo — USD ${onCargoRate.toFixed(2)}/MT x ${cargoQtyForDisplay} MT`
+
+  const duesSummaryItems: EpdaSummaryItem[] = [
+    { label: 'Quarantine for ship', value: `USD ${computed.shipQuarantineFee}` },
+    { label: 'Quarantine for cargo', value: `USD ${computed.cargoQuarantineFee}` },
+    {
+      label: 'Freight tax note',
+      value: computed.canEnableFreightTaxDeclaration ? computed.frtHint : 'N/A for this purpose',
+      hint: computed.canEnableFreightTaxDeclaration
+        ? 'Enter ocean freight rate below when applicable.'
+        : undefined,
+    },
+  ]
+
+  const agencySummaryItems: EpdaSummaryItem[] =
+    values.agencyFeeMode === 'TARRIF_AGENCY'
+      ? [
+          { label: onGrtLabel, value: onGrtAmountDisplay },
+          { label: onCargoLabel, value: onCargoAmountDisplay },
+        ]
+      : []
 
   return (
     <>
-      <div className="rounded-lg border p-4 space-y-6">
-        <h3 className="text-sm font-bold tracking-wide uppercase text-primary">General Information</h3>
-
-        <div className="grid md:grid-cols-4 gap-4">
+      <EpdaFormSection
+        id="epda-general"
+        title="General information"
+        description="Vessel, cargo, and call details used on the EPDA header."
+      >
+        <div className={epdaFieldGridClass()}>
           <div className="grid gap-2">
             <Label htmlFor="toShipowner" className={getRequiredState(values.toShipowner).labelClass}>
-              To (Ship Owner/Company) *
+              To (ship owner / company) *
             </Label>
             <Input
               id="toShipowner"
               value={values.toShipowner}
               onChange={(e) => handlers.setToShipowner(e.target.value)}
-              placeholder="Enter shipowner/company name"
+              placeholder="Enter shipowner or company name"
               className={getRequiredState(values.toShipowner).fieldClass}
               required
             />
@@ -198,7 +226,7 @@ export function CreateInvoiceVariantForm({
 
           <div className="grid gap-2">
             <Label htmlFor="mv" className={getRequiredState(values.mv).labelClass}>
-              M/V (Vessel Name) *
+              M/V (vessel name) *
             </Label>
             <Input
               id="mv"
@@ -211,16 +239,22 @@ export function CreateInvoiceVariantForm({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="eta">ETA (Date)</Label>
+            <Label htmlFor="eta">ETA (date)</Label>
             <DatePicker id="eta" value={values.eta} onChange={handlers.setEta} placeholder="TBN" />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="dischargeLoadingLocation" className={getRequiredState(values.dischargeLoadingLocation).labelClass}>
-              Discharge/Loading at *
+            <Label
+              htmlFor="dischargeLoadingLocation"
+              className={getRequiredState(values.dischargeLoadingLocation).labelClass}
+            >
+              Discharge / loading at *
             </Label>
             <Select value={values.dischargeLoadingLocation} onValueChange={handlers.setDischargeLoadingLocation}>
-              <SelectTrigger id="dischargeLoadingLocation" className={getRequiredState(values.dischargeLoadingLocation).fieldClass}>
+              <SelectTrigger
+                id="dischargeLoadingLocation"
+                className={getRequiredState(values.dischargeLoadingLocation).fieldClass}
+              >
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
               <SelectContent>
@@ -231,7 +265,7 @@ export function CreateInvoiceVariantForm({
           </div>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-4">
+        <div className={epdaFieldGridClass()}>
           <div className="grid gap-2">
             <Label htmlFor="dwt" className={getRequiredState(values.dwt).labelClass}>
               DWT (tons) *
@@ -241,7 +275,7 @@ export function CreateInvoiceVariantForm({
               type="number"
               value={values.dwt}
               onChange={(e) => handlers.setDwt(e.target.value)}
-              placeholder="Dead Weight Tonnage"
+              placeholder="Deadweight tonnage"
               className={getRequiredState(values.dwt).fieldClass}
             />
           </div>
@@ -255,7 +289,7 @@ export function CreateInvoiceVariantForm({
               type="number"
               value={values.grt}
               onChange={(e) => handlers.setGrt(e.target.value)}
-              placeholder="Gross Register Tonnage"
+              placeholder="Gross register tonnage"
               className={getRequiredState(values.grt).fieldClass}
             />
           </div>
@@ -270,10 +304,12 @@ export function CreateInvoiceVariantForm({
                 type="number"
                 value={values.loa}
                 onChange={(e) => handlers.setLoa(e.target.value)}
-                placeholder="Length Overall"
+                placeholder="Length overall"
                 className={`pr-8 ${getRequiredState(values.loa).fieldClass}`}
               />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">M</span>
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                m
+              </span>
             </div>
           </div>
 
@@ -286,16 +322,16 @@ export function CreateInvoiceVariantForm({
               type="number"
               value={values.cargoQty}
               onChange={(e) => handlers.setCargoQty(e.target.value)}
-              placeholder="e.g., 15000"
+              placeholder="e.g. 15000"
               className={getRequiredState(values.cargoQty).fieldClass}
               required
             />
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className={epdaFieldGridClass(3)}>
           <div className="grid gap-2">
-            <Label htmlFor="shipType">Ship Type</Label>
+            <Label htmlFor="shipType">Ship type</Label>
             <Select value={values.shipType} onValueChange={(value) => handlers.setShipType(value as ShipTypeOption)}>
               <SelectTrigger id="shipType">
                 <SelectValue placeholder="Select ship type" />
@@ -312,7 +348,7 @@ export function CreateInvoiceVariantForm({
 
           <div className="grid gap-2">
             <Label htmlFor="cargoType" className={getRequiredState(values.cargoType).labelClass}>
-              Cargo Type *
+              Cargo type *
             </Label>
             <Select
               value={values.cargoType}
@@ -345,7 +381,7 @@ export function CreateInvoiceVariantForm({
 
           <div className="grid gap-2">
             <Label htmlFor="cargoName" className={getRequiredState(values.cargoName).labelClass}>
-              Cargo Name *
+              Cargo name *
             </Label>
             <Select value={values.cargoName} onValueChange={handlers.setCargoName}>
               <SelectTrigger id="cargoName" className={getRequiredState(values.cargoName).fieldClass}>
@@ -369,16 +405,18 @@ export function CreateInvoiceVariantForm({
             </Select>
           </div>
         </div>
+      </EpdaFormSection>
 
-        <div className="grid md:grid-cols-1 gap-4" />
-      </div>
+      <EpdaFormSection
+        id="epda-dues"
+        title="Port dues and charges"
+        description="Berth, pilotage, quarantine, and freight tax inputs for this call."
+      >
+        <EpdaComputedSummary items={duesSummaryItems} />
 
-      <div className="rounded-lg border p-4 space-y-6">
-        <h3 className="text-sm font-bold tracking-wide uppercase text-primary">Port Dues and Charges</h3>
-
-        <div className="grid md:grid-cols-4 gap-4">
+        <div className={epdaFieldGridClass()}>
           <div className="grid gap-2">
-            <Label htmlFor="berthHours">{isHcmAnchorage ? 'Buoy Due (hours)' : 'Berth Due (hours)'}</Label>
+            <Label htmlFor="berthHours">{isHcmAnchorage ? 'Buoy due (hours)' : 'Berth due (hours)'}</Label>
             <Input
               id="berthHours"
               type="number"
@@ -389,7 +427,7 @@ export function CreateInvoiceVariantForm({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="anchorageHours">Anchorage Fee (Hours)</Label>
+            <Label htmlFor="anchorageHours">Anchorage fee (hours)</Label>
             <Input
               id="anchorageHours"
               type="number"
@@ -401,7 +439,7 @@ export function CreateInvoiceVariantForm({
 
           {variant === 'QN' ? (
             <div className="grid gap-2">
-              <Label htmlFor="qnPilotageMiles">Pilotage Miles</Label>
+              <Label htmlFor="qnPilotageMiles">Pilotage miles</Label>
               <Input
                 id="qnPilotageMiles"
                 type="number"
@@ -412,7 +450,7 @@ export function CreateInvoiceVariantForm({
             </div>
           ) : (
             <div className="grid gap-2">
-              <Label htmlFor="pilotageThirdMiles">Pilotage 3rd Miles</Label>
+              <Label htmlFor="pilotageThirdMiles">Pilotage 3rd miles</Label>
               <Input
                 id="pilotageThirdMiles"
                 type="number"
@@ -424,24 +462,27 @@ export function CreateInvoiceVariantForm({
           )}
 
           <div className="grid gap-2">
-            <Label htmlFor="garbageCbmAmount">Amount of cbm of garbage</Label>
+            <Label htmlFor="garbageCbmAmount">Garbage (cbm)</Label>
             <Input
               id="garbageCbmAmount"
               type="number"
               value={values.garbageCbmAmount}
               onChange={(e) => handlers.setGarbageCbmAmount(e.target.value)}
-              placeholder="Current 1"
+              placeholder="Default 1"
               min="1"
             />
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className={epdaFieldGridClass(3)}>
           <div className="grid gap-2">
             <Label htmlFor="purposeOfCalling" className={getRequiredState(values.purposeOfCalling).labelClass}>
               Purpose of calling *
             </Label>
-            <Select value={values.purposeOfCalling} onValueChange={(value) => handlers.setPurposeOfCalling(value as PurposeOption)}>
+            <Select
+              value={values.purposeOfCalling}
+              onValueChange={(value) => handlers.setPurposeOfCalling(value as PurposeOption)}
+            >
               <SelectTrigger id="purposeOfCalling" className={getRequiredState(values.purposeOfCalling).fieldClass}>
                 <SelectValue placeholder="Select purpose" />
               </SelectTrigger>
@@ -505,33 +546,11 @@ export function CreateInvoiceVariantForm({
               </SelectContent>
             </Select>
           </div>
-
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="quarantineShipFeeDisplay" className="text-muted-foreground">Quarantine for ship (USD)</Label>
-            <Input
-              id="quarantineShipFeeDisplay"
-              value={computed.shipQuarantineFee}
-              readOnly
-              disabled
-              className={disabledFieldTextClass}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="quarantineCargoFeeDisplay" className="text-muted-foreground">Quarantine for cargo (USD)</Label>
-            <Input
-              id="quarantineCargoFeeDisplay"
-              value={computed.cargoQuarantineFee}
-              readOnly
-              disabled
-              className={disabledFieldTextClass}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <p className="text-xs text-muted-foreground">{computed.frtHint}</p>
+        <div className={epdaFieldGridClass(3)}>
+          <div className="grid gap-2 sm:col-span-2 lg:col-span-1">
+            <Label htmlFor="oceanFrtRateUsdPerMt">Ocean freight (USD/MT)</Label>
             <Input
               id="oceanFrtRateUsdPerMt"
               type="number"
@@ -539,20 +558,20 @@ export function CreateInvoiceVariantForm({
               onChange={(e) => handlers.setOceanFrtRateUsdPerMt(e.target.value)}
               placeholder={
                 computed.isExportPlsAdviseMode
-                  ? 'PLEASE ADVICE'
+                  ? 'PLEASE ADVISE'
                   : computed.isImportFrtTaxType
                     ? '0'
-                    : 'Please enter amount, current 16 USD'
+                    : 'e.g. 16'
               }
               min="0"
-              aria-label="Frt amount (USD/mt)"
+              aria-label="Ocean freight rate USD per metric ton"
               disabled={computed.isOceanFreightInputDisabled}
               className={disabledFieldTextClass}
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="boatHireQuarantineAmount">Boat hired for quarantine (USD)</Label>
+            <Label htmlFor="boatHireQuarantineAmount">Boat hire — quarantine (USD)</Label>
             <Input
               id="boatHireQuarantineAmount"
               type="number"
@@ -567,7 +586,7 @@ export function CreateInvoiceVariantForm({
               htmlFor="tallyFeeAmount"
               className={computed.isTallyFeeEligibleCargo ? '' : 'text-muted-foreground'}
             >
-              Ship's side tally fee (USD)
+              Ship-side tally fee (USD)
             </Label>
             <Input
               id="tallyFeeAmount"
@@ -580,17 +599,21 @@ export function CreateInvoiceVariantForm({
             />
           </div>
         </div>
-      </div>
+      </EpdaFormSection>
 
-      <div className="rounded-lg border p-4 space-y-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <h3 className="text-sm font-bold tracking-wide uppercase text-primary">Agency fees and expenses</h3>
-          <div className="w-full md:w-72">
+      <EpdaFormSection
+        id="epda-agency"
+        title="Agency fees and expenses"
+        description="Tariff agency or lumpsum, discount, and ancillary agency costs."
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="w-full sm:max-w-xs">
+            <Label htmlFor="agencyFeeMode">Fee calculation mode</Label>
             <Select
               value={values.agencyFeeMode}
               onValueChange={(value) => handlers.setAgencyFeeMode(value as AgencyFeeModeOption)}
             >
-              <SelectTrigger id="agencyFeeMode">
+              <SelectTrigger id="agencyFeeMode" className="mt-2">
                 <SelectValue placeholder="Select agency fee mode" />
               </SelectTrigger>
               <SelectContent>
@@ -605,11 +628,9 @@ export function CreateInvoiceVariantForm({
         </div>
 
         {values.agencyFeeMode === 'AGENCY_IN_LUMPSUM' ? (
-          <div className="grid md:grid-cols-1 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="agencyLumpsumAmount">
-                USD {values.agencyLumpsumAmount || '0'} in LUMPSUM including transportation
-              </Label>
+          <div className={epdaFieldGridClass(3)}>
+            <div className="grid gap-2 sm:col-span-2 lg:col-span-3">
+              <Label htmlFor="agencyLumpsumAmount">Lumpsum amount (USD, incl. transportation)</Label>
               <Input
                 id="agencyLumpsumAmount"
                 type="number"
@@ -620,75 +641,56 @@ export function CreateInvoiceVariantForm({
             </div>
           </div>
         ) : (
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="agencyDiscountPercent">Discount (%)</Label>
-              <Input
-                id="agencyDiscountPercent"
-                type="number"
-                min="0"
-                max="100"
-                value={values.agencyDiscountPercent}
-                onChange={(e) => handlers.setAgencyDiscountPercent(e.target.value)}
-                placeholder="0"
-              />
-            </div>
+          <>
+            <EpdaComputedSummary items={agencySummaryItems} />
+            <div className={epdaFieldGridClass(3)}>
+              <div className="grid gap-2">
+                <Label htmlFor="agencyDiscountPercent">Discount (%)</Label>
+                <Input
+                  id="agencyDiscountPercent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={values.agencyDiscountPercent}
+                  onChange={(e) => handlers.setAgencyDiscountPercent(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="agencyOnGrtDisplay" className="text-muted-foreground">{onGrtLabel}</Label>
-              <Input
-                id="agencyOnGrtDisplay"
-                value={onGrtAmountDisplay}
-                readOnly
-                disabled
-                className={disabledFieldTextClass}
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label
+                  htmlFor="boatHireAmount"
+                  className={isBoatHireForAgencyEnabled ? '' : 'text-muted-foreground'}
+                >
+                  Boat hire — agency (USD)
+                </Label>
+                <Input
+                  id="boatHireAmount"
+                  type="number"
+                  value={values.boatHireAmount}
+                  onChange={(e) => handlers.setBoatHireAmount(e.target.value)}
+                  placeholder={
+                    isBoatHireForAgencyEnabled ? '0' : 'Available when discharge/loading is Anchorage'
+                  }
+                  disabled={!isBoatHireForAgencyEnabled}
+                  className={disabledFieldTextClass}
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="agencyOnCargoDisplay" className="text-muted-foreground">{onCargoLabel}</Label>
-              <Input
-                id="agencyOnCargoDisplay"
-                value={onCargoAmountDisplay}
-                readOnly
-                disabled
-                className={disabledFieldTextClass}
-              />
+              <div className="grid gap-2">
+                <Label htmlFor="transportLs">Taxi / courier / communication (USD)</Label>
+                <Input
+                  id="transportLs"
+                  type="number"
+                  value={values.transportLs}
+                  onChange={(e) => handlers.setTransportLs(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
             </div>
-
-            <div className="grid gap-2">
-              <Label
-                htmlFor="boatHireAmount"
-                className={isBoatHireForAgencyEnabled ? '' : 'text-muted-foreground'}
-              >
-                Boat hired for agency service (USD)
-              </Label>
-              <Input
-                id="boatHireAmount"
-                type="number"
-                value={values.boatHireAmount}
-                onChange={(e) => handlers.setBoatHireAmount(e.target.value)}
-                placeholder={isBoatHireForAgencyEnabled ? '0' : 'Enable when Discharge/Loading at is Anchorage'}
-                disabled={!isBoatHireForAgencyEnabled}
-                className={disabledFieldTextClass}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="transportLs">Taxi/Courrier/Communication for agency service</Label>
-              <Input
-                id="transportLs"
-                type="number"
-                value={values.transportLs}
-                onChange={(e) => handlers.setTransportLs(e.target.value)}
-                placeholder="0"
-              />
-            </div>
-
-            <div className="grid gap-2" />
-          </div>
+          </>
         )}
-      </div>
+      </EpdaFormSection>
     </>
   )
 }

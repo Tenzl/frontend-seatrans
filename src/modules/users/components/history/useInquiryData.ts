@@ -38,8 +38,6 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
   const [inquiries, setInquiries] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [formUpdatingId, setFormUpdatingId] = useState<number | null>(null)
-
   const updateStatus = useCallback(async (id: number, status: string, serviceSlug?: string) => {
     if (!isAdmin) return { success: false }
     const serviceName = toServiceTypeName(serviceSlug || serviceType)
@@ -62,34 +60,6 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
     )
 
     return { success: true }
-  }, [isAdmin, serviceType])
-
-  const updateForm = useCallback(async (id: number, form: string, serviceSlug?: string) => {
-    if (!isAdmin) return { success: false }
-    const serviceName = toServiceTypeName(serviceSlug || serviceType)
-    if (!serviceName) {
-      throw new Error('serviceType is required to update form')
-    }
-
-    setFormUpdatingId(id)
-    try {
-      const response = await apiClient.patch(
-        API_CONFIG.INQUIRIES.ADMIN_FORM(serviceName, id),
-        { form },
-      )
-
-      if (!response.ok) {
-        throw new Error('Failed to update form')
-      }
-
-      setInquiries(prev =>
-        prev.map(inq => (inq.id === id ? { ...inq, quoteForm: form } : inq))
-      )
-
-      return { success: true }
-    } finally {
-      setFormUpdatingId(null)
-    }
   }, [isAdmin, serviceType])
 
   const fetchInquiries = useCallback(async () => {
@@ -191,8 +161,6 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
     fetchInquiries,
     deleteInquiries,
     updateStatus,
-    updateForm,
-    formUpdatingId,
     refreshInquiries,
   }
 }
