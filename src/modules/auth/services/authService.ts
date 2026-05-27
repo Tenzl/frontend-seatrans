@@ -215,8 +215,40 @@ export const authService = {
 
   updateProfile: async (_userId: number, _data: Partial<User>): Promise<ApiResponse<User>> => ({
     success: false,
-    message: 'Profile updates are not available yet. Contact an administrator to change your account.',
+    message: 'Deprecated: use updateMyProfile instead.',
     data: null,
   }),
+
+  updateMyProfile: async (data: Pick<User, 'fullName' | 'phone' | 'company'>): Promise<ApiResponse<User>> => {
+    try {
+      const response = await apiClient.patch(API_CONFIG.AUTH.ME, data)
+      const result = await response.json()
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Unable to update profile',
+          data: null,
+        }
+      }
+
+      if (result?.data && canUseStorage()) {
+        const storage = getActiveStorage()
+        storage.setItem(USER_KEY, JSON.stringify(result.data))
+      }
+
+      return {
+        success: result.success,
+        message: result.message,
+        data: result.data,
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Network error',
+        data: null,
+      }
+    }
+  },
 }
  

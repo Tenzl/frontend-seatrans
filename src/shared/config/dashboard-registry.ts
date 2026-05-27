@@ -98,7 +98,7 @@ export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
     label: "Create EPDA",
     icon: Calculator,
     component: CreateInvoiceTab,
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "EMPLOYEE"],
     roleGroups: ["INTERNAL"],
     category: "Port Charge",
     title: "Create EPDA",

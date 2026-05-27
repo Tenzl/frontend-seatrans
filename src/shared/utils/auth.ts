@@ -12,12 +12,12 @@ function normalizeRole(role?: string): string {
 export function getRoleGroup(user?: User | null): RoleGroupResult {
   if (!user) return undefined
 
-  // Prefer backend-provided roleGroup to avoid front-end divergence.
-  if (user.roleGroup) return user.roleGroup
-
   const role = normalizeRole(user.role)
   if (role && INTERNAL_MARKERS.some((marker) => role.includes(marker))) return "INTERNAL"
   if (role && EXTERNAL_MARKERS.some((marker) => role.includes(marker))) return "EXTERNAL"
+
+  // Prefer backend-provided roleGroup as a fallback.
+  if (user.roleGroup) return user.roleGroup
 
   return undefined
 }
