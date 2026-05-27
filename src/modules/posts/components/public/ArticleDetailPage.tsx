@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Calendar, Clock, Eye, Tag, User } from 'lucide-react'
-import DOMPurify from 'dompurify'
+import createDOMPurify from 'dompurify'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
@@ -17,6 +17,11 @@ interface ArticleDetailPageProps {
 type ContentBlock = HTMLElement
 
 const MEDIA_SELECTOR = 'img, picture, video, iframe, svg, table, pre, code'
+
+function getDOMPurify() {
+  if (typeof window === 'undefined') return null
+  return createDOMPurify(window as any)
+}
 
 function decorateContent(html: string): string {
   // Tag blocks so we can style spacing/width without relying on CSS :has()
@@ -103,7 +108,10 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
   
   // Sanitize HTML to prevent XSS attacks
   const sanitizedHtml = useMemo(() => {
-    return DOMPurify.sanitize(decoratedHtml, {
+    const purifier = getDOMPurify()
+    if (!purifier) return decoratedHtml
+
+    return purifier.sanitize(decoratedHtml, {
       ALLOWED_TAGS: [
         'p', 'br', 'span', 'div',
         'b', 'i', 'u', 'strong', 'em', 'mark', 'small', 'del', 'ins', 'sub', 'sup',
@@ -128,7 +136,7 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-7xl px-6 py-24">
+      <div className="mx-auto max-w-7xl px-6 pb-24 pt-32">
         <div className="h-8 w-1/3 animate-pulse rounded bg-muted" />
         <div className="mt-6 h-[420px] animate-pulse rounded-2xl bg-muted" />
         <div className="mt-8 space-y-4">
@@ -142,7 +150,7 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
 
   if (error || !post) {
     return (
-      <div className="mx-auto max-w-7xl px-6 py-24">
+      <div className="mx-auto max-w-7xl px-6 pb-24 pt-32">
         <p className="text-destructive">{error || 'Article not found'}</p>
         <Button variant="ghost" className="mt-6" onClick={onNavigateBack}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
@@ -156,7 +164,7 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
   const readingMinutes = post.readingTime || 5
 
   return (
-    <article className="mx-auto max-w-7xl px-6 py-16">
+    <article className="mx-auto max-w-7xl px-6 pb-16 pt-32">
       <Button variant="ghost" className="mb-10" onClick={onNavigateBack}>
         <ArrowLeft className="mr-2 h-4 w-4" /> Back
       </Button>

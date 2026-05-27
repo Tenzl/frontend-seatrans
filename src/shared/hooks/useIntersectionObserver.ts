@@ -10,11 +10,17 @@ export function useIntersectionObserver(
   options: UseIntersectionObserverOptions = {}
 ): [React.RefObject<HTMLDivElement>, boolean] {
   const elementRef = useRef<HTMLDivElement>(null)
-  const [isIntersecting, setIsIntersecting] = useState(false)
+  // Default to visible to avoid "blank page" when IntersectionObserver
+  // is unavailable or fails to fire (e.g. browser quirks / extensions).
+  const [isIntersecting, setIsIntersecting] = useState(true)
 
   useEffect(() => {
     const element = elementRef.current
     if (!element) return
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsIntersecting(true)
+      return
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {

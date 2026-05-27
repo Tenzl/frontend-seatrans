@@ -158,11 +158,11 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
   }
 
   if (loading && postId && !formData.title) {
-    return <div className="p-8 text-center">Loading post data...</div>
+    return <div className="px-8 pb-8 pt-32 text-center">Loading post data...</div>
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 px-8 pb-8 pt-32">
       <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="bg-blue-600 px-6 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-white">
