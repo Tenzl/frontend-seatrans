@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react'
+import { memo, useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { Menu, Ship, User, LogOut, ChevronRight, AlertTriangle } from 'lucide-react'
 
 import { cn } from '@/shared/lib/utils'
@@ -20,50 +21,79 @@ import NavMenu from './NavMenu'
 import { menuData } from './menuData'
 import { UserNav } from './UserNav'
 import { useAuth } from '@/modules/auth/context/AuthContext'
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 
-/** Scroll (px) where reveal begins / ends */
-const REVEAL_START = 24
-const REVEAL_END = 128
+/**
+ * Liquid-drop transition — ease-out-back curve produces a water-droplet
+ * settle: target dimension is briefly overshot, then springs back. Pair with
+ * a longer duration so the overshoot reads as deliberate. `motion-reduce`
+ * disables the morph for users who request reduced motion.
+ */
+const LIQUID =
+  'transition-all duration-[1100ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none'
 
-const EASE_PREMIUM = 'cubic-bezier(0.32, 0.72, 0, 1)'
+/**
+ * Liquid-glass surface — pre-composed shadow strings for each morph state.
+ * Three layers, **same count/order** in both states so the browser interpolates
+ * shadow-by-shadow during the morph instead of cross-fading (which looks dead):
+ *   1. Top inset highlight   → light refracting off the glass edge.
+ *   2. Bottom inset seal     → defines the bottom of the pill against the bg.
+ *   3. Outer diffusion shadow → tinted to the page's blue accent for depth.
+ *
+ * The TOP state intentionally keeps the outer diffusion almost invisible so the
+ * pill reads as a "resting droplet" — the diffusion only ramps once scrolled,
+ * giving the pill a clear "compressed and grounded" feel.
+ */
+const GLASS_TOP =
+  'shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_hsla(217,33%,17%,0.02),0_4px_18px_-10px_hsla(217,30%,30%,0.12)]'
+const GLASS_SCROLLED =
+  'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_hsla(217,33%,17%,0.08),0_28px_60px_-24px_hsla(217,45%,35%,0.4)]'
+
+/**
+ * Perpetual brand mark — Ship icon bobs gently as if floating on water.
+ * Isolated + memoized per skill guardrail: never trigger re-renders in the
+ * parent layout, never animate inside the morphing nav transition pipeline.
+ */
+const FloatingShip = memo(function FloatingShip({ scaledDown }: { scaledDown: boolean }) {
+  const reducedMotion = useReducedMotion()
+  return (
+    <div
+      className={cn(
+        'rounded-lg bg-primary/10 p-1.5 transition-[transform,background-color] duration-[900ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:bg-primary/20 motion-reduce:transition-none',
+        scaledDown ? 'scale-90' : 'scale-100',
+      )}
+    >
+      <motion.div
+        animate={reducedMotion ? { y: 0 } : { y: [0, -1.5, 0] }}
+        transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ willChange: 'transform' }}
+      >
+        <Ship className="h-5 w-5 text-primary" strokeWidth={1.5} />
+      </motion.div>
+    </div>
+  )
+})
 
 export default function Header() {
   const { user, isAuthenticated, logout, profileComplete } = useAuth()
-  const [scrollY, setScrollY] = useState(0)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [hovered, setHovered] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const navSentinelRef = useRef<HTMLDivElement | null>(null)
   const router = useRouter()
   const pathname = usePathname()
 
+  // Liquid-drop island: morph to compact state when sentinel leaves viewport
+  // (i.e. user has scrolled past the first 64px), morph back when it returns.
   useEffect(() => {
-    let ticking = false
-
-    const updateScroll = () => {
-      setScrollY(window.scrollY)
-      ticking = false
-    }
-
-    const onScroll = () => {
-      if (!ticking) {
-        ticking = true
-        requestAnimationFrame(updateScroll)
-      }
-    }
-
-    updateScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const node = navSentinelRef.current
+    if (!node) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsScrolled(!entry.isIntersecting),
+      { threshold: 0 },
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
   }, [])
-
-  const revealProgress = useMemo(() => {
-    if (scrollY <= REVEAL_START) return 0
-    if (scrollY >= REVEAL_END) return 1
-    return (scrollY - REVEAL_START) / (REVEAL_END - REVEAL_START)
-  }, [scrollY])
-
-  const forceVisible = mobileOpen || hovered
-  const progress = forceVisible ? 1 : revealProgress
-  const isFullyRevealed = progress >= 0.98
 
   const handleNavigate = (path: string) => {
     setMobileOpen(false)
@@ -94,48 +124,45 @@ export default function Header() {
 
   return (
     <>
-      {/* Invisible hover-trigger strip — always sits at top of viewport,
-          catches the mouse even when header is translated out of view */}
+      {/* Sentinel for liquid-drop morph (height = scroll trigger threshold) */}
       <div
-        className="fixed top-0 left-0 right-0 z-40 h-3 pointer-events-auto"
-        onMouseEnter={() => setHovered(true)}
+        ref={navSentinelRef}
+        aria-hidden
+        className="pointer-events-none absolute left-0 top-0 h-16 w-px"
       />
 
-    <header
-      onMouseLeave={() => setHovered(false)}
-      className={cn(
-        'fixed top-0 left-0 right-0 z-50 w-full will-change-transform',
-        'transition-[transform,opacity] duration-700',
-        isFullyRevealed
-          ? 'shadow-[0_12px_40px_-16px_hsl(217_45%_35%/0.18)]'
-          : 'shadow-none'
-      )}
-      style={{
-        transform: `translate3d(0, ${(1 - progress) * -100}%, 0)`,
-        opacity: progress,
-        pointerEvents: progress > 0.12 ? 'auto' : 'none',
-        transitionTimingFunction: EASE_PREMIUM,
-      }}
-      aria-hidden={progress < 0.1}
-    >
-      <div
+      <header
         className={cn(
-          'border-b bg-background/90 backdrop-blur-xl h-16 transition-all duration-700',
-          isFullyRevealed ? 'border-border/80' : 'border-transparent'
+          'fixed inset-x-0 top-0 z-50 flex justify-center px-3 sm:px-6',
+          LIQUID,
+          isScrolled ? 'pt-1.5 sm:pt-2' : 'pt-4 sm:pt-6',
         )}
-        style={{ transitionTimingFunction: EASE_PREMIUM }}
       >
-        <div className="container flex h-full items-center justify-between">
-          <div className="flex items-center gap-8">
+        <nav
+          className={cn(
+            'flex w-full items-center justify-between gap-3 rounded-full border px-4 py-2 backdrop-blur-2xl sm:gap-4 sm:px-6 sm:py-2.5 [transform-origin:50%_0%]',
+            LIQUID,
+            isScrolled
+              ? `max-w-4xl scale-[0.97] border-border/80 bg-background/95 ${GLASS_SCROLLED}`
+              : `max-w-6xl scale-100 border-border/35 bg-background/55 ${GLASS_TOP}`,
+          )}
+        >
+          <div className={cn('flex items-center', LIQUID, isScrolled ? 'gap-5' : 'gap-8')}>
             <Link
               href="/"
-              className="flex items-center space-x-2 group"
+              className="group flex items-center gap-2 active:scale-[0.98]"
               onClick={() => window.scrollTo(0, 0)}
             >
-              <div className="bg-primary/10 p-1.5 rounded-lg transition-colors group-hover:bg-primary/20">
-                <Ship className="h-6 w-6 text-primary" />
-              </div>
-              <span className="font-bold tracking-tight text-xl">Seatrans</span>
+              <FloatingShip scaledDown={isScrolled} />
+              <span
+                className={cn(
+                  'font-bold tracking-tight',
+                  LIQUID,
+                  isScrolled ? 'text-base' : 'text-lg',
+                )}
+              >
+                Seatrans
+              </span>
             </Link>
 
             <div className="hidden md:block">
@@ -150,9 +177,9 @@ export default function Header() {
                   {!profileComplete && (
                     <Badge
                       variant="outline"
-                      className="hidden sm:flex items-center gap-1 border-amber-200 bg-amber-50 text-amber-700"
+                      className="hidden items-center gap-1 border-amber-200 bg-amber-50 text-amber-700 lg:flex"
                     >
-                      <AlertTriangle className="w-3 h-3" />
+                      <AlertTriangle className="h-3 w-3" />
                       Complete profile
                     </Badge>
                   )}
@@ -163,14 +190,14 @@ export default function Header() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="hidden md:flex text-sm"
+                    className="hidden text-sm md:flex"
                     onClick={() => handleNavigate('/login')}
                   >
                     Login
                   </Button>
                   <Button
                     size="sm"
-                    className="hover-lift text-sm"
+                    className="hover-lift rounded-full text-sm"
                     onClick={() => handleNavigate('/signup')}
                   >
                     Register
@@ -280,9 +307,8 @@ export default function Header() {
               </SheetContent>
             </Sheet>
           </div>
-        </div>
-      </div>
-    </header>
+        </nav>
+      </header>
     </>
   )
 }

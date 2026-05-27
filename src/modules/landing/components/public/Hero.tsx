@@ -108,7 +108,7 @@ export function Hero({
         aria-hidden
       />
 
-      <div className="container relative z-10 mx-auto flex min-h-[100dvh] max-w-7xl flex-col justify-center px-4 pb-14 pt-16 md:px-6 md:pb-16">
+      <div className="container relative z-10 mx-auto flex min-h-[100dvh] max-w-7xl flex-col justify-center px-4 pb-14 pt-24 md:px-6 md:pb-16 md:pt-32">
         <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-12 xl:gap-16">
           <ContentColumn {...contentColumnProps}>
             <Item {...itemProps} className="space-y-5 max-w-[65ch]">
