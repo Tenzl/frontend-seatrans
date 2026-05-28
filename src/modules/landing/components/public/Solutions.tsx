@@ -163,7 +163,7 @@ export function Solutions({ onNavigate: _onNavigate }: SolutionsProps) {
                     type="button"
                     onClick={() => setActiveKey(solution.key)}
                     className={cn(
-                      'snap-start shrink-0 lg:shrink text-left rounded-xl border px-4 py-4 transition-all duration-200 min-w-[200px] lg:min-w-0 lg:w-full',
+                      'snap-start shrink-0 lg:shrink text-left rounded-xl border px-4 py-4 transition-[transform,background-color,border-color,box-shadow] duration-200 min-w-[200px] lg:min-w-0 lg:w-full',
                       'hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       isActive
                         ? 'border-primary bg-primary/8 shadow-sm landing-card-shadow'

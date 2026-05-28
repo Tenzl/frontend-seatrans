@@ -195,13 +195,6 @@ export default function Header() {
                   >
                     Login
                   </Button>
-                  <Button
-                    size="sm"
-                    className="hover-lift rounded-full text-sm"
-                    onClick={() => handleNavigate('/signup')}
-                  >
-                    Register
-                  </Button>
                 </>
               )}
             </div>
@@ -300,7 +293,6 @@ export default function Header() {
                       <Button variant="outline" onClick={() => handleNavigate('/login')}>
                         Log in
                       </Button>
-                      <Button onClick={() => handleNavigate('/signup')}>Register</Button>
                     </div>
                   )}
                 </div>

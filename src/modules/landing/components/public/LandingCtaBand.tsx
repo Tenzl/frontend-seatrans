@@ -12,7 +12,7 @@ export function LandingCtaBand() {
     <section ref={ref} className="landing-section border-t border-border/60">
       <div className="container">
         <div
-          className={`relative overflow-hidden rounded-2xl bg-primary px-8 py-10 md:px-12 md:py-14 landing-card-shadow transition-all duration-500 ${
+          className={`relative overflow-hidden rounded-2xl bg-primary px-8 py-10 md:px-12 md:py-14 landing-card-shadow transition-[transform,opacity] duration-500 ${
             isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
           }`}
         >

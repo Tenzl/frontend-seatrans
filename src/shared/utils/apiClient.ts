@@ -5,8 +5,6 @@ import { API_CONFIG } from '@/shared/config/api.config'
  * Automatically logs out user when receiving 401 Unauthorized.
  */
 
-const TOKEN_KEY = 'auth_token'
-
 export interface ApiClientConfig extends RequestInit {
   skipAuth?: boolean
   /** Override default timeout (ms). Set to 0 to disable timeout for this request. */
@@ -25,18 +23,14 @@ class ApiClient {
     return ApiClient.instance
   }
 
-  private getToken(): string | null {
-    if (typeof window === 'undefined') return null
-    return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY)
-  }
-
   private clearAuth(): void {
     if (typeof window === 'undefined') return
 
     // Clear both persistent and session storage to cover remember-me/session flows
-    localStorage.removeItem(TOKEN_KEY)
+    // (legacy keys kept for compatibility with older builds).
+    localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_user')
-    sessionStorage.removeItem(TOKEN_KEY)
+    sessionStorage.removeItem('auth_token')
     sessionStorage.removeItem('auth_user')
 
     // Avoid redirect loops when already on login page
@@ -81,15 +75,9 @@ class ApiClient {
   async fetch(endpoint: string, config: ApiClientConfig = {}): Promise<Response> {
     const { skipAuth, timeout, headers, signal, ...restConfig } = config
 
-    const token = this.getToken()
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(headers as Record<string, string>),
-    }
-
-    // Add Authorization header if token exists and not explicitly skipped
-    if (token && !skipAuth) {
-      requestHeaders['Authorization'] = `Bearer ${token}`
     }
 
     const url = this.buildUrl(endpoint)

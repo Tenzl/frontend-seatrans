@@ -39,29 +39,24 @@ interface ApiResponse<T> {
   data: T | null
 }
 
-const TOKEN_KEY = 'auth_token'
 const USER_KEY = 'auth_user'
 
 const canUseStorage = (): boolean => typeof window !== 'undefined'
 
-const persistAuth = (auth: AuthResponse, remember = true) => {
+const persistAuthUser = (user: User, remember = true) => {
   if (!canUseStorage()) return
   const storage = remember ? localStorage : sessionStorage
-  storage.setItem(TOKEN_KEY, auth.token)
-  storage.setItem(USER_KEY, JSON.stringify(auth.user))
+  storage.setItem(USER_KEY, JSON.stringify(user))
 }
 
 const clearAuth = () => {
   if (!canUseStorage()) return
-  localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
-  sessionStorage.removeItem(TOKEN_KEY)
   sessionStorage.removeItem(USER_KEY)
-}
 
-const readToken = (): string | null => {
-  if (!canUseStorage()) return null
-  return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY)
+  // Back-compat (older builds)
+  localStorage.removeItem('auth_token')
+  sessionStorage.removeItem('auth_token')
 }
 
 const readUser = (): string | null => {
@@ -73,7 +68,8 @@ const getActiveStorage = (): Storage => {
   if (!canUseStorage()) {
     throw new Error('Storage is only available in the browser')
   }
-  return sessionStorage.getItem(TOKEN_KEY) ? sessionStorage : localStorage
+  // No token storage anymore; pick session if it has user, else local.
+  return sessionStorage.getItem(USER_KEY) ? sessionStorage : localStorage
 }
 
 export const authService = {
@@ -97,7 +93,7 @@ export const authService = {
 
       // Save token and user to localStorage
       if (data.success && data.data) {
-        persistAuth(data.data, remember)
+        persistAuthUser(data.data.user, remember)
       }
 
       return {
@@ -114,12 +110,17 @@ export const authService = {
     }
   },
 
-  logout: () => {
+  logout: async () => {
     clearAuth()
+    try {
+      await apiClient.post(API_CONFIG.AUTH.LOGOUT, undefined, { skipAuth: true })
+    } catch {
+      // best-effort: cookie may already be cleared/expired
+    }
   },
 
   getToken: () => {
-    return readToken()
+    return null
   },
 
   getUser: (): User | null => {
@@ -133,7 +134,7 @@ export const authService = {
   },
 
   isAuthenticated: () => {
-    return !!readToken()
+    return !!readUser()
   },
 
   register: async (email: string, fullName: string, password: string, phone?: string, company?: string): Promise<SignupResponse> => {
@@ -156,7 +157,7 @@ export const authService = {
 
       // Save token and user to localStorage
       if (data.success && data.data) {
-        persistAuth(data.data)
+        persistAuthUser(data.data.user, true)
       }
 
       return {
@@ -173,11 +174,8 @@ export const authService = {
     }
   },
 
-  // Helper function to get authorization header
-  getAuthHeader: (): Record<string, string> => {
-    const token = authService.getToken()
-    return token ? { Authorization: `Bearer ${token}` } : ({} as Record<string, string>)
-  },
+  // Auth is cookie-based; keep a stable helper signature for legacy callers.
+  getAuthHeader: (): Record<string, string> => ({} as Record<string, string>),
 
   getCurrentUser: async (): Promise<ApiResponse<User>> => {
     try {

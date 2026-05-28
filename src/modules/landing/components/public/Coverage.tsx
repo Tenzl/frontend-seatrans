@@ -280,7 +280,7 @@ export function Coverage() {
                                 stroke="#2ECC71"
                                 strokeWidth={2}
                                 opacity={0.6}
-                                className="animate-ping"
+                                className="motion-safe:animate-ping motion-reduce:animate-none"
                               />
 
                               {/* Main Marker Circle */}
@@ -289,7 +289,7 @@ export function Coverage() {
                                 fill="#2ECC71"
                                 stroke="#fff"
                                 strokeWidth={2}
-                                className="transition-all hover:scale-110"
+                                className="transition-transform hover:scale-110"
                               />
 
                               {/* HOVER MESSAGE BUBBLE */}

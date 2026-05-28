@@ -127,7 +127,6 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
         'href', 'title', 'target', 'rel',
         'src', 'alt', 'width', 'height', 'loading', 'srcset', 'sizes',
         'class', 'id', 'colspan', 'rowspan',
-        'style'
       ],
       ALLOW_DATA_ATTR: false,
       ALLOW_UNKNOWN_PROTOCOLS: false

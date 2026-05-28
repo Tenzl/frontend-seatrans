@@ -638,13 +638,6 @@ function LoginPage() {
             </Button>
           </form>
 
-          {/* Sign Up Link */}
-          <div className="text-center text-sm text-muted-foreground mt-8">
-            Don't have an account?{" "}
-            <a href="/signup" className="text-foreground font-medium hover:underline">
-              Sign Up
-            </a>
-          </div>
         </div>
       </div>
     </div>

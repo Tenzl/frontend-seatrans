@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    authService.logout()
+    void authService.logout()
     setUser(null)
     toast.success('Logged out successfully')
   }

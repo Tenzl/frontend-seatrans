@@ -23,7 +23,6 @@ function AuthCallbackContent() {
 
   useEffect(() => {
     const token = searchParams.get('token')
-    const refreshToken = searchParams.get('refreshToken')
     const error = searchParams.get('error')
 
     if (error) {
@@ -31,37 +30,41 @@ function AuthCallbackContent() {
       return
     }
 
-    if (token && refreshToken) {
-      localStorage.setItem('auth_token', token)
-
-      try {
-        // Fetch full user info from API and persist
-        apiClient
-          .get(API_CONFIG.AUTH.ME, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            skipAuth: true,
-          })
-          .then(res => res.json())
-          .then(data => {
-            if (data.success && data.data) {
-              localStorage.setItem('auth_user', JSON.stringify(data.data))
-            }
-            // Force page reload to trigger AuthContext re-initialization
-            window.location.href = '/'
-          })
-          .catch(() => {
-            window.location.href = '/'
-          })
-      } catch (err) {
-        console.error('Failed to handle auth callback', err)
-        window.location.href = '/'
-      }
-    } else {
+    // Security: never persist tokens from URL into Storage.
+    // Transitional support: if a legacy flow provides `?token=...`,
+    // exchange it for an HttpOnly cookie session, then remove the token URL.
+    if (!token) {
       router.push('/login')
+      return
     }
+
+    void (async () => {
+      try {
+        const exchange = await apiClient.post(
+          API_CONFIG.AUTH.SESSION,
+          { token },
+          { skipAuth: true },
+        )
+
+        if (!exchange.ok) {
+          router.push('/login?error=session_exchange_failed')
+          return
+        }
+
+        // Optionally warm client user cache (not a secret; cookie remains HttpOnly).
+        const me = await apiClient.get(API_CONFIG.AUTH.ME, { skipAuth: true })
+        if (me.ok) {
+          const data = await me.json()
+          if (data?.success && data?.data) {
+            localStorage.setItem('auth_user', JSON.stringify(data.data))
+          }
+        }
+
+        window.location.replace('/')
+      } catch {
+        router.push('/login?error=session_exchange_failed')
+      }
+    })()
   }, [router, searchParams])
 
   return <LoadingState />

@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === 'production'
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '') || 'http://localhost:8080'
 
 const nextConfig = {
   reactStrictMode: true,
@@ -40,6 +41,7 @@ const nextConfig = {
     ],
   },
   async rewrites() {
+    if (isProd) return []
     return [
       {
         source: '/api/:path*',
@@ -48,6 +50,35 @@ const nextConfig = {
     ]
   },
   async headers() {
+    const csp = isProd
+      ? [
+          "default-src 'self'",
+          "base-uri 'self'",
+          "object-src 'none'",
+          "frame-ancestors 'none'",
+          // Next.js commonly needs inline styles; move to nonces later if desired.
+          "style-src 'self' 'unsafe-inline' https:",
+          "style-src-elem 'self' 'unsafe-inline' https:",
+          "img-src 'self' data: blob: https: http:",
+          "font-src 'self' data: https:",
+          `connect-src 'self' ${API_ORIGIN} https: http:`,
+          // Allow GTM; no inline scripts in prod.
+          "script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com",
+        ].join('; ')
+      : [
+          // Dev only: allow inline + eval for React Refresh / HMR tooling.
+          "default-src 'self'",
+          "base-uri 'self'",
+          "object-src 'none'",
+          "frame-ancestors 'none'",
+          "style-src 'self' 'unsafe-inline' https:",
+          "style-src-elem 'self' 'unsafe-inline' https:",
+          "img-src 'self' data: blob: https: http:",
+          "font-src 'self' data: https:",
+          `connect-src 'self' ${API_ORIGIN} ws: wss: https: http:`,
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:",
+        ].join('; ')
+
     return [
       {
         source: '/api/:path*',
@@ -88,6 +119,20 @@ const nextConfig = {
         source: '/tinymce/:path*',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' },
+        ],
+      },
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          ...(isProd ? [{ key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' }] : []),
+          {
+            key: 'Content-Security-Policy',
+            value: csp,
+          },
         ],
       },
     ]

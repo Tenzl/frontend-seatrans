@@ -197,7 +197,7 @@ export function Hero({
         >
           <span className="tracking-wide">Services below</span>
           <ArrowDown
-            className="h-4 w-4 transition-transform group-hover:translate-y-0.5 motion-safe:animate-[bounce-soft_2s_ease-in-out_infinite]"
+            className="h-4 w-4 transition-transform group-hover:translate-y-0.5"
             strokeWidth={ICON_STROKE}
           />
         </button>

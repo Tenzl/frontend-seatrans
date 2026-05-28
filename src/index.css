@@ -4121,7 +4121,7 @@ body {
 /* Custom Hover Effect */
 @layer utilities {
   .hover-primary-effect {
-    @apply border border-transparent transition-all duration-200;
+    @apply border border-transparent transition-[background-color,color,border-color] duration-200;
   }
   .hover-primary-effect:hover {
     @apply bg-accent text-primary border-primary;

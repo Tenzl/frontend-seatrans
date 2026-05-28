@@ -33,6 +33,8 @@ export const API_CONFIG = {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
     ME: '/auth/me',
+    LOGOUT: '/auth/logout',
+    SESSION: '/auth/session',
   },
 
   PROVINCES: {

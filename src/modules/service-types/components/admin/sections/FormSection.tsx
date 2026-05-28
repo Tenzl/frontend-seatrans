@@ -150,8 +150,8 @@ export function FormSection({
   const [formData, setFormData] = useState<Record<string, string>>({})
   const [shippingCargoCatalog, setShippingCargoCatalog] = useState<Commodity[]>([])
   const [isLoadingShippingCargo, setIsLoadingShippingCargo] = useState(false)
-  const [shippingPorts, setShippingPorts] = useState<Port[]>([])
-  const [isLoadingShippingPorts, setIsLoadingShippingPorts] = useState(false)
+  const [portsByField, setPortsByField] = useState<Record<string, Port[]>>({})
+  const [isLoadingPortsByField, setIsLoadingPortsByField] = useState<Record<string, boolean>>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -196,37 +196,70 @@ export function FormSection({
   }, [isShippingAgencyForm, form.serviceTypeId])
 
   useEffect(() => {
-    if (!isShippingAgencyForm) {
-      setShippingPorts([])
-      return
-    }
+    const portAreaPairs: Array<{ portId: string; areaId: string }> = [
+      { portId: 'portOfCall', areaId: 'portArea' },
+      { portId: 'loadingPort', areaId: 'loadingArea' },
+      { portId: 'dischargingPort', areaId: 'dischargingArea' },
+    ]
+
+    const pairsInForm = portAreaPairs.filter(({ portId, areaId }) => {
+      const hasPort = allFields.some((f) => f.id === portId && f.type === 'port')
+      const hasArea = allFields.some((f) => f.id === areaId && f.type === 'select')
+      return hasPort && hasArea
+    })
+
+    if (pairsInForm.length === 0) return
+
     let cancelled = false
-    setIsLoadingShippingPorts(true)
-    portService
-      .getAllPorts()
-      .then((rows) => {
-        if (!cancelled) setShippingPorts(rows)
-      })
-      .catch(() => {
-        if (!cancelled) setShippingPorts([])
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoadingShippingPorts(false)
-      })
+
+    pairsInForm.forEach(({ portId, areaId }) => {
+      const area = (formData[areaId] || '').trim()
+      if (!area) {
+        setPortsByField((prev) => ({ ...prev, [portId]: [] }))
+        setIsLoadingPortsByField((prev) => ({ ...prev, [portId]: false }))
+        return
+      }
+
+      setIsLoadingPortsByField((prev) => ({ ...prev, [portId]: true }))
+      portService
+        .getPortsByArea(area)
+        .then((rows) => {
+          if (!cancelled) {
+            setPortsByField((prev) => ({ ...prev, [portId]: rows }))
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setPortsByField((prev) => ({ ...prev, [portId]: [] }))
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setIsLoadingPortsByField((prev) => ({ ...prev, [portId]: false }))
+          }
+        })
+    })
+
     return () => {
       cancelled = true
     }
-  }, [isShippingAgencyForm])
+  }, [allFields, formData, isShippingAgencyForm])
 
   const resolvedFields = useMemo(() => {
+    const portOptionsByField: Record<string, CargoSelectOption[] | undefined> = {}
+    Object.entries(portsByField).forEach(([fieldId, ports]) => {
+      if (ports?.length) portOptionsByField[fieldId] = buildPortOfCallSelectOptions(ports)
+    })
+
     if (!isShippingAgencyForm) {
-      return allFields
+      return allFields.map((field) => {
+        if (field.type === 'port' && portOptionsByField[field.id]?.length) {
+          return { ...field, selectOptions: portOptionsByField[field.id], options: undefined }
+        }
+        return field
+      })
     }
-    const portOptions =
-      shippingPorts.length > 0 ? buildPortOfCallSelectOptions(shippingPorts) : undefined
-    if (shippingCargoCatalog.length === 0 && !portOptions?.length) {
-      return allFields
-    }
+
     const cargoTypeOptions = buildCargoTypeSelectOptions(shippingCargoCatalog)
     const cargoNameOptions = formData.cargoType
       ? [
@@ -234,6 +267,7 @@ export function FormSection({
           { value: CARGO_NAME_OTHER, label: 'Other (specify)' },
         ]
       : []
+
     return allFields.map((field) => {
       if (field.id === 'cargoType' && cargoTypeOptions.length > 0) {
         return { ...field, selectOptions: cargoTypeOptions, options: undefined }
@@ -241,12 +275,12 @@ export function FormSection({
       if (field.id === 'cargoName' && cargoNameOptions.length > 0) {
         return { ...field, selectOptions: cargoNameOptions, options: undefined }
       }
-      if (field.id === 'portOfCall' && field.type === 'port' && portOptions?.length) {
-        return { ...field, selectOptions: portOptions, options: undefined }
+      if (field.type === 'port' && portOptionsByField[field.id]?.length) {
+        return { ...field, selectOptions: portOptionsByField[field.id], options: undefined }
       }
       return field
     })
-  }, [allFields, isShippingAgencyForm, shippingCargoCatalog, shippingPorts, formData.cargoType])
+  }, [allFields, isShippingAgencyForm, shippingCargoCatalog, portsByField, formData.cargoType])
 
   const resolvedFieldById = useMemo(() => {
     const map = new Map<string, FormField>()
@@ -285,6 +319,9 @@ export function FormSection({
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => {
       const next = { ...prev, [field]: value }
+      if (field === 'portArea' && prev.portArea !== value) next.portOfCall = ''
+      if (field === 'loadingArea' && prev.loadingArea !== value) next.loadingPort = ''
+      if (field === 'dischargingArea' && prev.dischargingArea !== value) next.dischargingPort = ''
       if (field === 'cargoType' && isShippingAgencyForm && prev.cargoType !== value) {
         next.cargoName = ''
         next.cargoNameOther = ''
@@ -592,6 +629,16 @@ export function FormSection({
     
     if (field.type === 'port') {
       if (field.selectOptions?.length) {
+        const areaFieldByPortId: Record<string, string> = {
+          portOfCall: 'portArea',
+          loadingPort: 'loadingArea',
+          dischargingPort: 'dischargingArea',
+        }
+        const areaFieldId = areaFieldByPortId[field.id]
+        const areaValue = areaFieldId ? (formData[areaFieldId] || '').trim() : ''
+        const isAreaDriven = Boolean(areaFieldId)
+        const isLoadingPorts = Boolean(isLoadingPortsByField[field.id])
+
         return (
           <ComboboxSelect
             id={field.id}
@@ -599,9 +646,17 @@ export function FormSection({
             onChange={(v) => onChange(field.id, v)}
             selectOptions={field.selectOptions}
             placeholder={
-              isLoadingShippingPorts ? 'Loading ports…' : field.placeholder || 'Select port of call'
+              isAreaDriven && areaValue === ''
+                ? 'Select area first'
+                : isLoadingPorts
+                  ? 'Loading ports…'
+                  : field.placeholder || 'Select port'
             }
-            disabled={disabled || isLoadingShippingPorts}
+            disabled={
+              disabled ||
+              (isAreaDriven && areaValue === '') ||
+              isLoadingPorts
+            }
             enableSearch
           />
         )

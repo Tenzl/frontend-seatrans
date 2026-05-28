@@ -108,6 +108,16 @@ export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
       serviceTypeSlug: 'shipping-agency',
       sections: [
         {
+          title: 'Trade & Port',
+          fields: [
+            { id: 'frtTaxType', label: 'Freight tax (import / export)', type: 'select', required: true, options: ['Import', 'Export'], gridSpan: 1, helperText: 'Export cargo may incur freight tax; import typically does not.', enableSearch: false },
+            { id: 'purposeOfCalling', label: 'Purpose of calling', type: 'select', required: true, options: ['NHAP_XUAT', 'NHAP_CHUYEN_CANG', 'CHUYEN_CANG_XUAT', 'CHUYEN_CANG_CHUYEN_CANG', 'MUC_DICH_KHAC'], gridSpan: 1, enableSearch: false },
+            { id: 'portArea', label: 'Area', type: 'select', required: true, options: ['NORTHERN', 'MIDDLE', 'SOUTHERN'], gridSpan: 1, enableSearch: false },
+            { id: 'portOfCall', label: 'Port of call', type: 'port', required: true, placeholder: 'Select port of call', gridSpan: 1 },
+            { id: 'dischargeLoadingLocation', label: 'Operation at', type: 'select', required: true, options: ['Berth', 'Anchorage'], gridSpan: 1, enableSearch: false },
+          ],
+        },
+        {
           title: 'Party & Vessel',
           fields: [
             { id: 'to', label: 'To (Shipowner / Principal)', type: 'text', required: true, placeholder: 'Owner or principal name', gridSpan: 1 },
@@ -125,15 +135,6 @@ export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
             { id: 'cargoName', label: 'Cargo name', type: 'select', required: true, placeholder: 'Select cargo name', gridSpan: 1 },
             { id: 'cargoNameOther', label: 'Cargo name (specify)', type: 'text', placeholder: 'Enter cargo name', gridSpan: 2, showWhen: { field: 'cargoName', value: 'OTHER' } },
             { id: 'quantityTons', label: 'Quantity (MT)', type: 'number', required: true, placeholder: 'e.g. 12,500', gridSpan: 1 },
-          ],
-        },
-        {
-          title: 'Trade & Port',
-          fields: [
-            { id: 'frtTaxType', label: 'Freight tax (import / export)', type: 'select', required: true, options: ['Import', 'Export'], gridSpan: 1, helperText: 'Export cargo may incur freight tax; import typically does not.', enableSearch: false },
-            { id: 'purposeOfCalling', label: 'Purpose of calling', type: 'select', required: true, options: ['NHAP_XUAT', 'NHAP_CHUYEN_CANG', 'CHUYEN_CANG_XUAT', 'CHUYEN_CANG_CHUYEN_CANG', 'MUC_DICH_KHAC'], gridSpan: 1, enableSearch: false },
-            { id: 'portOfCall', label: 'Port of call', type: 'port', required: true, placeholder: 'Select port of call', gridSpan: 1 },
-            { id: 'dischargeLoadingLocation', label: 'Operation at', type: 'select', required: true, options: ['Berth', 'Anchorage'], gridSpan: 1, enableSearch: false },
           ],
         },
         {

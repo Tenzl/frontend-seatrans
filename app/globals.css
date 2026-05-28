@@ -616,7 +616,7 @@
 }
 
 .animate-partner-scroll {
-  animation: partnerScroll 3s linear infinite;
+  animation: partnerScroll 18s linear infinite;
   will-change: transform;
 }
 
@@ -690,7 +690,11 @@
 
 /* Header Animations */
 .header-sticky {
-  transition: all var(--duration-m) var(--ease-out-standard);
+  transition:
+    transform var(--duration-m) var(--ease-out-standard),
+    background-color var(--duration-m) var(--ease-out-standard),
+    box-shadow var(--duration-m) var(--ease-out-standard),
+    border-color var(--duration-m) var(--ease-out-standard);
 }
 
 .nav-hover {
@@ -706,7 +710,9 @@
   width: 0;
   height: 2px;
   background: hsl(var(--primary));
-  transition: all var(--duration-s) var(--ease-out-standard);
+  transition:
+    width var(--duration-s) var(--ease-out-standard),
+    transform var(--duration-s) var(--ease-out-standard);
   transform: translateX(-50%);
 }
 
@@ -1043,7 +1049,38 @@
 
   /* Imagery Filters (Landing only) */
   .img-maritime {
-    @apply grayscale-[0.3] hover:grayscale-0 transition-all duration-500;
+    @apply grayscale-[0.3] transition-[filter] duration-500;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .img-maritime {
+      @apply hover:grayscale-0;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  .landing-main {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-scroll,
+  .animate-partner-scroll,
+  .breathing {
+    animation: none !important;
   }
 }
 

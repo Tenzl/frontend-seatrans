@@ -164,7 +164,7 @@ export function Updates({ onNavigateToArticle }: UpdatesProps) {
                   type="button"
                   onClick={scrollPrev}
                   disabled={!canScrollPrev}
-                  className="absolute -left-3 md:-left-5 top-1/2 z-10 -translate-y-1/2 rounded-full p-2.5 border bg-card shadow-md text-primary transition-all hover:bg-primary hover:text-primary-foreground disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-ring"
+                  className="absolute -left-3 md:-left-5 top-1/2 z-10 -translate-y-1/2 rounded-full p-2.5 border bg-card shadow-md text-primary transition-[transform,background-color,color,border-color,box-shadow] hover:bg-primary hover:text-primary-foreground disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
                   aria-label="Previous articles"
                 >
                   <ChevronLeft className="h-5 w-5" />
@@ -174,7 +174,7 @@ export function Updates({ onNavigateToArticle }: UpdatesProps) {
                   type="button"
                   onClick={scrollNext}
                   disabled={!canScrollNext}
-                  className="absolute -right-3 md:-right-5 top-1/2 z-10 -translate-y-1/2 rounded-full p-2.5 border bg-card shadow-md text-primary transition-all hover:bg-primary hover:text-primary-foreground disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-ring"
+                  className="absolute -right-3 md:-right-5 top-1/2 z-10 -translate-y-1/2 rounded-full p-2.5 border bg-card shadow-md text-primary transition-[transform,background-color,color,border-color,box-shadow] hover:bg-primary hover:text-primary-foreground disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
                   aria-label="Next articles"
                 >
                   <ChevronRight className="h-5 w-5" />

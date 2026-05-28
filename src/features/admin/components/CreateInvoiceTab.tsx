@@ -227,6 +227,19 @@ export function CreateInvoiceTab({
   const [agencyDiscountPercent, setAgencyDiscountPercent] = useState('')
   const [agencyLumpsumAmount, setAgencyLumpsumAmount] = useState('')
 
+  const shouldAutoselectTestCustomer =
+    process.env.NODE_ENV !== 'production' &&
+    !readOnly &&
+    !isInquiryDetailFlow &&
+    !linkedInquiryId
+
+  useEffect(() => {
+    if (!shouldAutoselectTestCustomer) return
+    if (customerUserId != null) return
+    setCustomerUserId(5)
+    setCustomerLabel('tester')
+  }, [shouldAutoselectTestCustomer, customerUserId])
+
   const getRequiredState = (value: string | null | undefined) => getRequiredFieldState(value, showValidationErrors)
   const canEnableFreightTaxDeclaration = useMemo(
     () => canEnableFreightTaxByPurpose(purposeOfCalling),
