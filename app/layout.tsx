@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
+import { connection } from 'next/server'
+import { headers } from 'next/headers'
 import { Suspense } from 'react'
 import { AuthProvider } from '@/modules/auth/context/AuthContext'
 import { Toaster } from '@/shared/components/ui/sonner'
@@ -57,11 +59,15 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  await connection()
+
+  const nonce = (await headers()).get('x-nonce') ?? undefined
+
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -83,6 +89,8 @@ export default function RootLayout({
     sameAs: ['https://www.facebook.com/seatrans.info'],
   }
 
+  const organizationSchemaJson = JSON.stringify(organizationSchema).replace(/</g, '\\u003c')
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
@@ -90,8 +98,9 @@ export default function RootLayout({
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
           strategy="afterInteractive"
+          nonce={nonce}
         />
-        <Script id="ga4-init" strategy="afterInteractive">
+        <Script id="ga4-init" strategy="afterInteractive" nonce={nonce}>
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -99,10 +108,10 @@ export default function RootLayout({
             gtag('config', '${gaMeasurementId}');
           `}
         </Script>
-        <Script
-          id="organization-schema"
+        <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: organizationSchemaJson }}
         />
         <AuthProvider>
           <Suspense fallback={null}>
