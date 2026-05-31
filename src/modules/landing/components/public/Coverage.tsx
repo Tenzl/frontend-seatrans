@@ -241,12 +241,12 @@ export function Coverage() {
                               <Geography
                                 key={geo.rsmKey}
                                 geography={geo}
-                                fill="#e0f2fe"
-                                stroke="#1a54b4"
+                                fill="hsl(var(--primary) / 0.12)"
+                                stroke="hsl(var(--primary))"
                                 strokeWidth={0.5}
                                 style={{
                                   default: { outline: 'none' },
-                                  hover: { outline: 'none', fill: '#bae6fd' },
+                                  hover: { outline: 'none', fill: 'hsl(var(--primary) / 0.22)' },
                                   pressed: { outline: 'none' }
                                 }}
                               />
@@ -277,7 +277,7 @@ export function Coverage() {
                               <circle
                                 r={13}
                                 fill="none"
-                                stroke="#2ECC71"
+                                stroke="hsl(var(--success))"
                                 strokeWidth={2}
                                 opacity={0.6}
                                 className="motion-safe:animate-ping motion-reduce:animate-none"
@@ -286,8 +286,8 @@ export function Coverage() {
                               {/* Main Marker Circle */}
                               <circle
                                 r={8}
-                                fill="#2ECC71"
-                                stroke="#fff"
+                                fill="hsl(var(--success))"
+                                stroke="hsl(var(--background))"
                                 strokeWidth={2}
                                 className="transition-transform hover:scale-110"
                               />

@@ -51,6 +51,23 @@ const mapPost = (raw: any): Post => {
   }
 }
 
+const viewRecordInflight = new Map<number, Promise<number>>()
+
+async function requestRecordPostView(id: number): Promise<number> {
+  const response = await apiClient.post<ApiResponse<{ viewCount: number }>>(
+    API_CONFIG.POSTS.PUBLIC_RECORD_VIEW(id),
+    {},
+    { skipAuth: true },
+  )
+
+  if (!response.ok) {
+    throw new Error('Failed to record post view')
+  }
+
+  const result: ApiResponse<{ viewCount: number }> = await response.json()
+  return result.data?.viewCount ?? 0
+}
+
 export const postService = {
   // Admin endpoints
   getAllPosts: async (): Promise<Post[]> => {
@@ -160,6 +177,20 @@ export const postService = {
 
     const result: ApiResponse<Post> = await response.json()
     return mapPost(result.data)
+  },
+
+  recordPostView: requestRecordPostView,
+
+  recordPostViewOnce(id: number): Promise<number> {
+    const existing = viewRecordInflight.get(id)
+    if (existing) return existing
+
+    const request = requestRecordPostView(id).finally(() => {
+      viewRecordInflight.delete(id)
+    })
+
+    viewRecordInflight.set(id, request)
+    return request
   },
 
   // alias for clarity with ArticleDetailPage

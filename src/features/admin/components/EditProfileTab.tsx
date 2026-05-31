@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Mail, Building } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
@@ -31,20 +31,24 @@ export function EditProfileTab() {
     }
   }, [user])
 
-  const canEdit = useMemo(() => {
-    const roleUpper = user?.role?.toUpperCase() || ''
-    const isEmployee = roleUpper.includes('EMPLOYEE')
-    return Boolean(isEmployee)
-  }, [user?.role])
-
   const handleSave = async () => {
-    if (!canEdit) return
+    if (!user) return
+
+    const fullName = formData.fullName.trim()
+    const phone = formData.phone.trim()
+    const company = formData.company.trim()
+
+    if (!fullName || !phone || !company) {
+      toast.error('Please fill in full name, phone, and company.')
+      return
+    }
+
     setIsSaving(true)
     try {
       const res = await updateMyProfile({
-        fullName: formData.fullName,
-        phone: formData.phone,
-        company: formData.company,
+        fullName,
+        phone,
+        company,
       })
       if (!res.success) {
         toast.error(res.message || 'Failed to update profile')
@@ -61,9 +65,10 @@ export function EditProfileTab() {
       <Card>
         <CardHeader className="border-b border-border/50 pb-4">
           <CardDescription className="max-w-2xl text-sm leading-relaxed">
-            {canEdit
-              ? 'Update your profile details. Email and role are managed by the system.'
-              : 'Your account details are managed by the system. Contact an administrator to update your profile or password.'}
+            Update your profile details. Email and role are managed by the system.
+            {user?.oauthProvider === 'google' && (
+              <> Complete phone and company to submit inquiries.</>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -73,7 +78,6 @@ export function EditProfileTab() {
               <Input
                 id="fullName"
                 value={formData.fullName}
-                disabled={!canEdit}
                 onChange={(e) => setFormData((prev) => ({ ...prev, fullName: e.target.value }))}
               />
             </div>
@@ -91,7 +95,6 @@ export function EditProfileTab() {
                 international
                 defaultCountry="VN"
                 value={formData.phone}
-                disabled={!canEdit}
                 onChange={(value) => setFormData((prev) => ({ ...prev, phone: String(value ?? '') }))}
                 className="w-full"
               />
@@ -104,20 +107,17 @@ export function EditProfileTab() {
                   id="company"
                   value={formData.company}
                   className="pl-9"
-                  disabled={!canEdit}
                   onChange={(e) => setFormData((prev) => ({ ...prev, company: e.target.value }))}
                 />
               </div>
             </div>
           </div>
 
-          {canEdit && (
-            <div className="mt-6 flex justify-end">
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Saving…' : 'Save changes'}
-              </Button>
-            </div>
-          )}
+          <div className="mt-6 flex justify-end">
+            <Button onClick={handleSave} disabled={isSaving || !user}>
+              {isSaving ? 'Saving…' : 'Save changes'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

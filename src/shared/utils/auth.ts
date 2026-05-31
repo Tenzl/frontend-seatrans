@@ -21,3 +21,12 @@ export function getRoleGroup(user?: User | null): RoleGroupResult {
 
   return undefined
 }
+
+/** Staff-only APIs (admin inquiry list, etc.) */
+export function isInternalStaff(user?: User | null): boolean {
+  if (!user) return false
+  if (getRoleGroup(user) !== "INTERNAL") return false
+
+  const role = normalizeRole(user.role)
+  return INTERNAL_MARKERS.some((marker) => role.includes(marker))
+}

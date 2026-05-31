@@ -136,7 +136,7 @@ export default function MultipleImageUpload({
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
-        className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
+        className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors"
       >
         <input
           type="file"
@@ -151,18 +151,18 @@ export default function MultipleImageUpload({
           htmlFor="file-upload"
           className="cursor-pointer flex flex-col items-center justify-center"
         >
-          <Upload className="w-12 h-12 text-gray-400 mb-3" />
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+          <Upload className="w-12 h-12 text-muted-foreground mb-3" />
+          <p className="text-sm text-muted-foreground mb-1">
             Click to upload or drag and drop
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-muted-foreground">
             PNG, JPG, WEBP up to 10MB (max {maxFiles} files)
           </p>
         </label>
       </div>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
+        <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
@@ -170,7 +170,7 @@ export default function MultipleImageUpload({
       {selectedFiles.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <h4 className="text-sm font-medium text-foreground">
               Selected Images ({selectedFiles.length}/{maxFiles})
             </h4>
             <button
@@ -180,7 +180,7 @@ export default function MultipleImageUpload({
                 previews.forEach(preview => URL.revokeObjectURL(preview));
                 setPreviews([]);
               }}
-              className="text-xs text-red-600 hover:text-red-700 dark:text-red-400"
+              className="text-xs text-destructive hover:text-destructive/80"
             >
               Clear All
             </button>
@@ -189,7 +189,7 @@ export default function MultipleImageUpload({
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {previews.map((preview, index) => (
               <div key={index} className="relative group">
-                <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                <div className="aspect-square rounded-lg overflow-hidden bg-muted">
                   <img
                     src={preview}
                     alt={selectedFiles[index].name}
@@ -199,12 +199,12 @@ export default function MultipleImageUpload({
                 <button
                   type="button"
                   onClick={() => removeFile(index)}
-                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-2 right-2 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                   disabled={uploading}
                 >
                   <X className="w-4 h-4" />
                 </button>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
+                <p className="mt-1 text-xs text-muted-foreground truncate">
                   {selectedFiles[index].name}
                 </p>
               </div>
@@ -216,16 +216,16 @@ export default function MultipleImageUpload({
       {uploading && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-300">
+            <span className="text-muted-foreground">
               Uploading {selectedFiles.length} images...
             </span>
-            <span className="text-gray-500 dark:text-gray-400">
+            <span className="text-muted-foreground">
               {uploadProgress}%
             </span>
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div className="w-full bg-muted rounded-full h-2">
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              className="bg-primary h-2 rounded-full transition-all duration-300"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
@@ -236,7 +236,7 @@ export default function MultipleImageUpload({
         type="button"
         onClick={handleUpload}
         disabled={selectedFiles.length === 0 || uploading}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+        className="w-full bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
       >
         {uploading ? (
           <>

@@ -46,13 +46,13 @@ export function DropdownInput({ options, value, onChange, placeholder = "Select.
       {/* Trigger */}
       <button
         onClick={() => setIsOpen((v) => !v)}
-        className="w-full px-3 py-2 border rounded bg-white flex items-center justify-between hover:border-gray-400 transition-all"
+        className="w-full px-3 py-2 border border-border rounded bg-card flex items-center justify-between hover:border-muted-foreground/40 transition-all"
       >
-        <span className={selected ? "text-gray-900" : "text-gray-400"}>
+        <span className={selected ? "text-foreground" : "text-muted-foreground"}>
           {selected ? selected.label : placeholder}
         </span>
         <ChevronDown
-          className={`h-4 w-4 text-gray-400 transition-transform ${
+          className={`h-4 w-4 text-muted-foreground transition-transform ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -60,10 +60,10 @@ export function DropdownInput({ options, value, onChange, placeholder = "Select.
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full bg-white border rounded shadow-lg mt-1 animate-fadeIn">
-          <div className="p-2 border-b">
+        <div className="absolute z-50 w-full bg-popover border border-border rounded shadow-lg mt-1 animate-fadeIn">
+          <div className="p-2 border-b border-border">
             <input
-              className="w-full px-3 py-1.5 border rounded focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-1.5 border border-border rounded focus:ring-2 focus:ring-ring"
               placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -73,14 +73,14 @@ export function DropdownInput({ options, value, onChange, placeholder = "Select.
 
           <div className="max-h-48 overflow-y-auto">
             {filtered.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-gray-500">No results</div>
+              <div className="px-3 py-2 text-sm text-muted-foreground">No results</div>
             ) : (
               filtered.map((opt) => (
                 <div
                   key={opt.value}
                   onClick={() => handleSelect(opt)}
-                  className={`px-3 py-2 flex justify-between items-center cursor-pointer hover:bg-blue-50 ${
-                    value === opt.value ? "bg-blue-50 text-blue-600" : ""
+                  className={`px-3 py-2 flex justify-between items-center cursor-pointer hover:bg-primary/5 ${
+                    value === opt.value ? "bg-primary/10 text-primary" : ""
                   }`}
                 >
                   <span>{opt.label}</span>

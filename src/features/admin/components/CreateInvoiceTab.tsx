@@ -45,6 +45,21 @@ import { inquiryService } from '@/modules/inquiries/services/inquiryService'
 import { shippingAgencyEpdaService } from '@/modules/inquiries/services/shippingAgencyEpdaService'
 import { EpdaCustomerSelect } from '@/features/admin/components/invoice/epda/EpdaCustomerSelect'
 import { EpdaInquiryMetaPanel } from '@/features/admin/components/invoice/epda/EpdaInquiryMetaPanel'
+import { EpdaCustomerChangeConfirmDialog } from '@/features/admin/components/invoice/epda/EpdaCustomerChangeConfirmDialog'
+import {
+  applyCustomerBaselineToForm,
+  buildCustomerBaselineFromInquiry,
+  buildCustomerBaselineFromQuoteInput,
+  diffCustomerFields,
+  getCustomerModifiedFieldClass,
+  getModifiedCustomerFieldSet,
+  mapCustomerChangesForApi,
+  shouldTrackCustomerFields,
+  type EpdaCustomerBaseline,
+  type EpdaCustomerFieldChange,
+  type EpdaCustomerTrackedField,
+} from '@/features/admin/components/invoice/epda/epdaCustomerFieldTracking'
+import { EpdaFieldChangeHistory } from '@/features/admin/components/invoice/epda/EpdaFieldChangeHistory'
 import { findPortSelectionFromInquiry } from '@/modules/logistics/shippingAgencyPortCatalog'
 import {
   readInquiryCargoForEpda,
@@ -54,20 +69,19 @@ import {
   quoteFormFromArea,
   quoteFormFromStored,
 } from '@/features/admin/components/invoice/epda/quoteFormFromArea'
+import {
+  DEFAULT_GARBAGE_CBM_AMOUNT,
+  getDefaultGarbageUsdRate,
+} from '@/features/admin/components/invoice/garbageFeeDefaults'
 import { cn } from '@/shared/lib/utils'
+import { PURPOSE_OF_CALLING_OPTIONS } from '@/modules/inquiries/constants/shippingAgencyInquiryOptions'
 
 type EpdaCargoType = CargoType
 
 const AREA_OPTIONS = ['NORTHERN', 'MIDDLE', 'SOUTHERN'] as const
 type AreaOption = typeof AREA_OPTIONS[number]
 
-const PURPOSE_OPTIONS = [
-  { value: 'NHAP_XUAT', label: 'Nhập - Xuất' },
-  { value: 'NHAP_CHUYEN_CANG', label: 'Nhập - Chuyển cảng' },
-  { value: 'CHUYEN_CANG_XUAT', label: 'Chuyển cảng - Xuất' },
-  { value: 'CHUYEN_CANG_CHUYEN_CANG', label: 'Chuyển cảng - Chuyển cảng' },
-  { value: 'MUC_DICH_KHAC', label: 'Mục đích khác' },
-] as const
+const PURPOSE_OPTIONS = PURPOSE_OF_CALLING_OPTIONS
 type PurposeOption = typeof PURPOSE_OPTIONS[number]['value']
 
 const SHIP_TYPE_OPTIONS = [
@@ -197,6 +211,12 @@ export function CreateInvoiceTab({
   const [selectedArea, setSelectedArea] = useState<AreaOption | ''>('')
   const [loadedInquiryQuoteForm, setLoadedInquiryQuoteForm] = useState<'HCM' | 'QN' | null>(null)
   const [viewInquiryMeta, setViewInquiryMeta] = useState<ShippingAgencyAdminInquiry | null>(null)
+  const [customerBaseline, setCustomerBaseline] = useState<EpdaCustomerBaseline | null>(null)
+  const customerBaselineInquiryIdRef = useRef<number | null>(null)
+  const [customerChangeDialogOpen, setCustomerChangeDialogOpen] = useState(false)
+  const [pendingEpdaAction, setPendingEpdaAction] = useState<'issue' | 'save-draft' | null>(null)
+  const [pendingCustomerChanges, setPendingCustomerChanges] = useState<EpdaCustomerFieldChange[]>([])
+  const [fieldChangeHistoryKey, setFieldChangeHistoryKey] = useState(0)
   const [pendingInquiryCargo, setPendingInquiryCargo] = useState<InquiryCargoFields | null>(null)
   const [toShipowner, setToShipowner] = useState('')
   const [mv, setMv] = useState('')
@@ -209,7 +229,8 @@ export function CreateInvoiceTab({
   const [cargoName, setCargoName] = useState('')
   const [frtTaxType, setFrtTaxType] = useState<FrtTaxTypeOption | ''>('')
   const [oceanFrtRateUsdPerMt, setOceanFrtRateUsdPerMt] = useState('')
-  const [garbageCbmAmount, setGarbageCbmAmount] = useState('1')
+  const [garbageUsdRate, setGarbageUsdRate] = useState(() => getDefaultGarbageUsdRate('HCM'))
+  const [garbageCbmAmount, setGarbageCbmAmount] = useState(DEFAULT_GARBAGE_CBM_AMOUNT)
   const [purposeOfCalling, setPurposeOfCalling] = useState<PurposeOption | ''>('')
   const [shipType, setShipType] = useState<ShipTypeOption>('BULK_SHIP')
   const [port, setPort] = useState('')
@@ -330,6 +351,11 @@ export function CreateInvoiceTab({
     if (loadedInquiryQuoteForm) return loadedInquiryQuoteForm
     return 'HCM'
   }, [selectedArea, loadedInquiryQuoteForm])
+
+  useEffect(() => {
+    if (linkedInquiryId) return
+    setGarbageUsdRate(getDefaultGarbageUsdRate(quoteForm))
+  }, [quoteForm, linkedInquiryId])
 
   useEffect(() => {
     if (!selectedArea) {
@@ -515,7 +541,8 @@ export function CreateInvoiceTab({
     frtTaxType,
     shouldIncludeOceanFrtRate: isExportTotalAmountMode(frtTaxType),
     oceanFrtRateUsdPerMt,
-    garbageCbmAmount,
+    garbageUsdRate: garbageUsdRate || getDefaultGarbageUsdRate(quoteForm),
+    garbageCbmAmount: garbageCbmAmount || DEFAULT_GARBAGE_CBM_AMOUNT,
     purposeOfCalling,
     dischargeLoadingLocation,
     transportLs,
@@ -537,6 +564,41 @@ export function CreateInvoiceTab({
 
   const buildQuoteParams = () => buildInvoiceQuoteData(buildQuoteParamsInput())
 
+  const tracksCustomerFields = shouldTrackCustomerFields(viewInquiryMeta?.createdSource)
+  const showSaveDraftButton = !readOnly
+
+  const customerFieldChanges = useMemo(() => {
+    if (!customerBaseline || !tracksCustomerFields) return []
+    return diffCustomerFields(
+      customerBaseline,
+      buildCustomerBaselineFromQuoteInput(buildQuoteParamsInput()),
+    )
+  }, [
+    customerBaseline,
+    tracksCustomerFields,
+    toShipowner,
+    mv,
+    dwt,
+    grt,
+    loa,
+    eta,
+    cargoQty,
+    cargoName,
+    cargoType,
+    port,
+    dischargeLoadingLocation,
+    frtTaxType,
+    purposeOfCalling,
+  ])
+
+  const modifiedCustomerFields = useMemo(
+    () => getModifiedCustomerFieldSet(customerFieldChanges),
+    [customerFieldChanges],
+  )
+
+  const getCustomerFieldClass = (field: EpdaCustomerTrackedField) =>
+    getCustomerModifiedFieldClass(field, modifiedCustomerFields)
+
   useEffect(() => {
     setLinkedInquiryId(resolvedInquiryId ?? null)
   }, [resolvedInquiryId])
@@ -553,6 +615,15 @@ export function CreateInvoiceTab({
         )
         if (cancelled) return
         setViewInquiryMeta(inquiry)
+        if (shouldTrackCustomerFields(inquiry.createdSource)) {
+          if (customerBaselineInquiryIdRef.current !== linkedInquiryId) {
+            customerBaselineInquiryIdRef.current = linkedInquiryId
+            setCustomerBaseline(buildCustomerBaselineFromInquiry(inquiry))
+          }
+        } else {
+          customerBaselineInquiryIdRef.current = null
+          setCustomerBaseline(null)
+        }
         setLoadedInquiryQuoteForm(quoteFormFromStored(inquiry.quoteForm))
         setPendingInquiryCargo({
           cargoType: inquiry.cargoType,
@@ -578,6 +649,7 @@ export function CreateInvoiceTab({
           setQnPilotageMiles,
           setShipType: (v) => setShipType(v as ShipTypeOption),
           setOceanFrtRateUsdPerMt,
+          setGarbageUsdRate,
           setGarbageCbmAmount,
           setQuarantineCargoMode: (v) => setQuarantineCargoMode(v as QuarantineCargoOption),
           setAgencyFeeMode: (v) => setAgencyFeeMode(v as AgencyFeeModeOption),
@@ -629,15 +701,31 @@ export function CreateInvoiceTab({
       return
     }
 
+    const changes = customerFieldChanges
+    if (changes.length > 0) {
+      setPendingCustomerChanges(changes)
+      setPendingEpdaAction('save-draft')
+      setCustomerChangeDialogOpen(true)
+      return
+    }
+
+    await executeSaveDraft()
+  }
+
+  const executeSaveDraft = async (confirmedChanges: EpdaCustomerFieldChange[] = []) => {
     setIsSavingDraft(true)
     try {
       const input = buildQuoteParamsInput()
       const patchBody = buildEpdaPatchPayload(input)
       patchBody.epdaSnapshot = buildInvoiceQuoteData(input) as unknown as Record<string, unknown>
+      if (confirmedChanges.length > 0) {
+        patchBody.confirmedCustomerFieldChanges = mapCustomerChangesForApi(confirmedChanges)
+      }
 
       if (linkedInquiryId) {
         await shippingAgencyEpdaService.updateEpda(linkedInquiryId, patchBody)
         toast.success('EPDA draft saved')
+        setFieldChangeHistoryKey((key) => key + 1)
         return
       }
 
@@ -671,20 +759,88 @@ export function CreateInvoiceTab({
       return
     }
 
+    const changes = customerFieldChanges
+    if (changes.length > 0) {
+      setPendingCustomerChanges(changes)
+      setPendingEpdaAction('issue')
+      setCustomerChangeDialogOpen(true)
+      return
+    }
+
+    await executeIssueToCustomer()
+  }
+
+  const executeIssueToCustomer = async (confirmedChanges: EpdaCustomerFieldChange[] = []) => {
+    if (!linkedInquiryId) return
+
     setIsIssuing(true)
     try {
       const input = buildQuoteParamsInput()
       const snapshot = buildInvoiceQuoteData(input) as unknown as Record<string, unknown>
       const patchBody = buildEpdaPatchPayload(input)
+      if (confirmedChanges.length > 0) {
+        patchBody.confirmedCustomerFieldChanges = mapCustomerChangesForApi(confirmedChanges)
+      }
       await shippingAgencyEpdaService.updateEpda(linkedInquiryId, patchBody)
-      await shippingAgencyEpdaService.issueEpda(linkedInquiryId, snapshot)
+      await shippingAgencyEpdaService.issueEpda(linkedInquiryId, snapshot, {
+        confirmedCustomerFieldChanges:
+          confirmedChanges.length > 0 ? mapCustomerChangesForApi(confirmedChanges) : undefined,
+      })
       toast.success('EPDA issued — customer can access the quote')
+      setFieldChangeHistoryKey((key) => key + 1)
     } catch (err) {
       console.error('Failed to issue EPDA:', err)
       toast.error(err instanceof Error ? err.message : 'Failed to issue EPDA')
     } finally {
       setIsIssuing(false)
     }
+  }
+
+  const revertCustomerFieldValues = () => {
+    if (!customerBaseline) return
+    applyCustomerBaselineToForm(customerBaseline, {
+      setToShipowner,
+      setMv,
+      setDwt,
+      setGrt,
+      setLoa,
+      setEta,
+      setCargoQty,
+      setCargoType: (value) => setCargoType(value as EpdaCargoType),
+      setCargoName,
+      setPort,
+      setDischargeLoadingLocation,
+      setFrtTaxType: (value) => setFrtTaxType(value as FrtTaxTypeOption),
+      setPurposeOfCalling: (value) => setPurposeOfCalling(value as PurposeOption),
+    })
+    if (customerBaseline.cargoType || customerBaseline.cargoName) {
+      setPendingInquiryCargo({
+        cargoType: customerBaseline.cargoType || null,
+        cargoName: customerBaseline.cargoName || null,
+        cargoNameOther: null,
+      })
+    }
+    toast.info('Reverted to customer-submitted values')
+  }
+
+  const handleConfirmCustomerChanges = async () => {
+    const changes = pendingCustomerChanges
+    setCustomerChangeDialogOpen(false)
+    const action = pendingEpdaAction
+    setPendingEpdaAction(null)
+    setPendingCustomerChanges([])
+    if (action === 'issue') {
+      await executeIssueToCustomer(changes)
+    } else if (action === 'save-draft') {
+      await executeSaveDraft(changes)
+    }
+  }
+
+  const handleRevertCustomerChanges = () => {
+    setCustomerChangeDialogOpen(false)
+    setPendingEpdaAction(null)
+    setPendingCustomerChanges([])
+    revertCustomerFieldValues()
   }
 
   const handlePreview = async () => {
@@ -752,7 +908,8 @@ export function CreateInvoiceTab({
     setCargoName('')
     setFrtTaxType('')
     setOceanFrtRateUsdPerMt('')
-    setGarbageCbmAmount('1')
+    setGarbageUsdRate(getDefaultGarbageUsdRate(quoteForm))
+    setGarbageCbmAmount(DEFAULT_GARBAGE_CBM_AMOUNT)
     setPurposeOfCalling('')
     setShipType('BULK_SHIP')
     setPort('')
@@ -817,7 +974,8 @@ export function CreateInvoiceTab({
     anchorageHours,
     qnPilotageMiles,
     pilotageThirdMiles,
-    garbageCbmAmount,
+    garbageUsdRate: garbageUsdRate || getDefaultGarbageUsdRate(quoteForm),
+    garbageCbmAmount: garbageCbmAmount || DEFAULT_GARBAGE_CBM_AMOUNT,
     purposeOfCalling,
     quarantineCargoMode,
     frtTaxType,
@@ -847,6 +1005,7 @@ export function CreateInvoiceTab({
     setAnchorageHours,
     setQnPilotageMiles,
     setPilotageThirdMiles,
+    setGarbageUsdRate,
     setGarbageCbmAmount,
     setPurposeOfCalling: (value: PurposeOption) => setPurposeOfCalling(value),
     setQuarantineCargoMode: (value: QuarantineCargoOption) => setQuarantineCargoMode(value),
@@ -890,50 +1049,56 @@ export function CreateInvoiceTab({
   }
 
   const editorActions = (
-    <>
+    <div className="grid w-full grid-cols-2 gap-2 md:flex md:w-auto md:flex-wrap md:items-center md:justify-end">
       <Button
         variant="outline"
         onClick={handleReset}
         disabled={isFormBusy}
-        className="active:scale-[0.98]"
+        className="h-10 active:scale-[0.98] sm:h-9"
       >
-        Reset form
+        <span className="hidden sm:inline">Reset form</span>
+        <span className="sm:hidden">Reset</span>
       </Button>
-      <Button
-        variant="outline"
-        onClick={handleSaveDraft}
-        disabled={isFormBusy}
-        className="gap-2 active:scale-[0.98]"
-      >
-        {isSavingDraft ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Save className="h-4 w-4" />
-        )}
-        Save draft
-      </Button>
+      {showSaveDraftButton ? (
+        <Button
+          variant="outline"
+          onClick={handleSaveDraft}
+          disabled={isFormBusy}
+          className="h-10 gap-2 active:scale-[0.98] sm:h-9"
+        >
+          {isSavingDraft ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4" />
+          )}
+          <span className="hidden sm:inline">Save draft</span>
+          <span className="sm:hidden">Save</span>
+        </Button>
+      ) : null}
       <Button
         variant="secondary"
         onClick={handleIssueToCustomer}
         disabled={isFormBusy || !linkedInquiryId}
-        className="gap-2 active:scale-[0.98]"
+        className="h-10 gap-2 active:scale-[0.98] sm:h-9"
       >
         {isIssuing ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <Send className="h-4 w-4" />
+          <Send className="h-4 w-4 shrink-0" />
         )}
-        Issue to customer
+        <span className="hidden sm:inline">Issue to customer</span>
+        <span className="sm:hidden">Issue</span>
       </Button>
       <Button
         onClick={handlePreview}
         disabled={isFormBusy}
-        className="gap-2 active:scale-[0.98]"
+        className="col-span-2 h-10 gap-2 active:scale-[0.98] md:col-span-1 md:h-9"
       >
         {isLoading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Generating...
+            <span className="hidden sm:inline">Generating...</span>
+            <span className="sm:hidden">Loading...</span>
           </>
         ) : (
           <>
@@ -942,7 +1107,7 @@ export function CreateInvoiceTab({
           </>
         )}
       </Button>
-    </>
+    </div>
   )
 
   const backToInquiries = isInquiryDetailFlow ? (
@@ -950,11 +1115,12 @@ export function CreateInvoiceTab({
       type="button"
       variant="ghost"
       size="sm"
-      className="-ml-2 mb-2 gap-2 text-muted-foreground hover:text-foreground"
+      className="-ml-2 mb-2 h-auto min-h-9 max-w-full gap-2 whitespace-normal py-2 text-left text-muted-foreground hover:text-foreground sm:whitespace-nowrap"
       onClick={() => router.push(buildDashboardUrl(pathname, 'shipping-agency-inquiries'))}
     >
-      <ArrowLeft className="h-4 w-4" />
-      Back to Shipping Agency Inquiries
+      <ArrowLeft className="h-4 w-4 shrink-0" />
+      <span className="hidden sm:inline">Back to Shipping Agency Inquiries</span>
+      <span className="sm:hidden">Back to inquiries</span>
     </Button>
   ) : null
 
@@ -969,12 +1135,23 @@ export function CreateInvoiceTab({
               'sticky top-0 z-10 -mx-1 border-b border-border/60 bg-background/95 px-1 pb-4 pt-1 backdrop-blur-md supports-[backdrop-filter]:bg-background/80',
           )}
         >
+          {customerFieldChanges.length > 0 ? (
+            <p className="rounded-md border border-emerald-500/30 bg-emerald-50/50 px-3 py-2 text-xs leading-relaxed text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-300">
+              {customerFieldChanges.length} customer field{customerFieldChanges.length === 1 ? '' : 's'} modified
+              (highlighted in green). Confirm changes when issuing the EPDA.
+            </p>
+          ) : null}
+
           {isLoadingInquiry ? (
             <p className="text-xs text-muted-foreground">Loading inquiry EPDA...</p>
           ) : null}
 
           {viewInquiryMeta && linkedInquiryId ? (
             <EpdaInquiryMetaPanel inquiry={viewInquiryMeta} />
+          ) : null}
+
+          {linkedInquiryId && tracksCustomerFields ? (
+            <EpdaFieldChangeHistory inquiryId={linkedInquiryId} refreshKey={fieldChangeHistoryKey} />
           ) : null}
 
           {!readOnly && !linkedInquiryId ? (
@@ -1037,9 +1214,14 @@ export function CreateInvoiceTab({
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="portOfCallSelect">Port of call</Label>
+                <Label
+                  htmlFor="portOfCallSelect"
+                  className={getCustomerFieldClass('port') ? 'text-emerald-700 dark:text-emerald-400' : undefined}
+                >
+                  Port of call
+                </Label>
                 <Select value={port} onValueChange={setPort} disabled={!selectedArea || isLoadingPorts}>
-                  <SelectTrigger id="portOfCallSelect">
+                  <SelectTrigger id="portOfCallSelect" className={getCustomerFieldClass('port')}>
                     <SelectValue
                       placeholder={
                         !selectedArea
@@ -1113,6 +1295,7 @@ export function CreateInvoiceTab({
                   options={formOptions}
                   computed={formComputed}
                   getRequiredState={getRequiredState}
+                  getCustomerFieldClass={tracksCustomerFields ? getCustomerFieldClass : undefined}
                 />
               ) : (
                 <CreateInvoiceHcmForm
@@ -1121,6 +1304,7 @@ export function CreateInvoiceTab({
                   options={formOptions}
                   computed={formComputed}
                   getRequiredState={getRequiredState}
+                  getCustomerFieldClass={tracksCustomerFields ? getCustomerFieldClass : undefined}
                 />
               )}
             </div>
@@ -1157,17 +1341,41 @@ export function CreateInvoiceTab({
     <>
       <AdminSection
         description={
-          isInquiryDetailFlow && linkedInquiryId
-            ? `Shipping agency inquiry #${linkedInquiryId} — review customer details and complete EPDA (save draft, preview, issue).`
-            : linkedInquiryId
-              ? `Edit EPDA for shipping agency inquiry #${linkedInquiryId}. Save draft, preview, then issue to customer.`
-              : 'Select a customer, complete EPDA fields, save draft, then issue to customer.'
+          isInquiryDetailFlow && linkedInquiryId ? (
+            <>
+              <span className="md:hidden">
+                Inquiry #{linkedInquiryId} — review customer details and complete EPDA.
+              </span>
+              <span className="hidden md:inline">
+                {`Shipping agency inquiry #${linkedInquiryId} — review customer details and complete EPDA (save draft, preview, issue).`}
+              </span>
+            </>
+          ) : linkedInquiryId ? (
+            <>
+              <span className="md:hidden">
+                Edit EPDA for inquiry #{linkedInquiryId}. Save, preview, then issue.
+              </span>
+              <span className="hidden md:inline">
+                {`Edit EPDA for shipping agency inquiry #${linkedInquiryId}. Save draft, preview, then issue to customer.`}
+              </span>
+            </>
+          ) : (
+            'Select a customer, complete EPDA fields, save draft, then issue to customer.'
+          )
         }
         actions={editorActions}
       >
         {epdaWorksheet}
       </AdminSection>
       {pdfPreview}
+      <EpdaCustomerChangeConfirmDialog
+        open={customerChangeDialogOpen}
+        onOpenChange={setCustomerChangeDialogOpen}
+        changes={pendingCustomerChanges}
+        actionLabel={pendingEpdaAction === 'issue' ? 'issue to customer' : 'save draft'}
+        onConfirm={() => void handleConfirmCustomerChanges()}
+        onRevert={handleRevertCustomerChanges}
+      />
     </>
   )
 }

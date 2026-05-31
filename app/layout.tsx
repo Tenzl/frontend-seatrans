@@ -8,8 +8,8 @@ import { Toaster } from '@/shared/components/ui/sonner'
 import { NProgressProvider } from '@/shared/components/NProgressProvider'
 import '@/styles/nprogress.css'
 import './globals.css'
+import { organizationSchemaJson, siteUrl } from '@/shared/seo/organizationSchema'
 
-const siteUrl = 'https://seatrans.vercel.app'
 const gaMeasurementId = 'G-NQK767RG2P'
 
 export const metadata: Metadata = {
@@ -66,30 +66,8 @@ export default async function RootLayout({
 }) {
   await connection()
 
-  const nonce = (await headers()).get('x-nonce') ?? undefined
-
-  const organizationSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
-    name: 'Seatrans',
-    url: siteUrl,
-    logo: `${siteUrl}/landing-image/web_Logo.png`,
-    contactPoint: {
-      '@type': 'ContactPoint',
-      telephone: '+84 935 015 679',
-      contactType: 'customer service',
-      areaServed: 'VN',
-    },
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: '51 Luu Huu Phuoc',
-      addressRegion: 'Gia Lai',
-      addressCountry: 'VN',
-    },
-    sameAs: ['https://www.facebook.com/seatrans.info'],
-  }
-
-  const organizationSchemaJson = JSON.stringify(organizationSchema).replace(/</g, '\\u003c')
+  const nonceHeader = (await headers()).get('x-nonce')
+  const nonce = nonceHeader?.trim() ? nonceHeader.trim() : undefined
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -110,7 +88,6 @@ export default async function RootLayout({
         </Script>
         <script
           type="application/ld+json"
-          nonce={nonce}
           dangerouslySetInnerHTML={{ __html: organizationSchemaJson }}
         />
         <AuthProvider>

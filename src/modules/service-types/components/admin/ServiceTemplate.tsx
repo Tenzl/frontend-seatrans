@@ -102,11 +102,7 @@ export function ServiceTemplate({
         {contacts && <ContactSection contacts={contacts} />}
       </div>
 
-      {services && (
-        <div className="container max-w-7xl">
-          <ServicesSection services={services} />
-        </div>
-      )}
+      {services && <ServicesSection services={services} />}
 
       <div className="container max-w-7xl pb-16 md:pb-24">
         {form && mergedForm && <FormSection form={mergedForm} />}

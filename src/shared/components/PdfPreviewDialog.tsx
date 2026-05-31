@@ -1,9 +1,16 @@
 'use client'
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/shared/components/ui/dialog'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/shared/components/ui/dialog'
 import { Button } from '@/shared/components/ui/button'
 import { useRef, useState, useEffect } from 'react'
-import { Loader2, Printer } from 'lucide-react'
+import { Loader2, Printer, X } from 'lucide-react'
 import { toast } from '@/shared/utils/toast'
 
 interface PdfPreviewDialogProps {
@@ -61,16 +68,19 @@ export function PdfPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0 shrink-0">
-          <div className="flex flex-col gap-1 min-w-0 flex-1">
-            <DialogTitle className="truncate pr-8">{fileName}</DialogTitle>
+      <DialogContent
+        showCloseButton={false}
+        className="max-w-5xl h-[90vh] flex flex-col p-0 gap-0"
+      >
+        <DialogHeader className="gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 shrink-0">
+          <div className="min-w-0 flex-1 space-y-1">
+            <DialogTitle className="truncate">{fileName}</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
               Print will open the browser Save as PDF dialog.
             </DialogDescription>
           </div>
-          {!showGenerating && (
-            <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center justify-end gap-2">
+            {!showGenerating ? (
               <Button
                 size="sm"
                 onClick={handlePrintPdf}
@@ -84,11 +94,17 @@ export function PdfPreviewDialog({
                 )}
                 Print / Save PDF
               </Button>
-            </div>
-          )}
+            ) : null}
+            <DialogClose asChild>
+              <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogClose>
+          </div>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 overflow-hidden bg-slate-100 dark:bg-slate-900">
+        <div className="flex-1 min-h-0 overflow-hidden bg-muted">
           {showGenerating ? (
             <div className="flex h-full flex-col items-center justify-center gap-3 p-12">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />

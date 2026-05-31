@@ -727,7 +727,7 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
                 <AlertTriangle className="h-5 w-5 text-orange-500" />
               )}
               {deleteModalImage && getDeleteWarningType(deleteModalImage) === 'below' && (
-                <Info className="h-5 w-5 text-blue-500" />
+                <Info className="h-5 w-5 text-info" />
               )}
               {deleteModalImage && getDeleteWarningType(deleteModalImage) === 'over' 
                 ? '⚠️ Image Limit Exceeded'

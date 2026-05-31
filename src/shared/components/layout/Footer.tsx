@@ -34,7 +34,7 @@ export function Footer() {
                   sizes="240px"
                   className="h-10 sm:h-12 w-auto object-contain"
                 />
-                <h3 className="uppercase text-[#202124] text-[16px] sm:text-[18px] leading-tight" style={{ fontWeight: 800 }}>
+                <h3 className="uppercase text-foreground text-[16px] sm:text-[18px] leading-tight" style={{ fontWeight: 800 }}>
                   SEATRANS – South East Asia Transport & Logistics
                 </h3>
               </div>
@@ -72,7 +72,7 @@ export function Footer() {
 
             {/* Column 2 - Services (Center Aligned on Desktop, Left on Mobile) */}
             <div className="text-left md:text-center space-y-3">
-              <h4 className="uppercase text-[#202124] text-[16px] sm:text-[18px] leading-tight mb-4 md:mb-6" style={{ fontWeight: 800 }}>
+              <h4 className="uppercase text-foreground text-[16px] sm:text-[18px] leading-tight mb-4 md:mb-6" style={{ fontWeight: 800 }}>
                 Doing business together
               </h4>
 
@@ -101,7 +101,7 @@ export function Footer() {
 
             {/* Column 3 - Social Media (Right Aligned on Desktop, Left on Mobile) */}
             <div className="text-left md:text-right space-y-3">
-              <h4 className="uppercase text-[#202124] text-[16px] sm:text-[18px] leading-tight mb-4 md:mb-6" style={{ fontWeight: 800 }}>
+              <h4 className="uppercase text-foreground text-[16px] sm:text-[18px] leading-tight mb-4 md:mb-6" style={{ fontWeight: 800 }}>
                 Get to know us
               </h4>
 
@@ -112,7 +112,7 @@ export function Footer() {
                     href="#"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:border-primary hover:text-primary transition-colors"
+                    className="w-8 h-8 flex items-center justify-center rounded border border-border hover:border-primary hover:text-primary transition-colors"
                     aria-label="Facebook"
                   >
                     <Facebook className="h-4 w-4" />
@@ -121,7 +121,7 @@ export function Footer() {
                     href="#"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:border-primary hover:text-primary transition-colors"
+                    className="w-8 h-8 flex items-center justify-center rounded border border-border hover:border-primary hover:text-primary transition-colors"
                     aria-label="Twitter"
                   >
                     <Twitter className="h-4 w-4" />
@@ -130,7 +130,7 @@ export function Footer() {
                     href="#"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:border-primary hover:text-primary transition-colors"
+                    className="w-8 h-8 flex items-center justify-center rounded border border-border hover:border-primary hover:text-primary transition-colors"
                     aria-label="Instagram"
                   >
                     <Instagram className="h-4 w-4" />
@@ -139,7 +139,7 @@ export function Footer() {
                     href="#"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:border-primary hover:text-primary transition-colors"
+                    className="w-8 h-8 flex items-center justify-center rounded border border-border hover:border-primary hover:text-primary transition-colors"
                     aria-label="LinkedIn"
                   >
                     <Linkedin className="h-4 w-4" />
@@ -148,7 +148,7 @@ export function Footer() {
                     href="#"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:border-primary hover:text-primary transition-colors"
+                    className="w-8 h-8 flex items-center justify-center rounded border border-border hover:border-primary hover:text-primary transition-colors"
                     aria-label="YouTube"
                   >
                     <Youtube className="h-4 w-4" />

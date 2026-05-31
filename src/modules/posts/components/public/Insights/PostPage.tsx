@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
-import { Calendar, User } from 'lucide-react'
+import { Calendar, Eye, User } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { postService, Post, CategoryResponse } from '@/modules/posts/services/postService'
 import { categoryService } from '@/modules/categories/services/categoryService'
@@ -205,15 +205,15 @@ function PostCard({
   const excerpt = extractExcerpt(post)
   const imageUrl = getImageUrl(post.thumbnailUrl)
 
-  let displayCategory = 'Uncategorized'
-  if (post.categories && post.categories.length > 0) {
-    if (selectedCategoryId !== null) {
-      const selectedCat = post.categories.find((cat) => cat.id === selectedCategoryId)
-      displayCategory = selectedCat ? selectedCat.name : post.categories[0].name
-    } else {
-      displayCategory = post.categories[0].name
-    }
-  }
+  const displayCategories =
+    post.categories && post.categories.length > 0
+      ? selectedCategoryId !== null
+        ? (() => {
+            const selectedCat = post.categories.find((cat) => cat.id === selectedCategoryId)
+            return [selectedCat?.name ?? post.categories[0].name]
+          })()
+        : post.categories.slice(0, 2).map((cat) => cat.name)
+      : ['Uncategorized']
 
   const postDate = post.publishedAt || post.createdAt
 
@@ -232,7 +232,16 @@ function PostCard({
           sizes="(min-width: 1024px) 360px, (min-width: 768px) 50vw, 100vw"
           className={cardStyles.mediaImg}
         />
-        <div className={`${cardStyles.categoryPill} bg-primary text-primary-foreground`}>{displayCategory}</div>
+        <div className={cardStyles.categoryPills}>
+          {displayCategories.map((name) => (
+            <div
+              key={name}
+              className={`${cardStyles.categoryPill} bg-primary text-primary-foreground`}
+            >
+              {name}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className={cardStyles.body}>
@@ -265,6 +274,11 @@ function PostCard({
                 year: 'numeric',
               })}
             </span>
+          </div>
+
+          <div className={cardStyles.metaItem}>
+            <Eye className="h-4 w-4" />
+            <span>{(post.viewCount ?? 0).toLocaleString('en-US')}</span>
           </div>
         </div>
       </div>

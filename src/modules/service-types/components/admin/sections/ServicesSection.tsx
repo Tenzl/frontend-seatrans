@@ -47,18 +47,19 @@ export function ServicesSection({
   const { items } = services
 
   return (
-      <section id="services-section" className="py-16 md:py-24 bg-slate-50/60 border-y border-slate-200/60">
+    <section id="services-section" className="service-section-surface">
+      <div className="service-section-inner">
       {/* Section header — 2-col asymmetric */}
       <div className="mb-12 grid gap-6 md:grid-cols-[1fr_1.6fr] md:items-end">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary mb-3">
             Scope of services
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tighter leading-none text-slate-900 text-balance">
+          <h2 className="landing-section-title">
             {services.sectionTitle}
           </h2>
         </div>
-        <p className="text-base text-slate-600 leading-relaxed max-w-[56ch]">
+        <p className="landing-section-lead max-w-[56ch]">
           {services.sectionDescription}
         </p>
       </div>
@@ -82,32 +83,33 @@ export function ServicesSection({
                 delay: index * 0.06,
               }}
               style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
-              className={`group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-7 md:p-8 transition-all duration-500 hover:shadow-[0_20px_48px_-16px_hsl(217_40%_35%/0.14)] hover:-translate-y-0.5 ${spanClass}`}
+              className={`group relative overflow-hidden rounded-2xl service-card p-7 md:p-8 transition-all duration-500 hover:-translate-y-0.5 ${spanClass}`}
             >
               {/* Subtle corner accent that intensifies on hover */}
               <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/5 transition-all duration-500 group-hover:scale-[2.2] group-hover:bg-primary/8" />
 
               <div className="relative flex items-start gap-5">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/8 border border-primary/15 text-primary transition-all duration-300 group-hover:bg-primary group-hover:text-white group-hover:border-primary group-hover:shadow-[0_4px_12px_-4px_hsl(217_45%_45%/0.35)]">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/8 border border-primary/15 text-primary transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary group-hover:shadow-[0_4px_12px_-4px_hsl(var(--primary)/0.35)]">
                   <Icon className="h-5 w-5" strokeWidth={ICON_STROKE} />
                 </div>
                 <div className="space-y-2 min-w-0 flex-1">
-                  <h4 className="font-semibold text-slate-900 tracking-tight text-balance">
+                  <h4 className="font-semibold text-foreground tracking-tight text-balance">
                     {service.name}
                   </h4>
-                  <p className="text-sm text-slate-600 leading-relaxed text-pretty">
+                  <p className="text-sm text-muted-foreground leading-relaxed text-pretty">
                     {service.description}
                   </p>
                 </div>
               </div>
 
               {/* Bottom index number — decorative */}
-              <span className="absolute bottom-5 right-6 font-mono text-[10px] font-semibold tabular-nums text-slate-200 select-none transition-colors group-hover:text-primary/20">
+              <span className="absolute bottom-5 right-6 font-mono text-[10px] font-semibold tabular-nums text-border select-none transition-colors group-hover:text-primary/20">
                 {String(index + 1).padStart(2, '0')}
               </span>
             </motion.div>
           )
         })}
+      </div>
       </div>
     </section>
   )

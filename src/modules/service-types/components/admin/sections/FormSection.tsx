@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/modules/auth/context/AuthContext'
 import { authService } from '@/modules/auth/services/authService'
@@ -61,6 +61,19 @@ export interface InquiryPayload {
   email: string
   phone: string
   notes: string
+}
+
+const PORT_AREA_BY_PORT_FIELD: Record<string, string> = {
+  portOfCall: 'portArea',
+  loadingPort: 'loadingArea',
+  dischargingPort: 'dischargingArea',
+}
+
+function getPortAreaFieldId(portFieldId: string, fields: FormField[]): string | null {
+  const areaId = PORT_AREA_BY_PORT_FIELD[portFieldId]
+  if (!areaId) return null
+  if (!fields.some((f) => f.id === areaId && f.type === 'select')) return null
+  return areaId
 }
 
 function ComboboxSelect({
@@ -152,6 +165,7 @@ export function FormSection({
   const [isLoadingShippingCargo, setIsLoadingShippingCargo] = useState(false)
   const [portsByField, setPortsByField] = useState<Record<string, Port[]>>({})
   const [isLoadingPortsByField, setIsLoadingPortsByField] = useState<Record<string, boolean>>({})
+  const portsByAreaCacheRef = useRef<Map<string, Port[]>>(new Map())
   const [submitting, setSubmitting] = useState(false)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -195,47 +209,100 @@ export function FormSection({
     }
   }, [isShippingAgencyForm, form.serviceTypeId])
 
-  useEffect(() => {
+  const portAreaBindings = useMemo(() => {
     const portAreaPairs: Array<{ portId: string; areaId: string }> = [
       { portId: 'portOfCall', areaId: 'portArea' },
       { portId: 'loadingPort', areaId: 'loadingArea' },
       { portId: 'dischargingPort', areaId: 'dischargingArea' },
     ]
 
-    const pairsInForm = portAreaPairs.filter(({ portId, areaId }) => {
-      const hasPort = allFields.some((f) => f.id === portId && f.type === 'port')
-      const hasArea = allFields.some((f) => f.id === areaId && f.type === 'select')
-      return hasPort && hasArea
-    })
+    return portAreaPairs
+      .filter(({ portId, areaId }) => {
+        const hasPort = allFields.some((f) => f.id === portId && f.type === 'port')
+        const hasArea = allFields.some((f) => f.id === areaId && f.type === 'select')
+        return hasPort && hasArea
+      })
+      .map(({ portId, areaId }) => ({
+        portId,
+        area: (formData[areaId] || '').trim(),
+      }))
+  }, [allFields, formData.portArea, formData.loadingArea, formData.dischargingArea])
 
-    if (pairsInForm.length === 0) return
+  useEffect(() => {
+    if (portAreaBindings.length === 0) return
 
     let cancelled = false
 
-    pairsInForm.forEach(({ portId, areaId }) => {
-      const area = (formData[areaId] || '').trim()
+    portAreaBindings.forEach(({ portId, area }) => {
       if (!area) {
         setPortsByField((prev) => ({ ...prev, [portId]: [] }))
         setIsLoadingPortsByField((prev) => ({ ...prev, [portId]: false }))
+      }
+    })
+
+    const uniqueAreas = [...new Set(portAreaBindings.map((binding) => binding.area).filter(Boolean))]
+
+    uniqueAreas.forEach((area) => {
+      const portIdsForArea = portAreaBindings
+        .filter((binding) => binding.area === area)
+        .map((binding) => binding.portId)
+
+      const cached = portsByAreaCacheRef.current.get(area)
+      if (cached) {
+        setPortsByField((prev) => {
+          const next = { ...prev }
+          portIdsForArea.forEach((portId) => {
+            next[portId] = cached
+          })
+          return next
+        })
+        setIsLoadingPortsByField((prev) => {
+          const next = { ...prev }
+          portIdsForArea.forEach((portId) => {
+            next[portId] = false
+          })
+          return next
+        })
         return
       }
 
-      setIsLoadingPortsByField((prev) => ({ ...prev, [portId]: true }))
+      portIdsForArea.forEach((portId) => {
+        setIsLoadingPortsByField((prev) => ({ ...prev, [portId]: true }))
+      })
+
       portService
         .getPortsByArea(area)
         .then((rows) => {
-          if (!cancelled) {
-            setPortsByField((prev) => ({ ...prev, [portId]: rows }))
-          }
+          if (cancelled) return
+          portsByAreaCacheRef.current.set(area, rows)
+          setPortsByField((prev) => {
+            const next = { ...prev }
+            portIdsForArea.forEach((portId) => {
+              next[portId] = rows
+            })
+            return next
+          })
         })
         .catch(() => {
           if (!cancelled) {
-            setPortsByField((prev) => ({ ...prev, [portId]: [] }))
+            setPortsByField((prev) => {
+              const next = { ...prev }
+              portIdsForArea.forEach((portId) => {
+                next[portId] = []
+              })
+              return next
+            })
           }
         })
         .finally(() => {
           if (!cancelled) {
-            setIsLoadingPortsByField((prev) => ({ ...prev, [portId]: false }))
+            setIsLoadingPortsByField((prev) => {
+              const next = { ...prev }
+              portIdsForArea.forEach((portId) => {
+                next[portId] = false
+              })
+              return next
+            })
           }
         })
     })
@@ -243,7 +310,7 @@ export function FormSection({
     return () => {
       cancelled = true
     }
-  }, [allFields, formData, isShippingAgencyForm])
+  }, [portAreaBindings])
 
   const resolvedFields = useMemo(() => {
     const portOptionsByField: Record<string, CargoSelectOption[] | undefined> = {}
@@ -253,6 +320,13 @@ export function FormSection({
 
     if (!isShippingAgencyForm) {
       return allFields.map((field) => {
+        if (field.type === 'port' && getPortAreaFieldId(field.id, allFields)) {
+          return {
+            ...field,
+            selectOptions: portOptionsByField[field.id] ?? [],
+            options: undefined,
+          }
+        }
         if (field.type === 'port' && portOptionsByField[field.id]?.length) {
           return { ...field, selectOptions: portOptionsByField[field.id], options: undefined }
         }
@@ -274,6 +348,13 @@ export function FormSection({
       }
       if (field.id === 'cargoName' && cargoNameOptions.length > 0) {
         return { ...field, selectOptions: cargoNameOptions, options: undefined }
+      }
+      if (field.type === 'port' && getPortAreaFieldId(field.id, allFields)) {
+        return {
+          ...field,
+          selectOptions: portOptionsByField[field.id] ?? [],
+          options: undefined,
+        }
       }
       if (field.type === 'port' && portOptionsByField[field.id]?.length) {
         return { ...field, selectOptions: portOptionsByField[field.id], options: undefined }
@@ -628,17 +709,13 @@ export function FormSection({
     }
     
     if (field.type === 'port') {
-      if (field.selectOptions?.length) {
-        const areaFieldByPortId: Record<string, string> = {
-          portOfCall: 'portArea',
-          loadingPort: 'loadingArea',
-          dischargingPort: 'dischargingArea',
-        }
-        const areaFieldId = areaFieldByPortId[field.id]
-        const areaValue = areaFieldId ? (formData[areaFieldId] || '').trim() : ''
-        const isAreaDriven = Boolean(areaFieldId)
-        const isLoadingPorts = Boolean(isLoadingPortsByField[field.id])
+      const areaFieldId = getPortAreaFieldId(field.id, allFields)
+      const areaValue = areaFieldId ? (formData[areaFieldId] || '').trim() : ''
+      const isAreaDriven = Boolean(areaFieldId)
+      const isLoadingPorts = Boolean(isLoadingPortsByField[field.id])
+      const areaNotSelected = isAreaDriven && areaValue === ''
 
+      if (field.selectOptions !== undefined) {
         return (
           <ComboboxSelect
             id={field.id}
@@ -646,17 +723,13 @@ export function FormSection({
             onChange={(v) => onChange(field.id, v)}
             selectOptions={field.selectOptions}
             placeholder={
-              isAreaDriven && areaValue === ''
+              areaNotSelected
                 ? 'Select area first'
                 : isLoadingPorts
                   ? 'Loading ports…'
                   : field.placeholder || 'Select port'
             }
-            disabled={
-              disabled ||
-              (isAreaDriven && areaValue === '') ||
-              isLoadingPorts
-            }
+            disabled={disabled || areaNotSelected || isLoadingPorts}
             enableSearch
           />
         )
@@ -667,8 +740,8 @@ export function FormSection({
           value={value}
           onChange={e => onChange(field.id, e.target.value)}
           required={field.required}
-          placeholder={field.placeholder || 'Enter port'}
-          disabled={disabled}
+          placeholder={areaNotSelected ? 'Select area first' : (field.placeholder || 'Enter port')}
+          disabled={disabled || areaNotSelected}
           className="bg-white"
         />
       )
@@ -742,14 +815,14 @@ export function FormSection({
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary mb-3">
                 Inquiry
               </p>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tighter leading-none text-slate-900 text-balance">
+              <h2 className="landing-section-title">
                 {form.sectionTitle}
               </h2>
               {form.badgeText && (
                 <Badge className="mt-3 rounded-full px-3 py-1">{form.badgeText}</Badge>
               )}
             </div>
-            <p className="text-base text-slate-600 leading-relaxed max-w-[52ch]">
+            <p className="landing-section-lead max-w-[52ch]">
               {form.sectionDescription}
             </p>
           </div>

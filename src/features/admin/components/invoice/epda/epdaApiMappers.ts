@@ -1,4 +1,9 @@
 import type { BuildInvoiceQuoteDataParams } from '@/features/admin/components/invoice/buildInvoiceQuoteData'
+import {
+  DEFAULT_GARBAGE_CBM_AMOUNT,
+  getDefaultGarbageUsdRate,
+  resolveGarbageUsdRate,
+} from '@/features/admin/components/invoice/garbageFeeDefaults'
 import { quoteFormFromStored } from '@/features/admin/components/invoice/epda/quoteFormFromArea'
 
 /** Admin inquiry row from GET /admin/inquiries/shipping-agency/:id */
@@ -39,11 +44,13 @@ export type ShippingAgencyAdminInquiry = {
   shipType?: string | null
   oceanFrtRateUsdPerMt?: string | number | null
   garbageCbmAmount?: string | number | null
+  garbageUsdRate?: string | number | null
   quarantineCargoMode?: string | null
   agencyFeeMode?: string | null
   agencyDiscountPercent?: string | number | null
   agencyLumpsumAmount?: string | number | null
   epdaSnapshot?: Record<string, unknown> | null
+  customerSubmittedSnapshot?: Record<string, string> | null
 }
 
 export type EpdaApiPayload = Record<string, unknown>
@@ -114,7 +121,10 @@ export function buildEpdaPatchPayload(
     epdaDocumentDate: params.formCreatedDate,
     shipType: params.shipType,
     oceanFrtRateUsdPerMt: toNum(params.oceanFrtRateUsdPerMt),
-    garbageCbmAmount: toNum(params.garbageCbmAmount),
+    garbageCbmAmount: toNum(params.garbageCbmAmount) ?? Number(DEFAULT_GARBAGE_CBM_AMOUNT),
+    garbageUsdRate:
+      toNum(params.garbageUsdRate) ??
+      resolveGarbageUsdRate(params.quoteForm, params.garbageUsdRate),
     quarantineCargoMode: mapQuarantineModeToApi(params.quarantineCargoMode),
     agencyFeeMode: mapAgencyFeeModeToApi(params.agencyFeeMode),
     agencyDiscountPercent: toNum(params.agencyDiscountPercent),
@@ -163,7 +173,10 @@ export function buildInternalCreatePayload(
         ? toNum(params.qnPilotageMiles) ?? 5
         : toNum(params.pilotageThirdMiles) ?? 17,
     oceanFrtRateUsdPerMt: toNum(params.oceanFrtRateUsdPerMt),
-    garbageCbmAmount: toNum(params.garbageCbmAmount) ?? 1,
+    garbageCbmAmount: toNum(params.garbageCbmAmount) ?? Number(DEFAULT_GARBAGE_CBM_AMOUNT),
+    garbageUsdRate:
+      toNum(params.garbageUsdRate) ??
+      resolveGarbageUsdRate(params.quoteForm, params.garbageUsdRate),
     quarantineCargoMode: mapQuarantineModeToApi(params.quarantineCargoMode),
     agencyFeeMode: mapAgencyFeeModeToApi(params.agencyFeeMode),
     agencyDiscountPercent: toNum(params.agencyDiscountPercent),
@@ -192,6 +205,7 @@ export function applyAdminInquiryToForm(
     setQnPilotageMiles: (v: string) => void
     setShipType: (v: string) => void
     setOceanFrtRateUsdPerMt: (v: string) => void
+    setGarbageUsdRate: (v: string) => void
     setGarbageCbmAmount: (v: string) => void
     setQuarantineCargoMode: (v: string) => void
     setAgencyFeeMode: (v: string) => void
@@ -226,7 +240,10 @@ export function applyAdminInquiryToForm(
   setters.setQnPilotageMiles(pilotage)
   setters.setShipType(toStr(inquiry.shipType) ?? 'BULK_SHIP')
   setters.setOceanFrtRateUsdPerMt(toStr(inquiry.oceanFrtRateUsdPerMt) ?? '')
-  setters.setGarbageCbmAmount(toStr(inquiry.garbageCbmAmount) ?? '1')
+  setters.setGarbageCbmAmount(toStr(inquiry.garbageCbmAmount) ?? DEFAULT_GARBAGE_CBM_AMOUNT)
+  setters.setGarbageUsdRate(
+    toStr(inquiry.garbageUsdRate) ?? getDefaultGarbageUsdRate(form),
+  )
   setters.setQuarantineCargoMode(mapQuarantineModeFromApi(inquiry.quarantineCargoMode))
   setters.setAgencyFeeMode(mapAgencyFeeModeFromApi(inquiry.agencyFeeMode))
   setters.setAgencyDiscountPercent(toStr(inquiry.agencyDiscountPercent) ?? '')

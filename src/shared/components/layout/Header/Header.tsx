@@ -22,6 +22,8 @@ import { menuData } from './menuData'
 import { UserNav } from './UserNav'
 import { useAuth } from '@/modules/auth/context/AuthContext'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
+import { getRoleGroup } from '@/shared/utils/auth'
+import { NotificationBell } from '@/modules/notifications/components/NotificationBell'
 
 /**
  * Liquid-drop transition — ease-out-back curve produces a water-droplet
@@ -45,9 +47,9 @@ const LIQUID =
  * giving the pill a clear "compressed and grounded" feel.
  */
 const GLASS_TOP =
-  'shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_hsla(217,33%,17%,0.02),0_4px_18px_-10px_hsla(217,30%,30%,0.12)]'
+  'shadow-[inset_0_1px_0_hsl(var(--surface-highlight)/0.6),inset_0_-1px_0_hsl(var(--foreground)/0.02),0_4px_18px_-10px_hsl(var(--primary)/0.12)]'
 const GLASS_SCROLLED =
-  'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_hsla(217,33%,17%,0.08),0_28px_60px_-24px_hsla(217,45%,35%,0.4)]'
+  'shadow-[inset_0_1px_0_hsl(var(--surface-highlight)/0.45),inset_0_-1px_0_hsl(var(--foreground)/0.08),0_28px_60px_-24px_hsl(var(--primary)/0.4)]'
 
 /**
  * Perpetual brand mark — Ship icon bobs gently as if floating on water.
@@ -81,6 +83,8 @@ export default function Header() {
   const navSentinelRef = useRef<HTMLDivElement | null>(null)
   const router = useRouter()
   const pathname = usePathname()
+  const roleGroup = getRoleGroup(user)
+  const showCustomerNotifications = isAuthenticated && roleGroup === 'EXTERNAL'
 
   // Liquid-drop island: morph to compact state when sentinel leaves viewport
   // (i.e. user has scrolled past the first 64px), morph back when it returns.
@@ -177,12 +181,17 @@ export default function Header() {
                   {!profileComplete && (
                     <Badge
                       variant="outline"
-                      className="hidden items-center gap-1 border-amber-200 bg-amber-50 text-amber-700 lg:flex"
+                      className="hidden items-center gap-1 border-warning/30 bg-warning/10 text-warning lg:flex"
                     >
                       <AlertTriangle className="h-3 w-3" />
                       Complete profile
                     </Badge>
                   )}
+                  {showCustomerNotifications ? (
+                    <NotificationBell
+                      onNavigateToInquiries={() => handleNavigate('/dashboard?section=inquiry')}
+                    />
+                  ) : null}
                   <UserNav user={user} onLogout={logout} />
                 </div>
               ) : (
@@ -268,7 +277,7 @@ export default function Header() {
                         {!profileComplete && (
                           <Button
                             variant="outline"
-                            className="w-full justify-start border-amber-200 text-amber-700"
+                            className="w-full justify-start border-warning/30 text-warning"
                             onClick={() => handleNavigate('/dashboard')}
                           >
                             <AlertTriangle className="mr-2 h-4 w-4" />

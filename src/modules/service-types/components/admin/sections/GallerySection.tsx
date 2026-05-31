@@ -44,7 +44,7 @@ function GalleryCard({
         <DialogTrigger asChild>
           <button
             type="button"
-            className="group relative w-full h-full rounded-[10px] overflow-hidden bg-[#EDEDEA] block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111] focus-visible:ring-offset-2"
+            className="group relative w-full h-full rounded-[10px] overflow-hidden bg-muted block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <ImageWithFallback
               src={getImageUrl(image.url)}
@@ -61,10 +61,10 @@ function GalleryCard({
             />
 
             {/* Scrim */}
-            <div className="absolute inset-0 bg-[#111]/0 group-hover:bg-[#111]/48 transition-colors duration-300" />
+            <div className="absolute inset-0 bg-scrim/0 group-hover:bg-scrim/48 transition-colors duration-300" />
 
             {/* Meta — slides up on hover */}
-            <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 pt-12 bg-gradient-to-t from-[#111]/72 to-transparent translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+            <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 pt-12 bg-gradient-to-t from-scrim/72 to-transparent translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
               <p className="text-[10px] font-semibold text-white/60 uppercase tracking-[0.14em] mb-0.5">
                 {image.commodityName}
               </p>
@@ -79,7 +79,7 @@ function GalleryCard({
         </DialogTrigger>
 
         {/* Lightbox */}
-        <DialogContent className="max-w-5xl w-full p-0 bg-[#0E0E0E] border-[#222] rounded-2xl overflow-hidden">
+        <DialogContent className="max-w-5xl w-full p-0 bg-scrim border-border rounded-2xl overflow-hidden">
           <DialogTitle className="sr-only">{image.portName}</DialogTitle>
           <DialogDescription className="sr-only">
             {`${image.commodityName} — ${image.provinceName}`}
@@ -93,7 +93,7 @@ function GalleryCard({
               priority
               className="w-full h-auto max-h-[88vh] object-contain"
             />
-            <div className="absolute bottom-0 left-0 right-0 px-6 py-4 bg-gradient-to-t from-[#0E0E0E] to-transparent">
+            <div className="absolute bottom-0 left-0 right-0 px-6 py-4 bg-gradient-to-t from-scrim to-transparent">
               <p className="text-[10px] font-semibold text-white/50 uppercase tracking-[0.12em]">
                 {image.commodityName}
               </p>
@@ -112,28 +112,28 @@ function GallerySkeleton() {
     <div className="flex flex-col gap-3">
       {/* Top bento — desktop */}
       <div className="hidden md:flex gap-3" style={{ height: 420 }}>
-        <div className="flex-[2] min-w-0 rounded-[10px] bg-[#EDEDEA] animate-pulse" />
+        <div className="flex-[2] min-w-0 rounded-[10px] bg-muted animate-pulse" />
         <div className="flex-[1] min-w-0 flex flex-col gap-3">
           <div
-            className="flex-1 rounded-[10px] bg-[#EDEDEA] animate-pulse"
+            className="flex-1 rounded-[10px] bg-muted animate-pulse"
             style={{ animationDelay: '80ms' }}
           />
           <div
-            className="flex-1 rounded-[10px] bg-[#EDEDEA] animate-pulse"
+            className="flex-1 rounded-[10px] bg-muted animate-pulse"
             style={{ animationDelay: '160ms' }}
           />
         </div>
       </div>
       {/* Top bento — mobile */}
       <div className="flex flex-col gap-3 md:hidden">
-        <div className="aspect-video rounded-[10px] bg-[#EDEDEA] animate-pulse" />
+        <div className="aspect-video rounded-[10px] bg-muted animate-pulse" />
         <div className="grid grid-cols-2 gap-3">
           <div
-            className="aspect-[4/3] rounded-[10px] bg-[#EDEDEA] animate-pulse"
+            className="aspect-[4/3] rounded-[10px] bg-muted animate-pulse"
             style={{ animationDelay: '80ms' }}
           />
           <div
-            className="aspect-[4/3] rounded-[10px] bg-[#EDEDEA] animate-pulse"
+            className="aspect-[4/3] rounded-[10px] bg-muted animate-pulse"
             style={{ animationDelay: '160ms' }}
           />
         </div>
@@ -143,7 +143,7 @@ function GallerySkeleton() {
         {[240, 320, 400].map((delay, i) => (
           <div
             key={i}
-            className="aspect-[4/3] rounded-[10px] bg-[#EDEDEA] animate-pulse"
+            className="aspect-[4/3] rounded-[10px] bg-muted animate-pulse"
             style={{ animationDelay: `${delay}ms` }}
           />
         ))}
@@ -160,14 +160,14 @@ function EmptyGallery({ label }: { label?: string }) {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className={`rounded-[6px] bg-[#EDEDEA] ${i === 0 ? 'col-span-2 h-12' : 'h-12'}`}
+            className={`rounded-[6px] bg-muted ${i === 0 ? 'col-span-2 h-12' : 'h-12'}`}
           />
         ))}
       </div>
-      <p className="text-sm font-medium text-[#3F3F46]">
+      <p className="text-sm font-medium text-muted-foreground">
         {label ? `No images for "${label}"` : 'No images yet'}
       </p>
-      <p className="text-xs text-[#A1A1AA] max-w-[30ch] text-center leading-relaxed">
+      <p className="text-xs text-muted-foreground max-w-[30ch] text-center leading-relaxed">
         Field photos will appear here as the team uploads them.
       </p>
     </div>
@@ -415,14 +415,14 @@ export function GallerySection({
         transition={{ type: 'spring', stiffness: 110, damping: 22 }}
       >
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#71717A] mb-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">
             Field work
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold tracking-[-0.03em] leading-[1.05] text-[#111]">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-[-0.03em] leading-[1.05] text-foreground">
             {gallery.sectionTitle}
           </h2>
         </div>
-        <p className="text-base text-[#52525B] leading-relaxed max-w-[52ch]">
+        <p className="text-base text-muted-foreground leading-relaxed max-w-[52ch]">
           {gallery.sectionDescription}
         </p>
       </motion.div>
@@ -430,7 +430,7 @@ export function GallerySection({
       {/* ── Filter underline tabs ───────────────────────────────── */}
       {commodities.length > 0 && (
         <motion.div
-          className="flex flex-wrap items-center gap-0 mb-8 border-b border-[#E4E4E7]"
+          className="flex flex-wrap items-center gap-0 mb-8 border-b border-border"
           initial={isVisible ? undefined : { opacity: 0, y: 8 }}
           animate={isVisible ? { opacity: 1, y: 0 } : undefined}
           transition={{ delay: 0.08, type: 'spring', stiffness: 110, damping: 22 }}
@@ -445,14 +445,14 @@ export function GallerySection({
                 className={[
                   'relative px-4 py-2.5 text-sm font-medium transition-colors duration-150',
                   'focus-visible:outline-none',
-                  isActive ? 'text-[#111]' : 'text-[#A1A1AA] hover:text-[#3F3F46]',
+                  isActive ? 'text-foreground' : 'text-muted-foreground hover:text-muted-foreground',
                 ].join(' ')}
               >
                 {label}
                 {isActive && (
                   <motion.span
                     layoutId="gallery-filter-indicator"
-                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#111] rounded-full"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-foreground rounded-full"
                     transition={{ type: 'spring', stiffness: 340, damping: 30 }}
                   />
                 )}
@@ -466,15 +466,15 @@ export function GallerySection({
       {loading && <GallerySkeleton />}
 
       {!loading && error && (
-        <div className="flex flex-col items-center justify-center py-16 gap-4 text-[#71717A]">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F4F4F5]">
+        <div className="flex flex-col items-center justify-center py-16 gap-4 text-muted-foreground">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
             <X className="h-4 w-4" strokeWidth={1.5} />
           </div>
           <p className="text-sm">{error}</p>
           <button
             type="button"
             onClick={() => setCurrentPage(p => p)}
-            className="text-xs font-medium text-[#111] underline-offset-2 hover:underline"
+            className="text-xs font-medium text-foreground underline-offset-2 hover:underline"
           >
             Try again
           </button>
@@ -510,17 +510,17 @@ export function GallerySection({
             className={[
               'flex h-9 w-9 items-center justify-center rounded-full border',
               'transition-colors duration-150 focus-visible:outline-none',
-              'focus-visible:ring-2 focus-visible:ring-[#111]',
+              'focus-visible:ring-2 focus-visible:ring-ring',
               currentPage === 1
-                ? 'border-[#E4E4E7] text-[#D4D4D8] cursor-not-allowed'
-                : 'border-[#D4D4D8] text-[#3F3F46] hover:border-[#111] hover:text-[#111]',
+                ? 'border-border text-muted-foreground/60 cursor-not-allowed'
+                : 'border-border text-muted-foreground hover:border-foreground hover:text-foreground',
             ].join(' ')}
           >
             <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
           </button>
 
-          <span className="text-sm text-[#A1A1AA]">
-            <span className="font-semibold text-[#111] tabular-nums">{currentPage}</span>
+          <span className="text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground tabular-nums">{currentPage}</span>
           </span>
 
           <button
@@ -531,10 +531,10 @@ export function GallerySection({
             className={[
               'flex h-9 w-9 items-center justify-center rounded-full border',
               'transition-colors duration-150 focus-visible:outline-none',
-              'focus-visible:ring-2 focus-visible:ring-[#111]',
+              'focus-visible:ring-2 focus-visible:ring-ring',
               !hasNextPage
-                ? 'border-[#E4E4E7] text-[#D4D4D8] cursor-not-allowed'
-                : 'border-[#D4D4D8] text-[#3F3F46] hover:border-[#111] hover:text-[#111]',
+                ? 'border-border text-muted-foreground/60 cursor-not-allowed'
+                : 'border-border text-muted-foreground hover:border-foreground hover:text-foreground',
             ].join(' ')}
           >
             <ChevronRight className="h-4 w-4" strokeWidth={1.5} />

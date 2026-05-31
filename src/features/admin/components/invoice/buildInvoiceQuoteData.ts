@@ -1,5 +1,9 @@
 import type { QuoteData as HcmQuoteData } from '@/modules/inquiries/components/common/Quote-hcm'
 import type { QuoteData as QnQuoteData } from '@/modules/inquiries/components/common/Quote-qn'
+import {
+  DEFAULT_GARBAGE_CBM_AMOUNT,
+  resolveGarbageUsdRate,
+} from '@/features/admin/components/invoice/garbageFeeDefaults'
 import type { CargoTypeCatalogItem, Commodity } from '@/modules/gallery/services/commodityService'
 
 type InvoiceQuoteData = HcmQuoteData & QnQuoteData
@@ -28,6 +32,7 @@ export interface BuildInvoiceQuoteDataParams {
   frtTaxType: string
   shouldIncludeOceanFrtRate: boolean
   oceanFrtRateUsdPerMt: string
+  garbageUsdRate: string
   garbageCbmAmount: string
   purposeOfCalling: string
   dischargeLoadingLocation: string
@@ -77,7 +82,9 @@ export function buildInvoiceQuoteData(params: BuildInvoiceQuoteDataParams): Invo
       params.shouldIncludeOceanFrtRate && params.oceanFrtRateUsdPerMt
         ? Number(params.oceanFrtRateUsdPerMt)
         : undefined,
-    garbage_cbm_amount: toNumberOrUndefined(params.garbageCbmAmount),
+    garbage_usd_rate: resolveGarbageUsdRate(params.quoteForm, params.garbageUsdRate),
+    garbage_cbm_amount:
+      toNumberOrUndefined(params.garbageCbmAmount) ?? Number(DEFAULT_GARBAGE_CBM_AMOUNT),
     purpose_of_calling: params.purposeOfCalling,
     at_berth: params.dischargeLoadingLocation === 'Berth' ? 'X' : undefined,
     at_anchorage: params.dischargeLoadingLocation === 'Anchorage' ? 'X' : undefined,

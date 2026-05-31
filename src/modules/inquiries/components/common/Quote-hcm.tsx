@@ -28,6 +28,7 @@ export type QuoteData = {
   port_upper?: string
   loading_term?: string
   ocean_frt_rate_usd_per_mt?: string | number
+  garbage_usd_rate?: string | number
   garbage_cbm_amount?: string | number
   at_anchorage?: string
   at_berth?: string
@@ -207,6 +208,7 @@ const buildAARows = (
     cargoQtyMt?: string | number
     quarantineCargoTrips?: string | number
     oceanFrtRateUsdPerMt?: string | number
+    garbageUsdRate?: string | number
     garbageCbmAmount?: string | number
   },
 ): { html: string; total?: string } => {
@@ -386,11 +388,13 @@ const buildAARows = (
     const clearanceFeesValue = 50
     const clearanceFees = formatAmount(clearanceFeesValue)
 
-    const garbageRemovalValue = mooringLocation === 'anchorage' ? 55 : 35
     const berthDaysNumeric = berthHoursValue / 24
+    const garbageUsdNumeric = toNumber(options?.garbageUsdRate)
+    const garbageUsdRate = garbageUsdNumeric !== null && garbageUsdNumeric > 0 ? garbageUsdNumeric : 54
     const garbageCbmNumeric = toNumber(options?.garbageCbmAmount)
     const garbageCbmAmount = garbageCbmNumeric !== null && garbageCbmNumeric > 0 ? garbageCbmNumeric : 1
-    const garbageRemovalValueFinal = garbageRemovalValue * Math.ceil(berthDaysNumeric / 2) * garbageCbmAmount
+    const garbageRemovalValueFinal =
+      garbageUsdRate * Math.ceil(berthDaysNumeric / 2) * garbageCbmAmount
     const garbageCbmAddText = garbageCbmAmount > 1 ? `${formatCbm(garbageCbmAmount)} cbm` : ''
     const garbageRemoval = formatAmount(garbageRemovalValueFinal)
     
@@ -483,7 +487,7 @@ const buildAARows = (
     pushNumbered({ item: 'Clearance fees', details: '(outward clearance)', amount: clearanceFees })
     pushNumbered({
       item: 'Garbage removal fee',
-      details: mooringLocation === 'anchorage' ? 'USD 55/cbm/2 days/time' : 'USD 35/cbm/2 days/time',
+      details: `USD ${garbageUsdRate}/cbm/2 days/time`,
       add: garbageCbmAddText,
       amount: garbageRemoval,
     })
@@ -718,6 +722,7 @@ export const renderQuoteHtml = (template: string, data: QuoteData) => {
     cargoQtyMt: normalizedData.cargo_qty_mt,
     quarantineCargoTrips: normalizedData.quarantine_cargo_trips,
     oceanFrtRateUsdPerMt: normalizedData.ocean_frt_rate_usd_per_mt,
+    garbageUsdRate: normalizedData.garbage_usd_rate,
     garbageCbmAmount: normalizedData.garbage_cbm_amount,
   })
 

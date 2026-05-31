@@ -35,6 +35,7 @@ export const API_CONFIG = {
     ME: '/auth/me',
     LOGOUT: '/auth/logout',
     SESSION: '/auth/session',
+    GOOGLE_OAUTH: '/auth/oauth2/google',
   },
 
   PROVINCES: {
@@ -99,6 +100,7 @@ export const API_CONFIG = {
     LATEST: '/posts/latest',
     PUBLIC_BASE: '/posts',
     PUBLIC_BY_ID: (id: number) => `/posts/${id}`,
+    PUBLIC_RECORD_VIEW: (id: number) => `/posts/${id}/view`,
     ADMIN_BASE: '/admin/posts',
     ADMIN_BY_ID: (id: number) => `/admin/posts/${id}`,
   },
@@ -132,6 +134,10 @@ export const API_CONFIG = {
       `/admin/inquiries/shipping-agency/${id}/epda`,
     ADMIN_SHIPPING_AGENCY_EPDA_ISSUE: (id: number) =>
       `/admin/inquiries/shipping-agency/${id}/epda/issue`,
+    ADMIN_SHIPPING_AGENCY_FIELD_CHANGES: (id: number, page = 0, size = 6) =>
+      `/admin/inquiries/shipping-agency/${id}/epda/field-changes?page=${page}&size=${size}`,
+    ADMIN_SHIPPING_AGENCY_CUSTOMER_FIELD_CHANGES: (id: number) =>
+      `/admin/inquiries/shipping-agency/${id}/epda/customer-field-changes`,
     USER_BATCH_DELETE: '/inquiries/batch',
     ADMIN_BATCH_DELETE: '/admin/inquiries/batch',
   },
@@ -149,6 +155,13 @@ export const API_CONFIG = {
       const base = `/inquiries/${serviceSlug}/${targetId}/documents/${documentId}/content`
       return disposition ? `${base}?disposition=${disposition}` : base
     },
+  },
+
+  NOTIFICATIONS: {
+    BASE: '/notifications',
+    UNREAD_COUNT: '/notifications/unread-count',
+    READ_ALL: '/notifications/read-all',
+    MARK_READ: (id: number) => `/notifications/${id}/read`,
   },
 } as const
 

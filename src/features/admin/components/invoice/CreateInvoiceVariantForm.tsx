@@ -15,6 +15,12 @@ import {
   epdaFieldGridClass,
   type EpdaSummaryItem,
 } from './EpdaFormLayout'
+import type { EpdaCustomerTrackedField } from './epda/epdaCustomerFieldTracking'
+import { mergeEpdaFieldClasses } from './epda/epdaCustomerFieldTracking'
+import {
+  DEFAULT_GARBAGE_CBM_AMOUNT,
+  getDefaultGarbageUsdRate,
+} from './garbageFeeDefaults'
 
 export type FormVariant = 'QN' | 'HCM'
 
@@ -55,6 +61,7 @@ export interface InvoiceVariantFormProps {
     anchorageHours: string
     qnPilotageMiles: string
     pilotageThirdMiles: string
+    garbageUsdRate: string
     garbageCbmAmount: string
     purposeOfCalling: PurposeOption | ''
     quarantineCargoMode: QuarantineCargoOption
@@ -84,6 +91,7 @@ export interface InvoiceVariantFormProps {
     setAnchorageHours: (value: string) => void
     setQnPilotageMiles: (value: string) => void
     setPilotageThirdMiles: (value: string) => void
+    setGarbageUsdRate: (value: string) => void
     setGarbageCbmAmount: (value: string) => void
     setPurposeOfCalling: (value: PurposeOption) => void
     setQuarantineCargoMode: (value: QuarantineCargoOption) => void
@@ -118,6 +126,7 @@ export interface InvoiceVariantFormProps {
     frtHint: string
   }
   getRequiredState: (value: string | null | undefined) => { labelClass: string; fieldClass: string }
+  getCustomerFieldClass?: (field: EpdaCustomerTrackedField) => string
 }
 
 export function CreateInvoiceVariantForm({
@@ -127,8 +136,19 @@ export function CreateInvoiceVariantForm({
   options,
   computed,
   getRequiredState,
+  getCustomerFieldClass,
 }: InvoiceVariantFormProps) {
   const disabledFieldTextClass = 'disabled:text-muted-foreground disabled:placeholder:text-muted-foreground'
+  const customerClass = (field: EpdaCustomerTrackedField, value: string | null | undefined) =>
+    mergeEpdaFieldClasses(
+      getRequiredState(value).fieldClass,
+      getCustomerFieldClass?.(field) ?? '',
+    )
+  const customerLabelClass = (field: EpdaCustomerTrackedField, value: string | null | undefined) =>
+    mergeEpdaFieldClasses(
+      getRequiredState(value).labelClass,
+      getCustomerFieldClass?.(field) ? 'text-emerald-700 dark:text-emerald-400' : '',
+    )
   const isBoatHireForAgencyEnabled = values.dischargeLoadingLocation === 'Anchorage'
   const isHcmAnchorage = variant === 'HCM' && values.dischargeLoadingLocation === 'Anchorage'
   const normalizeCargoType = (value: string) => value.trim().toUpperCase().replace(/[\s-]+/g, '_')
@@ -211,7 +231,7 @@ export function CreateInvoiceVariantForm({
       >
         <div className={epdaFieldGridClass()}>
           <div className="grid gap-2">
-            <Label htmlFor="toShipowner" className={getRequiredState(values.toShipowner).labelClass}>
+            <Label htmlFor="toShipowner" className={customerLabelClass('toShipowner', values.toShipowner)}>
               To (ship owner / company) *
             </Label>
             <Input
@@ -219,13 +239,13 @@ export function CreateInvoiceVariantForm({
               value={values.toShipowner}
               onChange={(e) => handlers.setToShipowner(e.target.value)}
               placeholder="Enter shipowner or company name"
-              className={getRequiredState(values.toShipowner).fieldClass}
+              className={customerClass('toShipowner', values.toShipowner)}
               required
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="mv" className={getRequiredState(values.mv).labelClass}>
+            <Label htmlFor="mv" className={customerLabelClass('mv', values.mv)}>
               M/V (vessel name) *
             </Label>
             <Input
@@ -233,27 +253,38 @@ export function CreateInvoiceVariantForm({
               value={values.mv}
               onChange={(e) => handlers.setMv(e.target.value)}
               placeholder="Enter vessel name"
-              className={getRequiredState(values.mv).fieldClass}
+              className={customerClass('mv', values.mv)}
               required
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="eta">ETA (date)</Label>
-            <DatePicker id="eta" value={values.eta} onChange={handlers.setEta} placeholder="TBN" />
+            <Label
+              htmlFor="eta"
+              className={getCustomerFieldClass?.('eta') ? 'text-emerald-700 dark:text-emerald-400' : undefined}
+            >
+              ETA (date)
+            </Label>
+            <DatePicker
+              id="eta"
+              value={values.eta}
+              onChange={handlers.setEta}
+              placeholder="TBN"
+              className={getCustomerFieldClass?.('eta') ?? ''}
+            />
           </div>
 
           <div className="grid gap-2">
             <Label
               htmlFor="dischargeLoadingLocation"
-              className={getRequiredState(values.dischargeLoadingLocation).labelClass}
+              className={customerLabelClass('dischargeLoadingLocation', values.dischargeLoadingLocation)}
             >
               Discharge / loading at *
             </Label>
             <Select value={values.dischargeLoadingLocation} onValueChange={handlers.setDischargeLoadingLocation}>
               <SelectTrigger
                 id="dischargeLoadingLocation"
-                className={getRequiredState(values.dischargeLoadingLocation).fieldClass}
+                className={customerClass('dischargeLoadingLocation', values.dischargeLoadingLocation)}
               >
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
@@ -267,7 +298,7 @@ export function CreateInvoiceVariantForm({
 
         <div className={epdaFieldGridClass()}>
           <div className="grid gap-2">
-            <Label htmlFor="dwt" className={getRequiredState(values.dwt).labelClass}>
+            <Label htmlFor="dwt" className={customerLabelClass('dwt', values.dwt)}>
               DWT (tons) *
             </Label>
             <Input
@@ -276,12 +307,14 @@ export function CreateInvoiceVariantForm({
               value={values.dwt}
               onChange={(e) => handlers.setDwt(e.target.value)}
               placeholder="Deadweight tonnage"
-              className={getRequiredState(values.dwt).fieldClass}
+              min="0"
+              step="any"
+              className={customerClass('dwt', values.dwt)}
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="grt" className={getRequiredState(values.grt).labelClass}>
+            <Label htmlFor="grt" className={customerLabelClass('grt', values.grt)}>
               GRT (tons) *
             </Label>
             <Input
@@ -290,12 +323,14 @@ export function CreateInvoiceVariantForm({
               value={values.grt}
               onChange={(e) => handlers.setGrt(e.target.value)}
               placeholder="Gross register tonnage"
-              className={getRequiredState(values.grt).fieldClass}
+              min="0"
+              step="any"
+              className={customerClass('grt', values.grt)}
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="loa" className={getRequiredState(values.loa).labelClass}>
+            <Label htmlFor="loa" className={customerLabelClass('loa', values.loa)}>
               LOA (meters) *
             </Label>
             <div className="relative">
@@ -305,7 +340,9 @@ export function CreateInvoiceVariantForm({
                 value={values.loa}
                 onChange={(e) => handlers.setLoa(e.target.value)}
                 placeholder="Length overall"
-                className={`pr-8 ${getRequiredState(values.loa).fieldClass}`}
+                min="0"
+                step="any"
+                className={mergeEpdaFieldClasses('pr-8', customerClass('loa', values.loa))}
               />
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                 m
@@ -314,7 +351,7 @@ export function CreateInvoiceVariantForm({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="cargoQty" className={getRequiredState(values.cargoQty).labelClass}>
+            <Label htmlFor="cargoQty" className={customerLabelClass('cargoQty', values.cargoQty)}>
               Quantity (tons) *
             </Label>
             <Input
@@ -323,7 +360,9 @@ export function CreateInvoiceVariantForm({
               value={values.cargoQty}
               onChange={(e) => handlers.setCargoQty(e.target.value)}
               placeholder="e.g. 15000"
-              className={getRequiredState(values.cargoQty).fieldClass}
+              min="0"
+              step="any"
+              className={customerClass('cargoQty', values.cargoQty)}
               required
             />
           </div>
@@ -347,7 +386,7 @@ export function CreateInvoiceVariantForm({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="cargoType" className={getRequiredState(values.cargoType).labelClass}>
+            <Label htmlFor="cargoType" className={customerLabelClass('cargoType', values.cargoType)}>
               Cargo type *
             </Label>
             <Select
@@ -357,7 +396,10 @@ export function CreateInvoiceVariantForm({
             >
               <SelectTrigger
                 id="cargoType"
-                className={`${getRequiredState(values.cargoType).fieldClass} disabled:text-muted-foreground`}
+                className={mergeEpdaFieldClasses(
+                  customerClass('cargoType', values.cargoType),
+                  'disabled:text-muted-foreground',
+                )}
               >
                 <SelectValue
                   placeholder={
@@ -380,11 +422,11 @@ export function CreateInvoiceVariantForm({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="cargoName" className={getRequiredState(values.cargoName).labelClass}>
+            <Label htmlFor="cargoName" className={customerLabelClass('cargoName', values.cargoName)}>
               Cargo name *
             </Label>
             <Select value={values.cargoName} onValueChange={handlers.setCargoName}>
-              <SelectTrigger id="cargoName" className={getRequiredState(values.cargoName).fieldClass}>
+              <SelectTrigger id="cargoName" className={customerClass('cargoName', values.cargoName)}>
                 <SelectValue
                   placeholder={
                     computed.isLoadingCargoCatalog
@@ -414,7 +456,7 @@ export function CreateInvoiceVariantForm({
       >
         <EpdaComputedSummary items={duesSummaryItems} />
 
-        <div className={epdaFieldGridClass()}>
+        <div className={`${epdaFieldGridClass()} xl:grid-rows-2`}>
           <div className="grid gap-2">
             <Label htmlFor="berthHours">{isHcmAnchorage ? 'Buoy due (hours)' : 'Berth due (hours)'}</Label>
             <Input
@@ -461,29 +503,40 @@ export function CreateInvoiceVariantForm({
             </div>
           )}
 
-          <div className="grid gap-2">
-            <Label htmlFor="garbageCbmAmount">Garbage (cbm)</Label>
-            <Input
-              id="garbageCbmAmount"
-              type="number"
-              value={values.garbageCbmAmount}
-              onChange={(e) => handlers.setGarbageCbmAmount(e.target.value)}
-              placeholder="Default 1"
-              min="1"
-            />
+          <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-muted/25 p-3 xl:row-span-2 xl:self-stretch">
+            <div className="grid gap-2">
+              <Label htmlFor="garbageUsdRate">Garbage ($)</Label>
+              <Input
+                id="garbageUsdRate"
+                type="number"
+                value={values.garbageUsdRate || getDefaultGarbageUsdRate(variant)}
+                onChange={(e) => handlers.setGarbageUsdRate(e.target.value)}
+                min="0"
+                step="any"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="garbageCbmAmount">Garbage (cbm)</Label>
+              <Input
+                id="garbageCbmAmount"
+                type="number"
+                value={values.garbageCbmAmount || DEFAULT_GARBAGE_CBM_AMOUNT}
+                onChange={(e) => handlers.setGarbageCbmAmount(e.target.value)}
+                min="1"
+                step="any"
+              />
+            </div>
           </div>
-        </div>
 
-        <div className={epdaFieldGridClass(3)}>
           <div className="grid gap-2">
-            <Label htmlFor="purposeOfCalling" className={getRequiredState(values.purposeOfCalling).labelClass}>
+            <Label htmlFor="purposeOfCalling" className={customerLabelClass('purposeOfCalling', values.purposeOfCalling)}>
               Purpose of calling *
             </Label>
             <Select
               value={values.purposeOfCalling}
               onValueChange={(value) => handlers.setPurposeOfCalling(value as PurposeOption)}
             >
-              <SelectTrigger id="purposeOfCalling" className={getRequiredState(values.purposeOfCalling).fieldClass}>
+              <SelectTrigger id="purposeOfCalling" className={customerClass('purposeOfCalling', values.purposeOfCalling)}>
                 <SelectValue placeholder="Select purpose" />
               </SelectTrigger>
               <SelectContent>
@@ -520,7 +573,7 @@ export function CreateInvoiceVariantForm({
               htmlFor="frtTaxType"
               className={
                 computed.canEnableFreightTaxDeclaration
-                  ? getRequiredState(values.frtTaxType).labelClass
+                  ? customerLabelClass('frtTaxType', values.frtTaxType)
                   : 'text-muted-foreground'
               }
             >
@@ -533,7 +586,10 @@ export function CreateInvoiceVariantForm({
             >
               <SelectTrigger
                 id="frtTaxType"
-                className={`${getRequiredState(values.frtTaxType).fieldClass} disabled:text-muted-foreground`}
+                className={mergeEpdaFieldClasses(
+                  customerClass('frtTaxType', values.frtTaxType),
+                  'disabled:text-muted-foreground',
+                )}
               >
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
@@ -578,6 +634,8 @@ export function CreateInvoiceVariantForm({
               value={values.boatHireQuarantineAmount}
               onChange={(e) => handlers.setBoatHireQuarantineAmount(e.target.value)}
               placeholder="0"
+              min="0"
+              step="any"
             />
           </div>
 
@@ -594,6 +652,8 @@ export function CreateInvoiceVariantForm({
               value={values.tallyFeeAmount}
               onChange={(e) => handlers.setTallyFeeAmount(e.target.value)}
               placeholder={computed.isTallyFeeEligibleCargo ? '0' : 'Nil'}
+              min="0"
+              step="any"
               disabled={!computed.isTallyFeeEligibleCargo}
               className={disabledFieldTextClass}
             />
@@ -637,6 +697,8 @@ export function CreateInvoiceVariantForm({
                 value={values.agencyLumpsumAmount}
                 onChange={(e) => handlers.setAgencyLumpsumAmount(e.target.value)}
                 placeholder="0"
+                min="0"
+                step="any"
               />
             </div>
           </div>
@@ -651,6 +713,7 @@ export function CreateInvoiceVariantForm({
                   type="number"
                   min="0"
                   max="100"
+                  step="any"
                   value={values.agencyDiscountPercent}
                   onChange={(e) => handlers.setAgencyDiscountPercent(e.target.value)}
                   placeholder="0"
@@ -672,6 +735,8 @@ export function CreateInvoiceVariantForm({
                   placeholder={
                     isBoatHireForAgencyEnabled ? '0' : 'Available when discharge/loading is Anchorage'
                   }
+                  min="0"
+                  step="any"
                   disabled={!isBoatHireForAgencyEnabled}
                   className={disabledFieldTextClass}
                 />
@@ -685,6 +750,8 @@ export function CreateInvoiceVariantForm({
                   value={values.transportLs}
                   onChange={(e) => handlers.setTransportLs(e.target.value)}
                   placeholder="0"
+                  min="0"
+                  step="any"
                 />
               </div>
             </div>

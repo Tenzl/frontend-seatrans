@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { authService } from '@/modules/auth/services/authService'
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
+import { isInternalStaff } from '@/shared/utils/auth'
 
 interface PageResponse<T> {
   content: T[]
@@ -32,14 +33,18 @@ function toServiceTypeName(input?: string): string | undefined {
   return SERVICE_TYPE_NAME_MAP[trimmed] ?? trimmed
 }
 
+function shouldUseAdminInquiryApi(isAdmin: boolean): boolean {
+  return isAdmin && isInternalStaff(authService.getUser())
+}
+
 export function useInquiryData(options: UseInquiryDataOptions = {}) {
   const { serviceType, isAdmin = false } = options
-  
+
   const [inquiries, setInquiries] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const updateStatus = useCallback(async (id: number, status: string, serviceSlug?: string) => {
-    if (!isAdmin) return { success: false }
+    if (!shouldUseAdminInquiryApi(isAdmin)) return { success: false }
     const serviceName = toServiceTypeName(serviceSlug || serviceType)
     if (!serviceName) {
       throw new Error('serviceType is required to update status')
@@ -65,9 +70,10 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
   const fetchInquiries = useCallback(async () => {
     setIsLoading(true)
     setError(null)
+    const useAdminApi = shouldUseAdminInquiryApi(isAdmin)
     
     try {
-      if (!isAdmin) {
+      if (!useAdminApi) {
         // User endpoint - always filtered by JWT userId
         const user = authService.getUser()
         if (!user?.id) {
@@ -128,7 +134,8 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
 
   const deleteInquiries = useCallback(async (ids: number[]) => {
     try {
-      const endpoint = isAdmin
+      const useAdminApi = shouldUseAdminInquiryApi(isAdmin)
+      const endpoint = useAdminApi
         ? API_CONFIG.INQUIRIES.ADMIN_BATCH_DELETE
         : API_CONFIG.INQUIRIES.USER_BATCH_DELETE
       

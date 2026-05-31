@@ -1,6 +1,10 @@
 const API_ORIGIN =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '') || 'http://localhost:8080'
 
+/** Inline JSON-LD in root layout — re-run scripts/compute-jsonld-hash.mjs after schema edits */
+const ORGANIZATION_JSON_LD_HASH =
+  "'sha256-Xh+TGAhBK9uvuMTWMDuADN3VVSNwcgtcVGNqmO1KukE='"
+
 export function createCspNonce(): string {
   return Buffer.from(crypto.randomUUID()).toString('base64')
 }
@@ -12,6 +16,7 @@ export function buildContentSecurityPolicy(nonce: string): string {
     ? [
         "'self'",
         `'nonce-${nonce}'`,
+        ORGANIZATION_JSON_LD_HASH,
         "'strict-dynamic'",
         'https://www.googletagmanager.com',
         'https://www.google-analytics.com',
@@ -19,6 +24,7 @@ export function buildContentSecurityPolicy(nonce: string): string {
     : [
         "'self'",
         `'nonce-${nonce}'`,
+        ORGANIZATION_JSON_LD_HASH,
         "'strict-dynamic'",
         "'unsafe-eval'",
       ].join(' ')
@@ -32,6 +38,7 @@ export function buildContentSecurityPolicy(nonce: string): string {
     "base-uri 'self'",
     "object-src 'none'",
     "frame-ancestors 'none'",
+    "frame-src 'self' https://maps.google.com https://www.google.com https://google.com https://maps.googleapis.com",
     `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline' https:",
     "style-src-elem 'self' 'unsafe-inline' https:",

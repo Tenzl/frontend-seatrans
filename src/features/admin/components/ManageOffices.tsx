@@ -392,7 +392,7 @@ export function ManageOffices() {
                   <Building2 className="h-4 w-4" />
                   {office.city}
                   {office.isHeadquarter && (
-                    <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded">
+                    <span className="text-xs px-2 py-0.5 bg-warning/20 text-warning rounded">
                       HQ
                     </span>
                   )}

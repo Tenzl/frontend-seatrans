@@ -27,6 +27,7 @@ export type QuoteData = {
   port_upper?: string
   loading_term?: string
   ocean_frt_rate_usd_per_mt?: string | number
+  garbage_usd_rate?: string | number
   garbage_cbm_amount?: string | number
   at_anchorage?: string
   at_berth?: string
@@ -193,6 +194,7 @@ const buildAARows = (
     cargoQtyMt?: string | number
     quarantineCargoTrips?: string | number
     oceanFrtRateUsdPerMt?: string | number
+    garbageUsdRate?: string | number
     garbageCbmAmount?: string | number
   },
 ): { html: string; total?: string } => {
@@ -337,9 +339,11 @@ const buildAARows = (
     const clearanceFees = formatAmount(clearanceFeesValue)
 
     const berthDaysNumeric = berthHoursValue / 24
+    const garbageUsdNumeric = toNumber(options?.garbageUsdRate)
+    const garbageUsdRate = garbageUsdNumeric !== null && garbageUsdNumeric > 0 ? garbageUsdNumeric : 17
     const garbageCbmNumeric = toNumber(options?.garbageCbmAmount)
     const garbageCbmAmount = garbageCbmNumeric !== null && garbageCbmNumeric > 0 ? garbageCbmNumeric : 1
-    const garbageRemovalValue = Math.ceil(berthDaysNumeric / 2) * 17 * garbageCbmAmount
+    const garbageRemovalValue = Math.ceil(berthDaysNumeric / 2) * garbageUsdRate * garbageCbmAmount
     const garbageCbmAddText = garbageCbmAmount > 1 ? `${formatCbm(garbageCbmAmount)} cbm` : ''
     const garbageRemoval = formatAmount(garbageRemovalValue)
     
@@ -401,7 +405,7 @@ const buildAARows = (
     defaultRows.push({ item: 'Clearance fees', details: '(In/Outward clearance)', amount: clearanceFees })
     defaultRows.push({
       item: 'Garbage removal fee',
-      details: 'USD17/cbm/2 days/time',
+      details: `USD${garbageUsdRate}/cbm/2 days/time`,
       add: garbageCbmAddText,
       amount: garbageRemoval,
     })
@@ -632,6 +636,7 @@ export const renderQuoteHtml = (template: string, data: QuoteData) => {
     cargoQtyMt: normalizedData.cargo_qty_mt,
     quarantineCargoTrips: normalizedData.quarantine_cargo_trips,
     oceanFrtRateUsdPerMt: normalizedData.ocean_frt_rate_usd_per_mt,
+    garbageUsdRate: normalizedData.garbage_usd_rate,
     garbageCbmAmount: normalizedData.garbage_cbm_amount,
   })
 

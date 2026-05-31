@@ -3,6 +3,11 @@
  * Prevents displaying irrelevant fields (e.g., ETA for Special Request)
  */
 
+import {
+  formatPurposeOfCalling,
+  formatPublicFrtTaxType,
+} from '@/modules/inquiries/constants/shippingAgencyInquiryOptions'
+
 export interface InquiryFieldSchema {
   key: string
   label: string
@@ -52,9 +57,9 @@ export const SERVICE_SCHEMAS: Record<string, InquiryFieldSchema[]> = {
     { key: 'cargoName', label: 'Cargo Name', type: 'text', format: formatText },
     { key: 'cargoNameOther', label: 'Cargo Name (other)', type: 'text', format: formatText },
     { key: 'cargoQuantity', label: 'Cargo Quantity (MT)', type: 'number', format: formatNumber },
-    { key: 'frtTaxType', label: 'Freight Tax', type: 'text', format: formatText },
-    { key: 'purposeOfCalling', label: 'Purpose of Calling', type: 'text', format: formatText },
     { key: 'portOfCall', label: 'Port of Call', type: 'text', format: formatText },
+    { key: 'frtTaxType', label: 'Freight Tax', type: 'text', format: formatPublicFrtTaxType },
+    { key: 'purposeOfCalling', label: 'Purpose of Calling', type: 'text', format: formatPurposeOfCalling },
     { key: 'dischargeLoadingLocation', label: 'Operation at', type: 'text', format: formatText },
     { key: 'transportLs', label: 'Transport L/S', type: 'text', format: formatText },
     { key: 'transportQuarantine', label: 'Transport (quarantine)', type: 'number', format: formatNumber },
@@ -67,6 +72,8 @@ export const SERVICE_SCHEMAS: Record<string, InquiryFieldSchema[]> = {
   ],
 
   'chartering': [
+    { key: 'loadingPort', label: 'Loading Port', type: 'text', format: formatText },
+    { key: 'dischargingPort', label: 'Discharging Port', type: 'text', format: formatText },
     { key: 'mv', label: 'M/V', type: 'text', format: formatText },
     { key: 'dwt', label: 'DWT (tons)', type: 'number', format: formatNumber },
     { key: 'grt', label: 'GRT (tons)', type: 'number', format: formatNumber },
@@ -76,36 +83,34 @@ export const SERVICE_SCHEMAS: Record<string, InquiryFieldSchema[]> = {
     { key: 'cargoType', label: 'Cargo Type', type: 'text', format: formatText },
     { key: 'cargoName', label: 'Cargo Name', type: 'text', format: formatText },
     { key: 'cargoQuantity', label: 'Cargo Quantity (MT)', type: 'number', format: formatNumber },
-    { key: 'loadingPort', label: 'Loading Port', type: 'text', format: formatText },
-    { key: 'dischargingPort', label: 'Discharging Port', type: 'text', format: formatText },
     // Note: NO ETA field for chartering
   ],
 
   'freight-forwarding': [
+    { key: 'loadingPort', label: 'Loading Port', type: 'text', format: formatText },
+    { key: 'dischargingPort', label: 'Discharging Port', type: 'text', format: formatText },
     { key: 'cargoName', label: 'Cargo Name', type: 'text', format: formatText },
     { key: 'cargoType', label: 'Cargo Type', type: 'text', format: formatText },
     { key: 'cargoQuantity', label: 'Cargo Quantity', type: 'number', format: formatNumber },
     { key: 'deliveryTerm', label: 'Delivery Term (Incoterms)', type: 'text', format: formatText },
     { key: 'container20ft', label: '20ft Containers', type: 'number', format: formatNumber },
     { key: 'container40ft', label: '40ft Containers', type: 'number', format: formatNumber },
-    { key: 'loadingPort', label: 'Loading Port', type: 'text', format: formatText },
-    { key: 'dischargingPort', label: 'Discharging Port', type: 'text', format: formatText },
     { key: 'shipmentFrom', label: 'Shipment From', type: 'text', format: formatText },
     { key: 'shipmentTo', label: 'Shipment To', type: 'text', format: formatText },
   ],
 
   'total-logistic': [
+    { key: 'loadingPort', label: 'Loading Port', type: 'text', format: formatText },
+    { key: 'dischargingPort', label: 'Discharging Port', type: 'text', format: formatText },
+    { key: 'portOfCall', label: 'Port of Call', type: 'text', format: formatText },
     { key: 'cargoName', label: 'Cargo Name', type: 'text', format: formatText },
     { key: 'cargoType', label: 'Cargo Type', type: 'text', format: formatText },
     { key: 'cargoQuantity', label: 'Cargo Quantity', type: 'number', format: formatNumber },
     { key: 'deliveryTerm', label: 'Delivery Term (Incoterms)', type: 'text', format: formatText },
     { key: 'container20ft', label: '20ft Containers', type: 'number', format: formatNumber },
     { key: 'container40ft', label: '40ft Containers', type: 'number', format: formatNumber },
-    { key: 'loadingPort', label: 'Loading Port', type: 'text', format: formatText },
-    { key: 'dischargingPort', label: 'Discharging Port', type: 'text', format: formatText },
     { key: 'shipmentFrom', label: 'Shipment From', type: 'text', format: formatText },
     { key: 'shipmentTo', label: 'Shipment To', type: 'text', format: formatText },
-    { key: 'portOfCall', label: 'Port of Call', type: 'text', format: formatText },
   ],
 
   'special-request': [

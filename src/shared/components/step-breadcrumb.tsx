@@ -37,7 +37,7 @@ export const Breadcrumb = memo(function Breadcrumb({
   return (
     <nav
       className={cn(
-        "p-2 sm:p-3 rounded-xl bg-gray-100 dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 overflow-x-auto scrollbar-hide",
+        "p-2 sm:p-3 rounded-xl bg-muted text-foreground overflow-x-auto scrollbar-hide",
         className,
       )}
       aria-label="Progress"
@@ -57,7 +57,7 @@ export const Breadcrumb = memo(function Breadcrumb({
               <div
                 className={cn(
                   "absolute top-4 left-7 -ml-px mt-0.5 h-0.5 w-full",
-                  step.status === "complete" ? "bg-green-600 dark:bg-green-500" : "bg-gray-300 dark:bg-zinc-700",
+                  step.status === "complete" ? "bg-success" : "bg-border",
                 )}
                 aria-hidden="true"
               />
@@ -68,10 +68,10 @@ export const Breadcrumb = memo(function Breadcrumb({
                   className={cn(
                     "flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full",
                     step.status === "complete"
-                      ? "bg-green-600 dark:bg-green-500 text-white"
+                      ? "bg-success text-success-foreground"
                       : step.status === "current"
-                        ? "border-2 border-green-600 dark:border-green-500 bg-white dark:bg-zinc-900"
-                        : "border-2 border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900",
+                        ? "border-2 border-success bg-card"
+                        : "border-2 border-border bg-card",
                   )}
                 >
                   {step.status === "complete" ? (
@@ -81,8 +81,8 @@ export const Breadcrumb = memo(function Breadcrumb({
                       className={cn(
                         "text-[10px] sm:text-xs",
                         step.status === "current"
-                          ? "text-green-600 dark:text-green-500"
-                          : "text-gray-500 dark:text-zinc-500",
+                          ? "text-success"
+                          : "text-muted-foreground",
                       )}
                     >
                       {step.id}
@@ -95,10 +95,10 @@ export const Breadcrumb = memo(function Breadcrumb({
                   className={cn(
                     "font-medium",
                     step.status === "complete"
-                      ? "text-gray-900 dark:text-zinc-100"
+                      ? "text-foreground"
                       : step.status === "current"
-                        ? "text-green-600 dark:text-green-500"
-                        : "text-gray-500 dark:text-zinc-500",
+                        ? "text-success"
+                        : "text-muted-foreground",
                   )}
                 >
                   {step.name}

@@ -15,9 +15,9 @@ export function DoubleBezel({ children, className }: DoubleBezelProps) {
   return (
     <div
       className={cn(
-        'rounded-2xl border border-slate-200/80 bg-white',
-        'shadow-[0_20px_48px_-16px_hsl(217_40%_35%/0.10)]',
-        'ring-1 ring-white/60 ring-inset',
+        'rounded-2xl border border-border/80 bg-card',
+        'shadow-[0_20px_48px_-16px_hsl(var(--primary)/0.10)]',
+        'ring-1 ring-surface-highlight/60 ring-inset',
         className
       )}
     >

@@ -125,8 +125,8 @@ function AddImageUploadPanel({
         <div
           className={`flex items-center gap-2 rounded-lg p-3 ${
             currentCount >= requiredCount
-              ? 'bg-green-50 text-green-700'
-              : 'bg-orange-50 text-orange-700'
+              ? 'bg-success/10 text-success'
+              : 'bg-warning/10 text-warning'
           }`}
         >
           <AlertCircle className="h-4 w-4" />
@@ -145,7 +145,7 @@ function AddImageUploadPanel({
         </label>
 
         <div className="rounded-lg border-2 border-dashed p-8 text-center">
-          <Upload className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+          <Upload className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
           <label htmlFor="file-upload-embedded" className="cursor-pointer">
             <span className="text-primary hover:underline">Click to select files</span>
             <span className="text-muted-foreground"> or drag and drop</span>
@@ -236,7 +236,7 @@ function UploadResultBanner({
   return (
     <div
       className={`rounded-lg border p-4 ${
-        result.failed === 0 ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'
+        result.failed === 0 ? 'border-success/30 bg-success/10' : 'border-warning/30 bg-warning/10'
       }`}
     >
       <div className="flex items-start justify-between">
@@ -572,8 +572,8 @@ export function AddImageTab({ embedded = false, onUploadSuccess }: AddImageTabPr
           {selectedCommodityData && (
             <div className={`p-3 rounded-lg flex items-center gap-2 ${
               selectedCommodityData.current >= selectedCommodityData.required
-                ? 'bg-green-50 text-green-700'
-                : 'bg-orange-50 text-orange-700'
+                ? 'bg-success/10 text-success'
+                : 'bg-warning/10 text-warning'
             }`}>
               <AlertCircle className="h-4 w-4" />
               <span className="text-sm">
@@ -592,7 +592,7 @@ export function AddImageTab({ embedded = false, onUploadSuccess }: AddImageTabPr
             </label>
             
             <div className="border-2 border-dashed rounded-lg p-8 text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <label htmlFor="file-upload" className="cursor-pointer">
                 <span className="text-primary hover:underline">Click to select files</span>
                 <span className="text-muted-foreground"> or drag and drop</span>

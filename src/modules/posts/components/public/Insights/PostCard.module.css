@@ -1,18 +1,18 @@
 /* PostCard.module.css */
 
 .card {
-  border: 1px solid rgba(17, 24, 39, 0.14); /* viền rõ */
+  border: 1px solid hsl(var(--border) / 0.8);
   border-radius: 0.875rem; /* ~14px */
   overflow: hidden;
-  background:  (var(--card));
+  background: hsl(var(--card));
   cursor: pointer;
   transition: transform 250ms ease, box-shadow 250ms ease, border-color 250ms ease;
 }
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
-  border-color: rgba(17, 24, 39, 0.22);
+  box-shadow: 0 12px 24px hsl(var(--foreground) / 0.08);
+  border-color: hsl(var(--border));
 }
 
 .media {
@@ -33,13 +33,20 @@
   transform: scale(1.08);
 }
 
-/* Category pill (NOT bold) */
-.categoryPill {
+.categoryPills {
   position: absolute;
   top: 12px;
   left: 12px;
   z-index: 10;
 
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: calc(100% - 24px);
+}
+
+/* Category pill (NOT bold) */
+.categoryPill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -54,7 +61,7 @@
   letter-spacing: normal;
 
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid hsl(var(--surface-highlight) / 0.35);
   backdrop-filter: blur(6px);
 }
 
@@ -79,7 +86,7 @@
 
 /* Hover card -> title đổi màu primary */
 .card:hover .title {
-  color:  (var(--primary));
+  color: hsl(var(--primary));
 }
 
 /* Excerpt nhỏ hơn */

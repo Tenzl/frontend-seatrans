@@ -1,14 +1,19 @@
 import { toast as sonnerToast } from "sonner"
 
+const toastSurface = (token: '--success' | '--destructive', foreground: '--success-foreground' | '--destructive-foreground') => ({
+  background: `hsl(var(${token}))`,
+  color: `hsl(var(${foreground}))`,
+})
+
 export const toast = {
   success: (message: string) => sonnerToast.success(message, { 
     duration: 3000,
-    style: { background: '#10b981', color: 'white' }
+    style: toastSurface('--success', '--success-foreground'),
   }),
   error: (message: string, error?: unknown) => {
     sonnerToast.error(message, { 
       duration: 5000,
-      style: { background: '#ef4444', color: 'white' }
+      style: toastSurface('--destructive', '--destructive-foreground'),
     })
     if (error) console.error(message, error)
   },

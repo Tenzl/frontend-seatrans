@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Database,
   FileText,
-  Home,
   Image as ImageIcon,
   ListChecks,
   PanelLeft,
@@ -31,7 +30,7 @@ import {
 import { NavUser } from "@/shared/components/ui/nav-user"
 import { createQueryClient } from "@/shared/config/react-query.config"
 import { getRoleGroup } from "@/shared/utils/auth"
-import { RoleGroup } from "@/shared/types/dashboard"
+import { RoleGroup, User } from "@/shared/types/dashboard"
 import {
   Sidebar,
   SidebarContent,
@@ -49,7 +48,6 @@ import {
   useSidebar,
 } from "@/shared/components/ui/sidebar"
 import { Separator } from "@/shared/components/ui/separator"
-import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { cn } from "@/shared/lib/utils"
 import {
@@ -86,10 +84,11 @@ const ROLE_GROUP_LABEL: Record<RoleGroup, string> = {
 }
 
 function mapUserRole(role?: string, roleGroup?: RoleGroup): SectionRole | undefined {
-  const upper = role?.toUpperCase()
-  if (upper?.includes("ADMIN")) return "ADMIN"
-  if (upper?.includes("EMPLOYEE")) return "EMPLOYEE"
-  if (upper?.includes("CUSTOMER")) return "CUSTOMER"
+  const upper = role?.toUpperCase() ?? ""
+  if (upper.includes("ADMIN")) return "ADMIN"
+  if (upper.includes("EMPLOYEE")) return "EMPLOYEE"
+  if (upper.includes("CUSTOMER") || upper.endsWith("_USER")) return "CUSTOMER"
+  if (roleGroup === "EXTERNAL") return "CUSTOMER"
   return undefined
 }
 
@@ -267,7 +266,7 @@ function DashboardShell({
   roleGroup: RoleGroup
   defaultSection?: DashboardSection
   onNavigateHome?: () => void
-  user?: { fullName?: string; email?: string; role?: string }
+  user?: Pick<User, "fullName" | "email" | "role">
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -375,6 +374,14 @@ function DashboardShell({
     }
   }, [sidebarState])
 
+  const navigateHome = () => {
+    if (onNavigateHome) {
+      onNavigateHome()
+      return
+    }
+    router.push("/")
+  }
+
   return (
     <div className="dashboard-shell flex min-h-dvh w-full">
       <Sidebar collapsible="icon" variant="inset" className="dashboard-sidebar text-sidebar-foreground">
@@ -383,7 +390,10 @@ function DashboardShell({
             <SidebarMenuItem>
               <SidebarMenuButton
                 size="lg"
+                type="button"
+                onClick={navigateHome}
                 className="h-auto py-3 hover:bg-sidebar-accent/60 data-[state=open]:bg-sidebar-accent"
+                aria-label="Go to Seatrans homepage"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sidebar-border/80 bg-background shadow-sm">
@@ -512,17 +522,6 @@ function DashboardShell({
                 </>
               )}
             </nav>
-            {onNavigateHome && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onNavigateHome}
-                className="shrink-0 gap-1.5 transition-transform duration-200 active:scale-[0.98]"
-              >
-                <Home className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Public site</span>
-              </Button>
-            )}
           </div>
         </header>
 

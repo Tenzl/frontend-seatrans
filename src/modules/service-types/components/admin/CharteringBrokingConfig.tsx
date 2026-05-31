@@ -105,10 +105,10 @@ export function CharteringBroking({ onNavigateHome }: CharteringBrokingProps) {
       serviceTypeSlug: 'chartering-ship-broking',
       fields: [
         { id: 'loadingArea', label: 'Loading area', type: 'select', required: true, options: ['NORTHERN', 'MIDDLE', 'SOUTHERN'], gridSpan: 1, enableSearch: false },
-        { id: 'cargoQuantity', label: 'Cargo type & quantity (MT)', type: 'number', required: true, placeholder: 'e.g. 15,000', gridSpan: 2 },
         { id: 'loadingPort', label: 'Port of loading', type: 'port', required: true, gridSpan: 1, placeholder: 'Select port of loading' },
         { id: 'dischargingArea', label: 'Discharging area', type: 'select', required: true, options: ['NORTHERN', 'MIDDLE', 'SOUTHERN'], gridSpan: 1, enableSearch: false },
         { id: 'dischargingPort', label: 'Port of discharge', type: 'port', required: true, gridSpan: 1, placeholder: 'Select port of discharge' },
+        { id: 'cargoQuantity', label: 'Cargo type & quantity (MT)', type: 'number', required: true, placeholder: 'e.g. 15,000', gridSpan: 2 },
         { id: 'laycanFrom', label: 'Laycan — opening date', type: 'date', required: true, gridSpan: 1 },
         { id: 'laycanTo', label: 'Laycan — closing date', type: 'date', required: true, gridSpan: 1 },
         { id: 'otherInfo', label: 'Additional terms / notes', type: 'textarea', placeholder: 'Vessel size preference, freight basis, special cargo conditions…', gridSpan: 2 },

@@ -87,22 +87,24 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
   const [contentRef, contentVisible] = useIntersectionObserver({ threshold: 0.1 })
 
   useEffect(() => {
-    const controller = new AbortController()
-
     setLoading(true)
     setError(null)
+    setPost(null)
 
     postService
       .getById(articleId)
       .then((data) => setPost(data))
-      .catch((err) => {
-        if (err?.name === 'AbortError') return
-        setError('Failed to load the article')
-      })
+      .catch(() => setError('Failed to load the article'))
       .finally(() => setLoading(false))
-
-    return () => controller.abort()
   }, [articleId])
+
+  useEffect(() => {
+    if (!post?.id) return
+
+    void postService.recordPostViewOnce(articleId).then((viewCount) => {
+      setPost((current) => (current ? { ...current, viewCount } : current))
+    })
+  }, [articleId, post?.id])
 
   const decoratedHtml = useMemo(() => decorateContent(post?.content || ''), [post?.content])
   

@@ -172,9 +172,9 @@ export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: Sig
                   {passwordRequirements.map((req, index) => (
                     <div key={index} className="flex items-center space-x-2 text-xs">
                       <CheckCircle2
-                        className={`w-3 h-3 ${req.met ? 'text-green-600 dark:text-green-500' : 'text-muted-foreground'}`}
+                        className={`w-3 h-3 ${req.met ? 'text-success' : 'text-muted-foreground'}`}
                       />
-                      <span className={req.met ? 'text-green-700 dark:text-green-600' : 'text-muted-foreground'}>
+                      <span className={req.met ? 'text-success' : 'text-muted-foreground'}>
                         {req.label}
                       </span>
                     </div>

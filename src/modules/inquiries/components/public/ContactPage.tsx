@@ -85,8 +85,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const heroImage =
-    'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80'
+  const heroImage = 'https://picsum.photos/seed/seatrans-contact-hero/1600/900'
 
   // Hardcoded department contacts with full information
   const departmentContacts = [
@@ -334,10 +333,11 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       <HeroBannerSection
         title="Contact SEATRANS"
         subtitle="Customer Support"
-        description="Our nationwide network is ready to support your maritime logistics needs."
+        description="Our nationwide network is ready to support your maritime logistics needs — port agency, chartering, forwarding, and customs from one desk."
         image={heroImage}
         serviceName="Contact"
         onNavigateHome={onNavigateHome}
+        variant="contact"
       />
 
       {/* Company Contact - General Manager Hotline */}
@@ -374,7 +374,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       </section>
 
       {/* Office Network - 2 Card System (Office Panel + Selector) */}
-      <section ref={mapRef} className="py-16">
+      <section ref={mapRef} id="contact-offices" className="py-16">
         <div className="container">
           <div className={`text-center mb-12 ${mapVisible ? 'fade-rise' : 'opacity-0'}`}>
             <h2 className="fade-rise text-3xl md:text-4xl font-bold mb-4">Our Offices</h2>
@@ -409,7 +409,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                         <div className="flex items-center gap-3 mb-2">
                           <h2 className="text-2xl">{selectedOffice.city}</h2>
                           {selectedOffice.isHeadquarter && (
-                            <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded">
+                            <span className="text-xs px-2 py-1 bg-warning/20 text-warning rounded">
                               HQ
                             </span>
                           )}
@@ -461,7 +461,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                                 <div className="flex items-center gap-2 mb-0.5">
                                   <p className="font-medium text-sm">{office.city}</p>
                                   {office.isHeadquarter && (
-                                    <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded">
+                                    <span className="text-xs px-2 py-0.5 bg-warning/20 text-warning rounded">
                                       HQ
                                     </span>
                                   )}
@@ -725,7 +725,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       </section>
 
       {/* Special Request Form */}
-      <section ref={formRef} className="py-16">
+      <section ref={formRef} id="contact-form" className="py-16">
         <div className="container">
           <div className={`max-w-3xl mx-auto ${formVisible ? 'fade-rise' : 'opacity-0'}`}>
             <div className="text-center mb-12">
@@ -736,10 +736,10 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
             </div>
 
             {formSubmitted ? (
-              <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-lg p-12 text-center">
-                <CheckCircle2 className="h-16 w-16 text-green-600 dark:text-green-500 mx-auto mb-4" />
-                <h3 className="text-xl text-green-900 dark:text-green-100 mb-2">Thank You!</h3>
-                <p className="text-green-700 dark:text-green-300">
+              <div className="bg-success/10 border border-success/30 rounded-lg p-12 text-center">
+                <CheckCircle2 className="h-16 w-16 text-success mx-auto mb-4" />
+                <h3 className="text-xl text-success mb-2">Thank You!</h3>
+                <p className="text-success/80">
                   Your special request has been received. Our team will contact you shortly.
                 </p>
               </div>

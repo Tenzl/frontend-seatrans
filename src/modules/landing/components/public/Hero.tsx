@@ -100,11 +100,11 @@ export function Hero({
 
   return (
     <section
-      className="relative min-h-[100dvh] overflow-hidden border-b border-border/60 bg-[#f8fafc]"
+      className="relative min-h-[100dvh] overflow-hidden border-b border-border/60 bg-muted/50"
       aria-label="Introduction"
     >
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_100%_0%,hsl(217_55%_92%/0.5),transparent_55%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_100%_0%,hsl(var(--primary)/0.12),transparent_55%)]"
         aria-hidden
       />
 
@@ -117,10 +117,10 @@ export function Hero({
                   {subtitle}
                 </p>
               )}
-              <h1 className="text-4xl font-bold tracking-tighter leading-[1.05] text-slate-900 text-balance md:text-5xl lg:text-[3.35rem]">
+              <h1 className="text-4xl font-bold tracking-tighter leading-[1.05] text-foreground text-balance md:text-5xl lg:text-[3.35rem]">
                 {title}
               </h1>
-              <p className="text-base md:text-lg text-slate-600 leading-relaxed text-pretty max-w-[58ch]">
+              <p className="text-base md:text-lg text-muted-foreground leading-relaxed text-pretty max-w-[58ch]">
                 Agency, chartering, and forwarding from one desk — built for owners and
                 operators who need clear answers when the vessel is on approach.
               </p>
@@ -134,7 +134,7 @@ export function Hero({
                 <Button
                   size="lg"
                   onClick={primaryCTA.action}
-                  className="h-12 rounded-full px-8 font-semibold shadow-[0_12px_32px_-8px_hsl(217_55%_40%/0.45)] transition-transform hover:scale-[1.02] active:scale-[0.98] active:translate-y-px"
+                  className="h-12 rounded-full px-8 font-semibold shadow-[0_12px_32px_-8px_hsl(var(--primary)/0.45)] transition-transform hover:scale-[1.02] active:scale-[0.98] active:translate-y-px"
                 >
                   {primaryCTA.text}
                   <ArrowRight className="ml-2 h-4 w-4" strokeWidth={ICON_STROKE} />
@@ -145,14 +145,14 @@ export function Hero({
                   size="lg"
                   variant="outline"
                   onClick={secondaryCTA.action}
-                  className="h-12 rounded-full border-slate-300 bg-white/80 px-8 font-medium text-slate-800 backdrop-blur-sm hover:bg-white transition-transform hover:scale-[1.02] active:scale-[0.98] active:translate-y-px"
+                  className="h-12 rounded-full border-border bg-card/80 px-8 font-medium text-foreground backdrop-blur-sm hover:bg-card transition-transform hover:scale-[1.02] active:scale-[0.98] active:translate-y-px"
                 >
                   {secondaryCTA.text}
                 </Button>
               )}
               <Link
                 href="tel:+84935015679"
-                className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-primary transition-colors px-1 py-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors px-1 py-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Phone className="h-4 w-4 shrink-0" strokeWidth={ICON_STROKE} />
                 <span className="font-mono tabular-nums tracking-tight">+84 93-501-5679</span>
@@ -161,16 +161,16 @@ export function Hero({
 
             {trustBadges && trustBadges.length > 0 && (
               <Item {...itemProps}>
-                <div className="grid grid-cols-3 gap-3 rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_16px_40px_-24px_hsl(217_40%_30%/0.2)] backdrop-blur-md">
+                <div className="grid grid-cols-3 gap-3 rounded-2xl border border-border/70 bg-card/70 p-4 shadow-[inset_0_1px_0_hsl(var(--surface-highlight)/0.8),var(--shadow-landing-soft)] backdrop-blur-md">
                   {trustBadges.map((badge) => (
                     <div
                       key={badge.label}
-                      className="border-r border-slate-200/80 last:border-0 px-1"
+                      className="border-r border-border/80 last:border-0 px-1"
                     >
                       <div className="font-mono text-xl font-semibold tabular-nums tracking-tight text-primary md:text-2xl">
                         {badge.value}
                       </div>
-                      <div className="mt-1 text-[0.65rem] font-medium leading-snug text-slate-500">
+                      <div className="mt-1 text-[0.65rem] font-medium leading-snug text-muted-foreground">
                         {badge.label}
                       </div>
                     </div>
@@ -192,7 +192,7 @@ export function Hero({
         <button
           type="button"
           onClick={scrollToSolutions}
-          className="mt-10 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md px-1 py-2 w-fit group"
+          className="mt-10 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md px-1 py-2 w-fit group"
           aria-label="Scroll to services"
         >
           <span className="tracking-wide">Services below</span>

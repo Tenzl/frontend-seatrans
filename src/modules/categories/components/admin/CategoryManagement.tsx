@@ -221,7 +221,7 @@ export function ManageCategories() {
         <div>
           {/* Success/Error Messages */}
           {successMessage && (
-            <div className="mb-4 p-4 bg-green-50 border-2 border-green-500 text-green-800 rounded-lg flex items-center justify-between">
+            <div className="mb-4 p-4 bg-success/10 border-2 border-success text-success rounded-lg flex items-center justify-between">
               <span className="font-medium">{successMessage}</span>
               <button onClick={() => setSuccessMessage(null)} className="cursor-pointer">
                 <Plus className="h-4 w-4 rotate-45" />

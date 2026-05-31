@@ -275,7 +275,7 @@ export function PartnerImportDialog({ open, onOpenChange, onImported }: PartnerI
               </div>
               {selectedFile && (
                 unknownHeaders.length > 0 ? (
-                  <p className="text-xs text-amber-600">
+                  <p className="text-xs text-warning">
                     Unrecognized columns: <strong>{unknownHeaders.join(", ")}</strong>
                   </p>
                 ) : missingHeaders.length === 0 ? (

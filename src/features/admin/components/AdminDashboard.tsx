@@ -125,18 +125,18 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
               <SidebarMenuItem>
                 <SidebarMenuButton
                   size="lg"
-                  asChild
+                  type="button"
+                  onClick={onNavigateHome}
                   className="bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  aria-label="Go to Seatrans homepage"
                 >
-                  <a href="/">
-                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                      <Shield className="size-4" />
-                    </div>
-                    <div className="flex flex-col gap-0.5 leading-none">
-                      <span className="font-semibold">Admin Panel</span>
-                      <span className="text-xs">Seatrans</span>
-                    </div>
-                  </a>
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <Shield className="size-4" />
+                  </div>
+                  <div className="flex flex-col gap-0.5 leading-none">
+                    <span className="font-semibold">Admin Panel</span>
+                    <span className="text-xs">Seatrans</span>
+                  </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

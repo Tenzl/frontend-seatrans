@@ -682,7 +682,7 @@ export function ManageCommodities() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleSaveCommodity(type.id)}
-                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  className="text-success hover:text-success/80 hover:bg-success/10"
                                 >
                                   <Save className="h-4 w-4" />
                                 </Button>

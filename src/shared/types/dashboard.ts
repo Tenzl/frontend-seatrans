@@ -31,12 +31,13 @@ export interface User {
   id: number
   email: string
   username?: string | null
-  fullName: string
+  fullName: string | null
   nation?: string
-  phone?: string
-  company?: string
+  phone?: string | null
+  company?: string | null
   role?: string
   roleId?: number
   roleGroup?: RoleGroup
-  oauthProvider?: string
+  oauthProvider?: string | null
+  emailVerified?: boolean
 }

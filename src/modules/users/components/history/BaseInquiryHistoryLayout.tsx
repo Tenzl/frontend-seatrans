@@ -116,6 +116,17 @@ export function BaseInquiryHistoryLayout({
   // Define columns
   const columns: ColumnDef<any>[] = [
     {
+      id: 'no',
+      header: 'No.',
+      cell: ({ row }) => (
+        <span className="text-muted-foreground text-sm tabular-nums">
+          {row.original.code || `#${row.original.id}`}
+        </span>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
       accessorKey: 'fullName',
       header: ({ column }) => (
         <Button
@@ -400,13 +411,13 @@ export function BaseInquiryHistoryLayout({
               <div className="flex flex-col gap-4 min-h-[70vh]">
                 <div className="flex-1 min-h-[70vh] rounded-md border overflow-hidden bg-white">
                   {loadingQuote ? (
-                    <div className="flex items-center justify-center h-full bg-gray-100">
-                      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                    <div className="flex items-center justify-center h-full bg-muted">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
                   ) : quoteHtml ? (
                     <QuotePreview html={quoteHtml} />
                   ) : (
-                    <div className="flex items-center justify-center h-full bg-gray-100 text-muted-foreground">
+                    <div className="flex items-center justify-center h-full bg-muted text-muted-foreground">
                       <FileText className="h-10 w-10 mr-2" />
                       No invoice available
                     </div>

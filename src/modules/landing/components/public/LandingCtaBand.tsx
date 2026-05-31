@@ -53,7 +53,7 @@ export function LandingCtaBand() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/10 transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                className="border-primary-foreground/40 bg-primary-foreground text-muted-foreground hover:bg-primary-foreground/90 hover:text-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
                 asChild
               >
                 <a href="tel:+84935015679">
