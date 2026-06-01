@@ -90,7 +90,7 @@
         return false;
     });
 
-    /* eslint-disable @typescript-eslint/no-wrapper-object-types */
+     
     const getPrototypeOf$2 = Object.getPrototypeOf;
     const hasProto = (v, constructor, predicate) => {
         if (predicate(v, constructor.prototype)) {
@@ -788,7 +788,7 @@
                     match,
                     // NOTE: Only for debugging.
                     log: (label) => {
-                        // eslint-disable-next-line no-console
+                         
                         console.log(label, {
                             constructors,
                             constructor: key,
@@ -894,10 +894,10 @@
     };
 
     // Use window object as the global if it's available since CSP will block script evals
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+     
     const Global = typeof window !== 'undefined' ? window : Function('return this;')();
 
-    /* eslint-disable no-bitwise */
+     
     const uuidV4Bytes = () => {
         const bytes = window.crypto.getRandomValues(new Uint8Array(16));
         // https://tools.ietf.org/html/rfc4122#section-4.1.3
@@ -1956,7 +1956,7 @@
         div.innerHTML = html;
         if (!div.hasChildNodes() || div.childNodes.length > 1) {
             const message = 'HTML does not have a single root node';
-            // eslint-disable-next-line no-console
+             
             console.error(message, html);
             throw new Error(message);
         }
@@ -2398,7 +2398,7 @@
             dom.setAttribute(key, value + '');
         }
         else {
-            // eslint-disable-next-line no-console
+             
             console.error('Invalid call to Attribute.set. Key ', key, ':: Value ', value, ':: Element ', dom);
             throw new Error('Attribute value was not simple');
         }
@@ -2532,7 +2532,7 @@
         // JQuery coerces numbers to pixels for certain property names, and other times lets numbers through.
         // we're going to be explicit; strings only.
         if (!isString(value)) {
-            // eslint-disable-next-line no-console
+             
             console.error('Invalid call to CSS.set. Property ', property, ':: Value ', value, ':: Element ', dom);
             throw new Error('CSS value must be a string: ' + value);
         }
@@ -4235,7 +4235,7 @@
             // Support upper UTF
             if (numeric > 0xFFFF) {
                 numeric -= 0x10000;
-                // eslint-disable-next-line no-bitwise
+                 
                 return String.fromCharCode(0xD800 + (numeric >> 10), 0xDC00 + (numeric & 0x3FF));
             }
             return asciiMap[numeric] || String.fromCharCode(numeric);
@@ -4367,7 +4367,7 @@
         'html5': cached(() => getElementSets('html5')),
         'html5-strict': cached(() => getElementSets('html5-strict'))
     };
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+     
     const getElementsPreset = (type, name) => {
         const { blockContent, phrasingContent, flowContent } = cachedSets[type]();
         if (name === 'blocks') {
@@ -5443,7 +5443,7 @@
             encodingLookup[encodingItems[i]] = invisibleChar + i;
             encodingLookup[invisibleChar + i] = encodingItems[i];
         }
-        // eslint-disable-next-line consistent-this
+         
         const self = {
             /**
              * Parses the specified style value into an object collection. This parser will also
@@ -5724,17 +5724,17 @@
         }
         // The composed path can't be cloned, so delegate instead
         if (isNonNullable(originalEvent.composedPath)) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+             
             event.composedPath = () => originalEvent.composedPath();
         }
         // The getModifierState won't work when cloned, so delegate instead
         if (isNonNullable(originalEvent.getModifierState)) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+             
             event.getModifierState = (keyArg) => originalEvent.getModifierState(keyArg);
         }
         // The getTargetRanges won't work when cloned, so delegate instead
         if (isNonNullable(originalEvent.getTargetRanges)) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+             
             event.getTargetRanges = () => originalEvent.getTargetRanges();
         }
         return event;
@@ -6907,7 +6907,7 @@
             ', startOffset: ' + r.startOffset +
             ', endContainer: ' + r.endContainer.nodeName +
             ', endOffset: ' + r.endOffset);
-        // eslint-disable-next-line consistent-this
+         
         const self = {
             doc,
             settings,
@@ -7985,7 +7985,7 @@
             if (!language || languages && wrappedLanguages.indexOf(',' + language + ',') === -1) {
                 return;
             }
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+             
             ScriptLoader.ScriptLoader.add(urls[name] + '/langs/' + language + '.js');
         };
         const requireLangPack = (name, languages) => {
@@ -7994,7 +7994,7 @@
                     loadLanguagePack(name, languages);
                 }
                 else {
-                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                     
                     waitFor(name, 'loaded').then(() => loadLanguagePack(name, languages));
                 }
             }
@@ -9609,7 +9609,7 @@
     };
     const fromRawPatterns = (patterns) => {
         const normalized = partition$1(map$3(patterns, normalizePattern));
-        // eslint-disable-next-line no-console
+         
         each$e(normalized.errors, (err) => console.error(err.message, err.pattern));
         return normalized.values;
     };
@@ -10067,7 +10067,7 @@
                     if (editor.initialized && isDisabled$1(editor) !== value) {
                         // Schedules the callback to run in the next microtask queue once the option is updated
                         // TODO: TINY-11586 - Implement `onChange` callback when the value of an option changes
-                        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                         
                         Promise.resolve().then(() => {
                             fireDisabledStateChange(editor, value);
                         });
@@ -10132,7 +10132,7 @@
         registerOption('url_converter', {
             processor: 'function',
             // Note: Don't bind here, as the binding is handled via the `url_converter_scope`
-            // eslint-disable-next-line @typescript-eslint/unbound-method
+             
             default: editor.convertURL
         });
         registerOption('url_converter_scope', {
@@ -13465,7 +13465,7 @@
             each$d(resizeHandles, (handle) => {
                 if (handle.elm) {
                     dom.unbind(handle.elm);
-                    // eslint-disable-next-line @typescript-eslint/no-array-delete
+                     
                     delete handle.elm;
                 }
             });
@@ -18018,7 +18018,7 @@
     };
 
     // TINY-10350: A modification of the Regexes.link regex to specifically capture host.
-    // eslint-disable-next-line max-len
+     
     const hostCaptureRegex = /^(?:(?:(?:[A-Za-z][A-Za-z\d.+-]{0,14}:\/\/(?:[-.~*+=!&;:'%@?^${}(),\w]+@)?|www\.|[-;:&=+$,.\w]+@)([A-Za-z\d-]+(?:\.[A-Za-z\d-]+)*))(?::\d+)?(?:\/(?:[-.~*+=!;:'%@$(),\/\w]*[-~*+=%@$()\/\w])?)?(?:\?(?:[-.~*+=!&;:'%@?^${}(),\/\w]+)?)?(?:#(?:[-.~*+=!&;:'%@?^${}(),\/\w]+)?)?)$/;
     const extractHost = (url) => Optional.from(url.match(hostCaptureRegex)).bind((ms) => get$b(ms, 1)).map((h) => startsWith(h, 'www.') ? h.substring(4) : h);
 
@@ -18205,7 +18205,7 @@
       freeze,
       seal,
       create: create$7
-    } = Object; // eslint-disable-line import/no-mutable-exports
+    } = Object;  
     let {
       apply,
       construct
@@ -18394,12 +18394,12 @@
     const MUSTACHE_EXPR = seal(/\{\{[\w\W]*|[\w\W]*\}\}/gm); // Specify template detection regex for SAFE_FOR_TEMPLATES mode
     const ERB_EXPR = seal(/<%[\w\W]*|[\w\W]*%>/gm);
     const TMPLIT_EXPR = seal(/\$\{[\w\W]*/gm); // eslint-disable-line unicorn/better-regex
-    const DATA_ATTR = seal(/^data-[\-\w.\u00B7-\uFFFF]+$/); // eslint-disable-line no-useless-escape
-    const ARIA_ATTR = seal(/^aria-[\-\w]+$/); // eslint-disable-line no-useless-escape
-    const IS_ALLOWED_URI = seal(/^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i // eslint-disable-line no-useless-escape
+    const DATA_ATTR = seal(/^data-[\-\w.\u00B7-\uFFFF]+$/);  
+    const ARIA_ATTR = seal(/^aria-[\-\w]+$/);  
+    const IS_ALLOWED_URI = seal(/^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i  
     );
     const IS_SCRIPT_OR_DATA = seal(/^(?:\w+script|data):/i);
-    const ATTR_WHITESPACE = seal(/[\u0000-\u0020\u00A0\u1680\u180E\u2000-\u2029\u205F\u3000]/g // eslint-disable-line no-control-regex
+    const ATTR_WHITESPACE = seal(/[\u0000-\u0020\u00A0\u1680\u180E\u2000-\u2029\u205F\u3000]/g  
     );
     const DOCTYPE_NAME = seal(/^html$/i);
     const CUSTOM_ELEMENT = seal(/^[a-z][.\w]*(-[.\w]+)+$/i);
@@ -18708,7 +18708,7 @@
        *
        * @param cfg optional config literal
        */
-      // eslint-disable-next-line complexity
+       
       const _parseConfig = function _parseConfig() {
         let cfg = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
         if (CONFIG && CONFIG === cfg) {
@@ -19046,7 +19046,7 @@
        */
       const _createNodeIterator = function _createNodeIterator(root) {
         return createNodeIterator.call(root.ownerDocument || root, root,
-        // eslint-disable-next-line no-bitwise
+         
         NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_TEXT | NodeFilter.SHOW_PROCESSING_INSTRUCTION | NodeFilter.SHOW_CDATA_SECTION, null);
       };
       /**
@@ -19175,7 +19175,7 @@
        * @param value Attribute value.
        * @return Returns true if `value` is valid, otherwise false.
        */
-      // eslint-disable-next-line complexity
+       
       const _isValidAttribute = function _isValidAttribute(lcTag, lcName, value) {
         /* Make sure attribute cannot clobber */
         if (SANITIZE_DOM && (lcName === 'id' || lcName === 'name') && (value in document || value in formElement)) {
@@ -19363,7 +19363,7 @@
         /* Execute a hook if present */
         _executeHooks(hooks.afterSanitizeShadowDOM, fragment, null);
       };
-      // eslint-disable-next-line complexity
+       
       DOMPurify.sanitize = function (dirty) {
         let cfg = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
         let body = null;
@@ -19804,14 +19804,14 @@
          * @returns {Boolean} True if the origins are the same.
          */
         isSameOrigin(uri) {
-            // eslint-disable-next-line eqeqeq
+             
             if (this.host == uri.host && this.protocol == uri.protocol) {
-                // eslint-disable-next-line eqeqeq
+                 
                 if (this.port == uri.port) {
                     return true;
                 }
                 const defaultPort = this.protocol ? DEFAULT_PORTS[this.protocol] : null;
-                // eslint-disable-next-line eqeqeq
+                 
                 if (defaultPort && ((this.port || defaultPort) == (uri.port || defaultPort))) {
                     return true;
                 }
@@ -20226,7 +20226,7 @@
         }
         else {
             const sanitizeHtmlElement = (body, _mimeType) => {
-                // eslint-disable-next-line no-bitwise
+                 
                 const nodeIterator = document.createNodeIterator(body, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_TEXT);
                 let node;
                 while ((node = nodeIterator.nextNode())) {
@@ -20791,7 +20791,7 @@
             const themesMessage = isLegacyMobileTheme ? `\n\nThemes:${listJoiner}mobile` : '';
             const pluginsMessage = hasRemovedPlugins ? `\n\nPlugins:${listJoiner}${removedPlugins.join(listJoiner)}` : '';
             const optionsMessage = hasRemovedOptions ? `\n\nOptions:${listJoiner}${removedOptions.join(listJoiner)}` : '';
-            // eslint-disable-next-line no-console
+             
             console.warn('The following deprecated features are currently enabled and have been removed in TinyMCE 8.0. These features will no longer work and should be removed from the TinyMCE configuration. ' +
                 'See https://www.tiny.cloud/docs/tinymce/8/migration-from-7x/ for more information.' +
                 themesMessage +
@@ -20817,7 +20817,7 @@
             const listJoiner = '\n- ';
             const pluginsMessage = hasDeprecatedPlugins ? `\n\nPlugins:${listJoiner}${deprecatedPlugins.map(getPluginDescription).join(listJoiner)}` : '';
             const optionsMessage = hasDeprecatedOptions ? `\n\nOptions:${listJoiner}${deprecatedOptions.join(listJoiner)}` : '';
-            // eslint-disable-next-line no-console
+             
             console.warn('The following deprecated features are currently enabled but will be removed soon.' +
                 pluginsMessage +
                 optionsMessage);
@@ -20832,7 +20832,7 @@
         selectionSetContent: 'The "editor.selection.setContent" method has been deprecated and will be removed in TinyMCE 9. Use "editor.insertContent" instead.'
     };
     const logFeatureDeprecationWarning = (feature) => {
-        // eslint-disable-next-line no-console
+         
         console.warn(deprecatedFeatures[feature], new Error().stack);
     };
 
@@ -23370,7 +23370,7 @@
          * @param {String} selector CSS selector to check for.
          * @param {Function} callback Callback with state and args when the selector is matches or not.
          */
-        // eslint-disable-next-line @typescript-eslint/no-wrapper-object-types
+         
         const selectorChanged = (selector, callback) => {
             selectorChangedWithUnbind(selector, callback);
             return exports;
@@ -24440,7 +24440,7 @@
     };
     const logError = (editor, errorType, msg) => {
         fireError(editor, errorType, { message: msg });
-        // eslint-disable-next-line no-console
+         
         console.error(msg);
     };
     const createLoadError = (type, url, name) => name ?
@@ -24530,7 +24530,7 @@
         switchModeListener();
     };
 
-    /* eslint-disable no-console */
+     
     const displayNotification = (editor, messageData) => {
         const { type, message } = messageData;
         editor.notificationManager.open({
@@ -24744,7 +24744,7 @@
             // not block initialization of the editor
             // The validate function is expected to set the editor to the correct
             // state depending on if the license key is valid or not
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+             
             editor.licenseKeyManager.validate({});
         };
         return {
@@ -25491,11 +25491,11 @@
         };
         editor.on('SetContent', () => {
             if (isAutomaticUploadsEnabled(editor)) {
-                // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                 
                 uploadImagesAuto();
             }
             else {
-                // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                 
                 scanForImages();
             }
         });
@@ -31190,7 +31190,7 @@
             doLookup(fetchOptions).fold(cancelIfNecessary, (lookupInfo) => {
                 commenceIfNecessary(lookupInfo.context);
                 // Wait for the results to return and then display the menu
-                // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                 
                 lookupInfo.lookupData.then((lookupData) => {
                     // Lookup the active autocompleter to make sure it's still active, if it isn't then do nothing
                     activeAutocompleter.get().map((ac) => {
@@ -33544,7 +33544,7 @@
             const images = getImagesFromDataTransfer(editor, dataTransfer);
             if (images.length > 0) {
                 e.preventDefault();
-                // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                 
                 readFilesAsDataUris(images).then((fileResults) => {
                     if (rng) {
                         editor.selection.setRng(rng);
@@ -36469,7 +36469,7 @@
     };
     const loadComponents = (editor) => {
         // Since we are handling the errors in the promise rejections inside the loadComponentsAsync we can ignore the errors here
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+         
         loadComponentsAsync(editor);
     };
 
@@ -36812,7 +36812,7 @@
         editor.dom = DOMUtils(doc, {
             keep_values: true,
             // Note: Don't bind here, as the binding is handled via the `url_converter_scope`
-            // eslint-disable-next-line @typescript-eslint/unbound-method
+             
             url_converter: editor.convertURL,
             url_converter_scope: editor,
             update_styles: true,
@@ -36852,14 +36852,14 @@
         loadComponents(editor);
         setupRtcThunk.fold(() => {
             const cancelProgress = startProgress(editor);
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+             
             loadContentCss(editor).then(() => {
                 initEditorWithInitialContent(editor);
                 cancelProgress();
             });
         }, (setupRtc) => {
             editor.setProgressState(true);
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+             
             loadContentCss(editor).then(() => {
                 setupRtc().then((_rtcMode) => {
                     editor.setProgressState(false);
@@ -37230,7 +37230,7 @@
             if (!editor.removed &&
                 isThemeLoaded(editor) &&
                 isModelLoaded(editor)) {
-                // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                 
                 init(editor);
             }
         };
@@ -37382,10 +37382,10 @@
     const djb2Hash = (key, maxValue) => {
         let hash = 5381;
         for (let i = 0; i < key.length; i++) {
-            // eslint-disable-next-line no-bitwise
+             
             hash = ((hash << 5) + hash) + key.charCodeAt(i);
         }
-        // eslint-disable-next-line no-bitwise
+         
         return (hash >>> 0) % (maxValue + 1);
     };
     const getColor = (id) => {
@@ -37445,7 +37445,7 @@
         const { errors, values } = partition$1(results);
         if (errors.length > 0) {
             const formattedErrors = map$3(errors, (error, idx) => `User at index ${idx}: ${formatError(error)}`);
-            // eslint-disable-next-line no-console
+             
             console.warn('User validation errors:\n' + formattedErrors.join('\n'));
         }
         return map$3(values, (user) => {
@@ -38901,7 +38901,7 @@
                 return result.value;
             }
             else {
-                // eslint-disable-next-line no-console
+                 
                 console.error(getErrorMessage(`Invalid default value passed for the "${name}" option`, result));
             }
         }
@@ -38917,7 +38917,7 @@
                 return true;
             }
             else {
-                // eslint-disable-next-line no-console
+                 
                 console.warn(getErrorMessage(`Invalid value passed for the ${name} option`, result));
                 return false;
             }
@@ -38942,14 +38942,14 @@
             .getOrUndefined();
         const set = (name, value) => {
             if (!isRegistered(name)) {
-                // eslint-disable-next-line no-console
+                 
                 console.warn(`"${name}" is not a registered option. Ensure the option has been registered before setting a value.`);
                 return false;
             }
             else {
                 const spec = registry[name];
                 if (spec.immutable) {
-                    // eslint-disable-next-line no-console
+                     
                     console.error(`"${name}" is an immutable option and cannot be updated`);
                     return false;
                 }
@@ -38968,7 +38968,7 @@
         const isSet = (name) => has$2(values, name);
         const debug = () => {
             try {
-                // eslint-disable-next-line no-console
+                 
                 console.log(JSON.parse(JSON.stringify(rawInitialOptions, (_key, value) => {
                     if (isBoolean(value) ||
                         isNumber(value) ||
@@ -38982,7 +38982,7 @@
                 })));
             }
             catch (error) {
-                // eslint-disable-next-line no-console
+                 
                 console.error(error);
             }
         };
@@ -39068,7 +39068,7 @@
             newMode.activate();
         }
         catch (e) {
-            // eslint-disable-next-line no-console
+             
             console.error(`problem while activating editor mode ${mode}:`, e);
             return;
         }
@@ -39107,7 +39107,7 @@
                         api.deactivate();
                     }
                     catch (e) {
-                        // eslint-disable-next-line no-console
+                         
                         console.error(`problem while deactivating editor mode ${mode}:`, e);
                     }
                 }

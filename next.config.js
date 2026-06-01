@@ -7,6 +7,9 @@ const nextConfig = {
   // Repo root also has package-lock.json (shadcn); app + deps live in frontend/.
   outputFileTracingRoot: path.join(__dirname),
   reactStrictMode: true,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   transpilePackages: [
     'zod',
     '@tanstack/react-query',

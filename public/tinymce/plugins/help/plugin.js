@@ -5,7 +5,7 @@
 (function () {
     'use strict';
 
-    /* eslint-disable @typescript-eslint/no-wrapper-object-types */
+     
     const hasProto = (v, constructor, predicate) => {
         if (predicate(v, constructor.prototype)) {
             return true;
@@ -464,7 +464,7 @@
     pLoadHtmlByLangCode(baseUrl, global$2.getCode()).catch(() => pLoadHtmlByLangCode(baseUrl, 'en'));
     const initI18nLoad = (editor, baseUrl) => {
         editor.on('init', () => {
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+             
             pLoadI18nHtml(baseUrl);
         });
     };
@@ -777,7 +777,7 @@
         return Optional.from(getHelpTabs(editor)).fold(() => getNamesFromTabs(tabs), (tabsFromSettings) => parseHelpTabsSetting(tabsFromSettings, tabs));
     };
     const init = (editor, customTabs, pluginUrl) => () => {
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+         
         pParseCustomTabs(editor, customTabs, pluginUrl).then(({ tabs, names }) => {
             const foundTabs = map(names, (name) => get$1(tabs, name));
             const dialogTabs = cat(foundTabs);

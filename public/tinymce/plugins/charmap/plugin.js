@@ -16,7 +16,7 @@
         editor.execCommand('mceInsertContent', false, evtChr);
     };
 
-    /* eslint-disable @typescript-eslint/no-wrapper-object-types */
+     
     const hasProto = (v, constructor, predicate) => {
         if (predicate(v, constructor.prototype)) {
             return true;

@@ -9,8 +9,8 @@ const vnGeo = JSON.parse(fs.readFileSync(vnGeoPath, 'utf-8'))
 function calculateCentroid(geometry: any): [number, number] {
     if (!geometry) return [0, 0];
 
-    let coordinates = geometry.coordinates;
-    let type = geometry.type;
+    const coordinates = geometry.coordinates;
+    const type = geometry.type;
 
     if (type === 'Polygon') {
         return getCoastalPoint(coordinates);

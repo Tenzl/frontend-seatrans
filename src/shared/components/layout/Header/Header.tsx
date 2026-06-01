@@ -84,7 +84,7 @@ export default function Header() {
   const router = useRouter()
   const pathname = usePathname()
   const roleGroup = getRoleGroup(user)
-  const showCustomerNotifications = isAuthenticated && roleGroup === 'EXTERNAL'
+  const showNotifications = isAuthenticated
 
   // Liquid-drop island: morph to compact state when sentinel leaves viewport
   // (i.e. user has scrolled past the first 64px), morph back when it returns.
@@ -187,7 +187,7 @@ export default function Header() {
                       Complete profile
                     </Badge>
                   )}
-                  {showCustomerNotifications ? (
+                  {showNotifications ? (
                     <NotificationBell
                       onNavigateToInquiries={() => handleNavigate('/dashboard?section=inquiry')}
                     />

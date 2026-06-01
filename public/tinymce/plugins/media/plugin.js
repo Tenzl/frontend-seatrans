@@ -7,7 +7,7 @@
 
     var global$6 = tinymce.util.Tools.resolve('tinymce.PluginManager');
 
-    /* eslint-disable @typescript-eslint/no-wrapper-object-types */
+     
     const hasProto = (v, constructor, predicate) => {
         if (predicate(v, constructor.prototype)) {
             return true;
@@ -451,7 +451,7 @@
                         if (!data.type) {
                             data.type = name;
                         }
-                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                         
                         data = global$5.extend(node.attributes.map, data);
                     }
                     if (name === 'source') {

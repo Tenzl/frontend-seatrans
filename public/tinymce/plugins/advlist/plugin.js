@@ -36,7 +36,7 @@
     const getNumberStyles = option('advlist_number_styles');
     const getBulletStyles = option('advlist_bullet_styles');
 
-    /* eslint-disable @typescript-eslint/no-wrapper-object-types */
+     
     const isNullable = (a) => a === null || a === undefined;
     const isNonNullable = (a) => !isNullable(a);
 
@@ -457,7 +457,7 @@
                 register$2(editor);
             }
             else {
-                // eslint-disable-next-line no-console
+                 
                 console.error('Please use the Lists plugin together with the List Styles plugin.');
             }
         });

@@ -76,7 +76,7 @@ export function adminStickyColumnClass(
 // ---------------------------------------------------------------------------
 
 export function DataTableSortHeader({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   column,
   children,
 }: {

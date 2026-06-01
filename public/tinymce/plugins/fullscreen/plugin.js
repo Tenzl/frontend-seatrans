@@ -5,7 +5,7 @@
 (function () {
     'use strict';
 
-    /* eslint-disable @typescript-eslint/no-wrapper-object-types */
+     
     const hasProto = (v, constructor, predicate) => {
         if (predicate(v, constructor.prototype)) {
             return true;
@@ -423,7 +423,7 @@
     };
 
     // Use window object as the global if it's available since CSP will block script evals
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+     
     const Global = typeof window !== 'undefined' ? window : Function('return this;')();
 
     /*
@@ -536,7 +536,7 @@
         div.innerHTML = html;
         if (!div.hasChildNodes() || div.childNodes.length > 1) {
             const message = 'HTML does not have a single root node';
-            // eslint-disable-next-line no-console
+             
             console.error(message, html);
             throw new Error(message);
         }
@@ -1089,7 +1089,7 @@
             dom.setAttribute(key, value + '');
         }
         else {
-            // eslint-disable-next-line no-console
+             
             console.error('Invalid call to Attribute.set. Key ', key, ':: Value ', value, ':: Element ', dom);
             throw new Error('Attribute value was not simple');
         }
@@ -1137,7 +1137,7 @@
         // JQuery coerces numbers to pixels for certain property names, and other times lets numbers through.
         // we're going to be explicit; strings only.
         if (!isString(value)) {
-            // eslint-disable-next-line no-console
+             
             console.error('Invalid call to CSS.set. Property ', property, ':: Value ', value, ':: Element ', dom);
             throw new Error('CSS value must be a string: ' + value);
         }
@@ -1325,7 +1325,7 @@
     const requestFullscreen = (sugarElem) => {
         const elem = sugarElem.dom;
         if (elem.requestFullscreen) {
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+             
             elem.requestFullscreen();
         }
         else if (elem.msRequestFullscreen) {
@@ -1338,7 +1338,7 @@
     const exitFullscreen = (sugarDoc) => {
         const doc = sugarDoc.dom;
         if (doc.exitFullscreen) {
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+             
             doc.exitFullscreen();
         }
         else if (doc.msExitFullscreen) {

@@ -3,7 +3,7 @@ import * as React from "react"
 import { cn } from "@/shared/lib/utils"
 
 function sanitizeNumberInputValue(value: string, min?: string | number): string {
-  let next = value.replace(/-/g, "")
+  const next = value.replace(/-/g, "")
   if (next === "") return next
 
   const minNumber = min === undefined || min === "" ? undefined : Number(min)

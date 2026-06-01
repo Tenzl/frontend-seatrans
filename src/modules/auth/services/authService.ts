@@ -49,6 +49,12 @@ const persistAuthUser = (user: User, remember = true) => {
   storage.setItem(USER_KEY, JSON.stringify(user))
 }
 
+const persistAuthToken = (token: string, remember = true) => {
+  if (typeof document === 'undefined') return
+  const expires = remember ? `max-age=${60 * 60 * 24};` : ''
+  document.cookie = `auth_token=${token}; path=/; ${expires} SameSite=Lax; ${window.location.protocol === 'https:' ? 'Secure;' : ''}`
+}
+
 const clearAuth = () => {
   if (!canUseStorage()) return
   localStorage.removeItem(USER_KEY)
@@ -57,6 +63,11 @@ const clearAuth = () => {
   // Back-compat (older builds)
   localStorage.removeItem('auth_token')
   sessionStorage.removeItem('auth_token')
+
+  // Clear cookie
+  if (typeof document !== 'undefined') {
+    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure;'
+  }
 }
 
 const readUser = (): string | null => {
@@ -94,6 +105,7 @@ export const authService = {
       // Save token and user to localStorage
       if (data.success && data.data) {
         persistAuthUser(data.data.user, remember)
+        persistAuthToken(data.data.token, remember)
       }
 
       return {
@@ -158,6 +170,7 @@ export const authService = {
       // Save token and user to localStorage
       if (data.success && data.data) {
         persistAuthUser(data.data.user, true)
+        persistAuthToken(data.data.token, true)
       }
 
       return {
