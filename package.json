@@ -76,6 +76,7 @@
     "swiper": "^12.0.3",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.184.0",
     "tinymce": "^8.2.2",
     "vaul": "^1.1.2",
     "xlsx": "^0.18.5",
@@ -83,6 +84,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.19.27",
+    "@types/three": "^0.184.1",
     "autoprefixer": "^10.4.22",
     "eslint": "9.39.4",
     "eslint-config-next": "16.1.6",

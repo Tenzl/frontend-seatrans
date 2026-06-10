@@ -21,24 +21,19 @@ export default function HomePageClient() {
 
   return (
     <div className="min-h-screen bg-background landing-grain">
-      <Header />
+      <Header overlay />
       <main className="landing-main">
         <Hero
           title="Maritime logistics across Vietnam and the region"
-          subtitle="South East Asia Transport & Logistics"
+          subtitle="Trụ sở tại Cảng Quy Nhơn · Việt Nam"
           primaryCTA={{
-            text: 'View services',
-            action: scrollToSolutions,
-          }}
-          secondaryCTA={{
-            text: 'Contact desk',
+            text: 'Liên hệ ngay',
             action: () => router.push('/contact'),
           }}
-          trustBadges={[
-            { label: 'Ports served', value: '147' },
-            { label: 'Vessels / year', value: '2,417' },
-            { label: 'Median response', value: '1h 52m' },
-          ]}
+          secondaryCTA={{
+            text: 'Xem dịch vụ',
+            action: scrollToSolutions,
+          }}
         />
         <Solutions onNavigate={(page) => router.push(`/${page}`)} />
         <Coverage />

@@ -12,7 +12,7 @@ export default function AdminInquiriesPage() {
     <ProtectedRoute requiredRole="INTERNAL">
       <MainDashboard
         roleGroup="INTERNAL"
-        initialSection="shipping-agency-inquiries"
+        initialSection="freight-forwarding-inquiries"
         onNavigateHome={() => router.push("/")}
       />
     </ProtectedRoute>

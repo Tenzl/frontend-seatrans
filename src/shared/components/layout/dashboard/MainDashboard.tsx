@@ -50,10 +50,7 @@ import {
 import { Separator } from "@/shared/components/ui/separator"
 import { Badge } from "@/shared/components/ui/badge"
 import { cn } from "@/shared/lib/utils"
-import {
-  buildDashboardUrl,
-  isShippingAgencyInquiryDetailSection,
-} from "@/shared/utils/dashboardNavigation"
+import { buildDashboardUrl } from "@/shared/utils/dashboardNavigation"
 
 interface MainDashboardProps {
   initialSection?: DashboardSection
@@ -274,30 +271,14 @@ function DashboardShell({
   const { state: sidebarState } = useSidebar()
 
   const querySection = searchParams.get("section") as DashboardSection | null
-  const queryInquiryId = searchParams.get("inquiryId")
 
   const activeSection = useMemo((): DashboardSection | undefined => {
     const isValid = (id: DashboardSection | null | undefined): id is DashboardSection =>
       Boolean(id && sections.some((s) => s.id === id))
 
-    if (isShippingAgencyInquiryDetailSection(querySection)) {
-      if (!queryInquiryId) {
-        return isValid(defaultSection) ? defaultSection : "shipping-agency-inquiries"
-      }
-      const shippingContext =
-        !defaultSection ||
-        defaultSection === "shipping-agency-inquiries" ||
-        defaultSection === "shipping-agency-inquiry-detail" ||
-        defaultSection === "profile"
-      if (!shippingContext && isValid(defaultSection)) {
-        return defaultSection
-      }
-      return "shipping-agency-inquiry-detail"
-    }
-
     if (isValid(querySection)) return querySection
     return isValid(defaultSection) ? defaultSection : undefined
-  }, [querySection, queryInquiryId, sections, defaultSection])
+  }, [querySection, sections, defaultSection])
 
   // Legacy sidebar URLs → unified Images hub with tab deep-link
   useEffect(() => {
@@ -323,27 +304,18 @@ function DashboardShell({
   }
 
   const setActiveSection = (sectionId: DashboardSection) => {
-    const leavingInquiryDetail =
-      isShippingAgencyInquiryDetailSection(activeSection ?? null) &&
-      !isShippingAgencyInquiryDetailSection(sectionId)
-    navigateDashboard(sectionId, undefined, { replace: leavingInquiryDetail })
+    navigateDashboard(sectionId)
   }
 
   useEffect(() => {
-    const section = searchParams.get("section")
     const inquiryId = searchParams.get("inquiryId")
     if (!inquiryId) return
-    if (isShippingAgencyInquiryDetailSection(section)) return
     if (!activeSection) return
 
     router.replace(buildDashboardUrl(pathname, activeSection), { scroll: false })
   }, [searchParams, activeSection, pathname, router])
 
-  const inquiryIdParam = searchParams.get("inquiryId")
-  const isShippingAgencyInquiryDetail = activeSection === "shipping-agency-inquiry-detail"
-  const sidebarHighlightSection: DashboardSection | undefined =
-    isShippingAgencyInquiryDetail ? "shipping-agency-inquiries" : activeSection
-  const shippingAgencyListConfig = getSectionConfig("shipping-agency-inquiries")
+  const sidebarHighlightSection: DashboardSection | undefined = activeSection
 
   const activeConfig = activeSection ? getSectionConfig(activeSection) : undefined
   const activeCategory = findCategoryForSection(categories, activeSection)
@@ -486,41 +458,20 @@ function DashboardShell({
               <Badge variant="secondary" className="shrink-0 font-medium tabular-nums">
                 {ROLE_GROUP_LABEL[roleGroup]}
               </Badge>
-              {isShippingAgencyInquiryDetail ? (
+              {activeCategory ? (
                 <>
                   <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" aria-hidden />
-                  <span className="truncate">Inquiries</span>
-                  <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" aria-hidden />
-                  <button
-                    type="button"
-                    className="truncate transition-colors hover:text-foreground"
-                    onClick={() => navigateDashboard("shipping-agency-inquiries")}
-                  >
-                    {shippingAgencyListConfig?.title ?? "Shipping Agency Inquiries"}
-                  </button>
+                  <span className="truncate">{activeCategory}</span>
+                </>
+              ) : null}
+              {activeConfig ? (
+                <>
                   <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" aria-hidden />
                   <span className="truncate font-medium text-foreground">
-                    {inquiryIdParam ? `Inquiry #${inquiryIdParam}` : "Inquiry detail"}
+                    {activeConfig.title ?? activeConfig.label}
                   </span>
                 </>
-              ) : (
-                <>
-                  {activeCategory ? (
-                    <>
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" aria-hidden />
-                      <span className="truncate">{activeCategory}</span>
-                    </>
-                  ) : null}
-                  {activeConfig ? (
-                    <>
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" aria-hidden />
-                      <span className="truncate font-medium text-foreground">
-                        {activeConfig.title ?? activeConfig.label}
-                      </span>
-                    </>
-                  ) : null}
-                </>
-              )}
+              ) : null}
             </nav>
           </div>
         </header>

@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
 import { ColumnDef } from '@tanstack/react-table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
@@ -12,7 +11,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { QuotePreview } from '@/modules/inquiries/components/common/Quote-hcm'
 import { InquiryDataTable } from './InquiryDataTable'
 import { InquiryDetailDrawer } from './InquiryDetailDrawer'
-import { buildDashboardUrl } from '@/shared/utils/dashboardNavigation'
 import { useInquiryData } from './useInquiryData'
 import { useInvoicePreview } from './useInvoicePreview'
 import {
@@ -42,8 +40,6 @@ export function BaseInquiryHistoryLayout({
   title,
   description = 'View and manage your inquiry submissions',
 }: BaseInquiryHistoryLayoutProps) {
-  const router = useRouter()
-  const pathname = usePathname()
   const { inquiries, isLoading, error, fetchInquiries, deleteInquiries, updateStatus } = useInquiryData({
     serviceType,
     isAdmin,
@@ -81,16 +77,6 @@ export function BaseInquiryHistoryLayout({
   }
 
   const handleOpenDetail = (inquiry: any) => {
-    const slug = getServiceSlugFromInquiry(inquiry) || serviceType
-    if (isAdmin && slug === 'shipping-agency') {
-      router.push(
-        buildDashboardUrl(pathname, 'shipping-agency-inquiry-detail', {
-          inquiryId: inquiry.id,
-        }),
-        { scroll: false },
-      )
-      return
-    }
     setDetailInquiry(inquiry)
   }
 

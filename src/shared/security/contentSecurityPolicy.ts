@@ -29,9 +29,12 @@ export function buildContentSecurityPolicy(nonce: string): string {
         "'unsafe-eval'",
       ].join(' ')
 
+  // blob: + data: are required so GLTFLoader/ImageBitmapLoader can fetch() the
+  // object-URL textures it extracts from a GLB (fetch is governed by connect-src,
+  // not img-src). Without them three.js reports "Couldn't load texture blob:".
   const connectSrc = isProd
-    ? `'self' ${API_ORIGIN} https: http:`
-    : `'self' ${API_ORIGIN} ws: wss: https: http:`
+    ? `'self' ${API_ORIGIN} https: http: blob: data:`
+    : `'self' ${API_ORIGIN} ws: wss: https: http: blob: data:`
 
   return [
     "default-src 'self'",

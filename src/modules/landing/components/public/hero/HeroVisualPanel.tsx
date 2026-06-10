@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { MapPin } from 'lucide-react'
 import { ImageWithFallback } from '@/shared/components/ImageWithFallback'
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const
@@ -21,6 +22,10 @@ export function HeroVisualPanel({
   imageSrc,
   imageAlt,
   reducedMotion,
+  overlayEyebrow,
+  overlayTitle,
+  overlayFooter,
+  floatingBadge,
   variant = 'service',
   compact = false,
 }: HeroVisualPanelProps) {
@@ -68,12 +73,47 @@ export function HeroVisualPanel({
         />
         <div
           className={
-            variant === 'contact'
-              ? 'absolute inset-0 bg-gradient-to-t from-scrim/75 via-scrim/25 to-scrim/10'
-              : 'absolute inset-0 bg-gradient-to-tr from-scrim/55 via-scrim/15 to-transparent'
+            overlayTitle
+              ? 'absolute inset-0 bg-gradient-to-t from-scrim/80 via-scrim/30 to-scrim/5'
+              : variant === 'contact'
+                ? 'absolute inset-0 bg-gradient-to-t from-scrim/75 via-scrim/25 to-scrim/10'
+                : 'absolute inset-0 bg-gradient-to-tr from-scrim/55 via-scrim/15 to-transparent'
           }
           aria-hidden
         />
+
+        {floatingBadge && (
+          <div className="absolute right-4 top-4 md:right-5 md:top-5">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-md">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+              </span>
+              {floatingBadge}
+            </span>
+          </div>
+        )}
+
+        {overlayTitle && (
+          <div className="absolute inset-x-4 bottom-4 md:inset-x-5 md:bottom-5">
+            <div className="max-w-sm rounded-2xl border border-white/15 bg-white/10 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_24px_48px_-20px_rgba(0,0,0,0.55)] backdrop-blur-md md:p-5">
+              {overlayEyebrow && (
+                <p className="mb-1.5 flex items-center gap-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-white/80">
+                  <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+                  {overlayEyebrow}
+                </p>
+              )}
+              <p className="text-sm font-semibold leading-snug text-white md:text-base">
+                {overlayTitle}
+              </p>
+              {overlayFooter && (
+                <p className="mt-1 text-[0.78rem] leading-relaxed text-white/80">
+                  {overlayFooter}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   )

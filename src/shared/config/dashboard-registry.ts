@@ -2,18 +2,14 @@ import { lazy } from "react"
 import type React from "react"
 import {
   User,
-  Calculator,
-  ListChecks,
   Package,
   Truck,
-  Ship,
   Anchor,
   FileText,
   Image as ImageIcon,
   Cog,
   LayoutDashboard,
   Database,
-  BriefcaseBusiness,
 } from "lucide-react"
 
 import { RoleGroup } from "@/shared/types/dashboard"
@@ -23,14 +19,10 @@ export type SectionRole = "ADMIN" | "EMPLOYEE" | "CUSTOMER"
 
 export type DashboardSection =
   | "profile"
-  | "create-epda"
-  | "shipping-agency-inquiry-detail"
-  | "shipping-agency-inquiries"
   | "freight-forwarding-inquiries"
   | "logistics-inquiries"
   | "chartering-inquiries"
   | "special-request-inquiries"
-  | "users"
   | "images"
   | "services"
   | "ports"
@@ -38,8 +30,6 @@ export type DashboardSection =
   | "cargo-types"
   | "categories"
   | "posts"
-  | "booking-partners"
-  | "booking-shipping"
   | "inquiry"
 
 export interface SectionConfig {
@@ -58,13 +48,6 @@ export interface SectionConfig {
 
 // Lazy loaded components
 const EditProfileTab = lazy(() => import("@/features/admin/components/EditProfileTab").then(m => ({ default: m.EditProfileTab })))
-const CreateInvoiceTab = lazy(() => import("@/features/admin/components/CreateInvoiceTab").then(m => ({ default: m.CreateInvoiceTab })))
-const ShippingAgencyInquiryDetailTab = lazy(() =>
-  import("@/features/admin/components/ShippingAgencyInquiryDetailTab").then(m => ({
-    default: m.ShippingAgencyInquiryDetailTab,
-  })),
-)
-const ShippingAgencyInquiriesTab = lazy(() => import("@/features/admin/components/ShippingAgencyInquiriesTab").then(m => ({ default: m.ShippingAgencyInquiriesTab })))
 const FreightForwardingInquiriesTab = lazy(() => import("@/features/admin/components/FreightForwardingInquiriesTab").then(m => ({ default: m.FreightForwardingInquiriesTab })))
 const LogisticsInquiriesTab = lazy(() => import("@/features/admin/components/LogisticsInquiriesTab").then(m => ({ default: m.LogisticsInquiriesTab })))
 const CharteringInquiriesTab = lazy(() => import("@/features/admin/components/CharteringInquiriesTab").then(m => ({ default: m.CharteringInquiriesTab })))
@@ -76,9 +59,6 @@ const ManageOffices = lazy(() => import("@/features/admin/components/ManageOffic
 const ManageCommodities = lazy(() => import("@/modules/gallery/components/admin/CommodityManagement").then(m => ({ default: m.ManageCommodities })))
 const ManageCategories = lazy(() => import("@/modules/categories/components/admin/CategoryManagement").then(m => ({ default: m.ManageCategories })))
 const ManagePosts = lazy(() => import("@/modules/posts/components/admin/PostManagement").then(m => ({ default: m.ManagePosts })))
-const PartnerManagementTab = lazy(() => import("@/features/admin/components/PartnerManagementTab").then(m => ({ default: m.PartnerManagementTab })))
-const BookingShippingTab = lazy(() => import("@/features/admin/components/BookingShippingTab").then(m => ({ default: m.BookingShippingTab })))
-const ManageUsers = lazy(() => import("@/features/admin/components/ManageUsers").then(m => ({ default: m.ManageUsers })))
 
 const UserInquiriesPage = lazy(() => import("@/features/user/component/UserInquiriesPage").then(m => ({ default: m.UserInquiriesPage })))
 
@@ -92,37 +72,6 @@ export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
     roleGroups: ["INTERNAL", "EXTERNAL"],
     category: "Profile",
     title: "Edit Profile",
-  },
-  "create-epda": {
-    id: "create-epda",
-    label: "Create EPDA",
-    icon: Calculator,
-    component: CreateInvoiceTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Port Charge",
-    title: "Create EPDA",
-  },
-  "shipping-agency-inquiry-detail": {
-    id: "shipping-agency-inquiry-detail",
-    label: "Inquiry detail",
-    icon: ListChecks,
-    component: ShippingAgencyInquiryDetailTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Inquiries",
-    title: "Shipping Agency Inquiry",
-    navHidden: true,
-  },
-  "shipping-agency-inquiries": {
-    id: "shipping-agency-inquiries",
-    label: "Shipping Agency",
-    icon: ListChecks,
-    component: ShippingAgencyInquiriesTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Inquiries",
-    title: "Shipping Agency Inquiries",
   },
   "freight-forwarding-inquiries": {
     id: "freight-forwarding-inquiries",
@@ -174,17 +123,6 @@ export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
     category: "Data Management",
     title: "Gallery Images",
     description: "Upload and manage field gallery images by area, port, and cargo type.",
-  },
-  users: {
-    id: "users",
-    label: "Users",
-    icon: User,
-    component: ManageUsers,
-    roles: ["ADMIN"],
-    roleGroups: ["INTERNAL"],
-    category: "Data Management",
-    title: "Manage Users",
-    description: "Manage internal accounts and view external customer accounts.",
   },
   services: {
     id: "services",
@@ -245,26 +183,6 @@ export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
     roleGroups: ["INTERNAL"],
     category: "Content Management",
     title: "Manage Posts",
-  },
-  "booking-partners": {
-    id: "booking-partners",
-    label: "Partner",
-    icon: BriefcaseBusiness,
-    component: PartnerManagementTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Booking Management",
-    title: "Partner Management",
-  },
-  "booking-shipping": {
-    id: "booking-shipping",
-    label: "Shipping",
-    icon: Ship,
-    component: BookingShippingTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Booking Management",
-    title: "Shipping",
   },
   inquiry: {
     id: "inquiry",
