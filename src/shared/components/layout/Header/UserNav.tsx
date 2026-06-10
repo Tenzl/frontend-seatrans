@@ -8,9 +8,10 @@ import type { User } from '@/shared/types/dashboard'
 interface UserNavProps {
   user: User
   onLogout: () => void
+  light?: boolean
 }
 
-export function UserNav({ user, onLogout }: UserNavProps) {
+export function UserNav({ user, onLogout, light }: UserNavProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const router = useRouter()
 
@@ -48,14 +49,14 @@ export function UserNav({ user, onLogout }: UserNavProps) {
       onMouseEnter={() => setShowDropdown(true)}
       onMouseLeave={() => setShowDropdown(false)}
     >
-      <button className="flex items-center space-x-2 px-3 py-2 rounded-full hover:bg-accent transition-colors">
-        <div className="flex items-center justify-center w-7 h-7 bg-primary/10 rounded-full">
-          <UserIcon className="w-4 h-4 text-primary" />
+      <button className={`flex items-center space-x-2 px-3 py-2 rounded-full transition-colors ${light ? 'hover:bg-white/10 text-white' : 'hover:bg-accent'}`}>
+        <div className={`flex items-center justify-center w-7 h-7 rounded-full ${light ? 'bg-white/15' : 'bg-primary/10'}`}>
+          <UserIcon className={`w-4 h-4 ${light ? 'text-white' : 'text-primary'}`} />
         </div>
         <span className="hidden sm:inline text-sm font-medium">
           {user.fullName || user.email}
         </span>
-        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        <ChevronDown className={`w-4 h-4 ${light ? 'text-white/70' : 'text-muted-foreground'}`} />
       </button>
 
       {showDropdown && (

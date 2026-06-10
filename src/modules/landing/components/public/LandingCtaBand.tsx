@@ -30,7 +30,7 @@ export function LandingCtaBand() {
               <p className="text-xs font-semibold tracking-[0.14em] uppercase text-primary-foreground/80">
                 Ready to move cargo
               </p>
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-balance">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-balance text-white">
                 Talk to our operations team across Vietnam ports
               </h2>
               <p className="text-primary-foreground/85 leading-relaxed">

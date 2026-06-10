@@ -114,9 +114,10 @@ export default function Header({ overlay = false, minimal = false }: HeaderProps
         {showNotifications ? (
           <NotificationBell
             onNavigateToInquiries={() => handleNavigate('/dashboard?section=inquiry')}
+            light={transparent}
           />
         ) : null}
-        <UserNav user={user} onLogout={logout} />
+        <UserNav user={user} onLogout={logout} light={transparent} />
       </div>
     ) : (
       <Button
@@ -219,23 +220,7 @@ export default function Header({ overlay = false, minimal = false }: HeaderProps
                   <NavMenu menu={menuData} light={transparent} />
                 </div>
 
-                <Button
-                  onClick={() => router.push('/contact')}
-                  className={cn(
-                    'hidden gap-2 rounded-full bg-primary font-semibold text-primary-foreground shadow-[0_10px_24px_-12px_hsl(var(--primary)/0.7)] ring-1 ring-inset ring-white/15 transition-transform hover:bg-primary/90 active:scale-[0.97] sm:inline-flex',
-                    MORPH,
-                    isScrolled ? 'h-9 px-4 text-sm' : 'h-10 px-5 text-sm',
-                  )}
-                >
-                  <Phone
-                    className={cn('shrink-0', isScrolled ? 'h-3.5 w-3.5' : 'h-4 w-4')}
-                    strokeWidth={2}
-                  />
-                  <span className="hidden lg:inline">Liên hệ ngay</span>
-                  <span className="lg:hidden">Liên hệ</span>
-                </Button>
-
-                <div className="hidden md:block">{renderAuthCluster()}</div>
+<div className="hidden md:block">{renderAuthCluster()}</div>
 
                 <Button
                   variant="ghost"
@@ -307,17 +292,7 @@ export default function Header({ overlay = false, minimal = false }: HeaderProps
               })}
             </div>
 
-            <div className="mt-6">
-              <Button
-                className="w-full gap-2 rounded-full bg-primary text-primary-foreground"
-                onClick={() => handleNavigate('/contact')}
-              >
-                <Phone className="h-4 w-4" strokeWidth={2} />
-                Liên hệ ngay
-              </Button>
-            </div>
-
-            {isAuthenticated && user ? (
+{isAuthenticated && user ? (
               <div className="mt-auto border-t pb-8 pt-4">
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 px-2">

@@ -93,12 +93,29 @@ export default function Hero3DModel() {
       },
     )
 
+    let isVisible = true
+
     const renderLoop = () => {
+      if (!isVisible || disposed) return
       controls.update()
       renderer.render(scene, camera)
       frame = requestAnimationFrame(renderLoop)
     }
     frame = requestAnimationFrame(renderLoop)
+
+    // Pause the rAF loop when the hero scrolls off-screen to free GPU for other sections
+    const visObs = new IntersectionObserver(
+      ([entry]) => {
+        const wasVisible = isVisible
+        isVisible = entry.isIntersecting
+        if (isVisible && !wasVisible && !disposed) {
+          cancelAnimationFrame(frame)
+          frame = requestAnimationFrame(renderLoop)
+        }
+      },
+      { threshold: 0 },
+    )
+    visObs.observe(mount)
 
     const ro = new ResizeObserver(() => {
       const w = mount.clientWidth || 1
@@ -111,7 +128,9 @@ export default function Hero3DModel() {
 
     return () => {
       disposed = true
+      isVisible = false
       cancelAnimationFrame(frame)
+      visObs.disconnect()
       ro.disconnect()
       controls.dispose()
       pmrem.dispose()

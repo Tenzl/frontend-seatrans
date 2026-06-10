@@ -4,6 +4,8 @@ interface UseIntersectionObserverOptions {
   threshold?: number | number[]
   root?: Element | null
   rootMargin?: string
+  /** Keep isIntersecting true after the first reveal (default) so scroll-reveal animations don't restart. */
+  once?: boolean
 }
 
 export function useIntersectionObserver(
@@ -22,9 +24,16 @@ export function useIntersectionObserver(
       return
     }
 
+    const once = options.once ?? true
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setIsIntersecting(entry.isIntersecting)
+        if (entry.isIntersecting) {
+          setIsIntersecting(true)
+          if (once) observer.disconnect()
+        } else if (!once) {
+          setIsIntersecting(false)
+        }
       },
       {
         threshold: options.threshold || 0.1,
@@ -38,7 +47,7 @@ export function useIntersectionObserver(
     return () => {
       observer.disconnect()
     }
-  }, [options.threshold, options.root, options.rootMargin])
+  }, [options.threshold, options.root, options.rootMargin, options.once])
 
   return [elementRef, isIntersecting]
 }

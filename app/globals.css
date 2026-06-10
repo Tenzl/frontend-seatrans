@@ -1,9 +1,3 @@
-/* Google Fonts - Import một lần duy nhất */
-@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap");
-
 /* Tailwind directives - sẽ được compile bởi Tailwind */
 @tailwind base;
 @tailwind components;
@@ -381,9 +375,6 @@
     --surface-highlight: 218 12% 96%;
     --scrim: 218 24% 3%;
     --glass-border: 218 12% 96%;
-    --font-sans: "Roboto", sans-serif;
-    --font-serif: "Merriweather", serif;
-    --font-mono: "Fira Code", monospace;
     --radius: 0.5rem;
     --shadow-x: 0rem;
     --shadow-y: 0.1875rem;

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
+import { Archivo, Merriweather, Fira_Code } from 'next/font/google'
 import { connection } from 'next/server'
 import { headers } from 'next/headers'
 import { Suspense } from 'react'
@@ -9,6 +10,29 @@ import { NProgressProvider } from '@/shared/components/NProgressProvider'
 import '@/styles/nprogress.css'
 import './globals.css'
 import { organizationSchemaJson, siteUrl } from '@/shared/seo/organizationSchema'
+
+const archivo = Archivo({
+  subsets: ['latin', 'vietnamese'],
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-sans',
+  display: 'swap',
+})
+
+const merriweather = Merriweather({
+  subsets: ['latin', 'vietnamese'],
+  weight: ['400', '700'],
+  variable: '--font-serif',
+  display: 'swap',
+  preload: false,
+})
+
+const firaCode = Fira_Code({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-mono',
+  display: 'swap',
+  preload: false,
+})
 
 const gaMeasurementId = 'G-NQK767RG2P'
 
@@ -72,7 +96,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body suppressHydrationWarning>
+      <body className={`${archivo.variable} ${merriweather.variable} ${firaCode.variable}`} suppressHydrationWarning>
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
           strategy="afterInteractive"

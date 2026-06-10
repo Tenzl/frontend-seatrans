@@ -10,9 +10,10 @@ import { useNotificationPolling } from '@/modules/notifications/hooks/useNotific
 
 interface NotificationBellProps {
   onNavigateToInquiries?: () => void
+  light?: boolean
 }
 
-export function NotificationBell({ onNavigateToInquiries }: NotificationBellProps) {
+export function NotificationBell({ onNavigateToInquiries, light }: NotificationBellProps) {
   const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead } =
     useNotificationPolling({ onNavigateToInquiries })
 
@@ -30,7 +31,12 @@ export function NotificationBell({ onNavigateToInquiries }: NotificationBellProp
           type="button"
           variant="ghost"
           size="icon"
-          className="relative shrink-0 rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
+          className={cn(
+            'relative shrink-0 rounded-full',
+            light
+              ? 'text-white hover:bg-white/10 hover:text-white'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+          )}
           aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
         >
           <Bell className="h-4 w-4" />
