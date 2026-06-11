@@ -49,12 +49,6 @@ const persistAuthUser = (user: User, remember = true) => {
   storage.setItem(USER_KEY, JSON.stringify(user))
 }
 
-const persistAuthToken = (token: string, remember = true) => {
-  if (typeof document === 'undefined') return
-  const expires = remember ? `max-age=${60 * 60 * 24};` : ''
-  document.cookie = `auth_token=${token}; path=/; ${expires} SameSite=Lax; ${window.location.protocol === 'https:' ? 'Secure;' : ''}`
-}
-
 const clearAuth = () => {
   if (!canUseStorage()) return
   localStorage.removeItem(USER_KEY)
@@ -102,10 +96,10 @@ export const authService = {
         }
       }
 
-      // Save token and user to localStorage
+      // Persist only the non-sensitive user profile. The JWT session lives in an
+      // HttpOnly cookie set by the backend — never store the token in JS (XSS-safe).
       if (data.success && data.data) {
         persistAuthUser(data.data.user, remember)
-        persistAuthToken(data.data.token, remember)
       }
 
       return {
@@ -167,10 +161,10 @@ export const authService = {
         }
       }
 
-      // Save token and user to localStorage
+      // Persist only the non-sensitive user profile; the JWT stays in the
+      // backend's HttpOnly cookie (never stored in JS).
       if (data.success && data.data) {
         persistAuthUser(data.data.user, true)
-        persistAuthToken(data.data.token, true)
       }
 
       return {

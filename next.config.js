@@ -3,6 +3,15 @@ const path = require('path')
 
 const isProd = process.env.NODE_ENV === 'production'
 
+// Backend origin the /api/* proxy forwards to. Server-only (no NEXT_PUBLIC_
+// prefix). In prod set API_PROXY_TARGET to the backend URL (e.g. the Render
+// origin); in dev it defaults to localhost.
+const explicitProxyTarget =
+  process.env.API_PROXY_TARGET || process.env.NEXT_PUBLIC_API_BASE_URL || ''
+const API_PROXY_TARGET = (explicitProxyTarget || 'http://localhost:8080')
+  .replace(/\/+$/, '')
+  .replace(/\/api(?:\/v\d+)?$/, '')
+
 const nextConfig = {
   // Repo root also has package-lock.json (shadcn); app + deps live in frontend/.
   outputFileTracingRoot: path.join(__dirname),
@@ -47,11 +56,15 @@ const nextConfig = {
     ],
   },
   async rewrites() {
-    if (isProd) return []
+    // Proxy /api/* to the backend so the session cookie stays same-origin
+    // (first-party) — this is what makes login work on mobile, where cross-site
+    // cookies are blocked. Enabled in prod too (BFF pattern), but only when a
+    // backend target is explicitly configured.
+    if (isProd && !explicitProxyTarget) return []
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8080/api/:path*',
+        destination: `${API_PROXY_TARGET}/api/:path*`,
       },
     ]
   },
