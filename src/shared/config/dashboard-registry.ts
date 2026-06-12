@@ -25,9 +25,7 @@ export type DashboardSection =
   | "special-request-inquiries"
   | "images"
   | "services"
-  | "ports"
   | "offices"
-  | "cargo-types"
   | "categories"
   | "posts"
   | "inquiry"
@@ -54,9 +52,7 @@ const CharteringInquiriesTab = lazy(() => import("@/features/admin/components/Ch
 const SpecialRequestInquiriesTab = lazy(() => import("@/features/admin/components/SpecialRequestInquiriesTab").then(m => ({ default: m.SpecialRequestInquiriesTab })))
 const GalleryImageHub = lazy(() => import("@/modules/gallery/components/admin/GalleryImageHub").then(m => ({ default: m.GalleryImageHub })))
 const ManageServices = lazy(() => import("@/features/admin/components/ManageServices").then(m => ({ default: m.ManageServices })))
-const ManagePorts = lazy(() => import("@/features/admin/components/ManagePorts").then(m => ({ default: m.ManagePorts })))
 const ManageOffices = lazy(() => import("@/features/admin/components/ManageOffices").then(m => ({ default: m.ManageOffices })))
-const ManageCommodities = lazy(() => import("@/modules/gallery/components/admin/CommodityManagement").then(m => ({ default: m.ManageCommodities })))
 const ManageCategories = lazy(() => import("@/modules/categories/components/admin/CategoryManagement").then(m => ({ default: m.ManageCategories })))
 const ManagePosts = lazy(() => import("@/modules/posts/components/admin/PostManagement").then(m => ({ default: m.ManagePosts })))
 
@@ -134,16 +130,6 @@ export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
     category: "Data Management",
     title: "Manage Services",
   },
-  ports: {
-    id: "ports",
-    label: "Ports",
-    icon: Anchor,
-    component: ManagePorts,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Data Management",
-    title: "Manage Ports",
-  },
   offices: {
     id: "offices",
     label: "Offices",
@@ -153,16 +139,6 @@ export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
     roleGroups: ["INTERNAL"],
     category: "Data Management",
     title: "Manage Offices",
-  },
-  "cargo-types": {
-    id: "cargo-types",
-    label: "Cargo",
-    icon: Package,
-    component: ManageCommodities,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Data Management",
-    title: "Manage Cargo",
   },
   categories: {
     id: "categories",
