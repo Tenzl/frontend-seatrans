@@ -1,26 +1,17 @@
 'use client'
 
-import dynamic from 'next/dynamic'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { ArrowRight, Mail, MapPin, Phone, Printer } from 'lucide-react'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 
 /**
- * Landing hero — full brand-blue field with the company identity on the left
- * and an auto-rotating 3D model of the SEATRANS vessel on the right, over a
- * white operational contact card anchored to the foot of the banner.
+ * Landing hero — a full-bleed photo of the SEATRANS headquarters with a dark
+ * scrim (heavier on the left) so the company identity and CTAs read cleanly,
+ * over a white operational contact card anchored to the foot of the banner.
  */
 
-// WebGL island, client-only, lazy-loaded so it never blocks first paint.
-const Hero3DModel = dynamic(() => import('./hero/Hero3DModel'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full w-full items-center justify-center">
-      <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/25 border-t-white/90" />
-    </div>
-  ),
-})
-
+const HERO_PHOTO = '/landing-image/seatrans_hero.png'
 const COMPANY_NAME_EN = 'South East Asia Transport & Logistics J.S.C'
 const LEAD =
   'SEATRANS cung cấp giải pháp vận tải và logistics toàn diện, kết nối hàng hóa đến mọi nơi an toàn, nhanh chóng và hiệu quả.'
@@ -64,7 +55,7 @@ interface HeroProps {
   image?: string
   primaryCTA?: { text: string; action: () => void }
   secondaryCTA?: { text: string; action: () => void }
-  /** @deprecated Hero now spotlights the identity + 3D model + contact card. */
+  /** @deprecated Hero now spotlights the identity over the HQ photo + contact card. */
   trustBadges?: { label: string; value: string }[]
 }
 
@@ -95,30 +86,35 @@ export function Hero({ primaryCTA, secondaryCTA }: HeroProps = {}) {
       }
 
   return (
-    <section className="relative w-full bg-[#0a2356]" aria-label="Giới thiệu công ty">
-      {/* Full brand-blue field with a soft light pooled top-left and a darker foot */}
+    <section className="relative w-full bg-background" aria-label="Giới thiệu công ty">
+      {/* Photo banner — the HQ image is bounded to this block so the contact card below sits outside it */}
+      <div className="relative">
+      {/* Full-bleed HQ photo with a dark scrim (heavier left, fading right) for legibility */}
       <div className="absolute inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_72%_60%_at_22%_28%,#1a4ba0,transparent_62%)]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#06143a]" />
+        <Image
+          src={HERO_PHOTO}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[78%_58%] md:object-[center_58%]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#06143a]/96 via-[#06143a]/80 to-[#06143a]/25" />
+        {/* Extra dark panel behind the text block on the left */}
+        <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-[#06143a]/95 via-[#06143a]/45 to-transparent md:w-[74%] lg:w-[66%]" />
+        {/* Slight top tint only (keeps the transparent header legible); no bottom darkening */}
+        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#06143a]/25 to-transparent" />
       </div>
 
-      <div className="relative z-10 mx-auto grid min-h-[640px] max-w-[1400px] items-center gap-6 px-4 pb-28 pt-28 sm:px-6 md:min-h-[680px] md:pt-32 lg:grid-cols-2 lg:gap-12 lg:px-8">
+      <div className="relative z-10 mx-auto grid min-h-[600px] max-w-[1400px] items-center gap-6 px-4 pb-16 pt-28 sm:px-6 md:min-h-[700px] md:pt-32 lg:grid-cols-12 lg:gap-12 lg:px-8">
         {/* Left — identity & CTAs */}
-        <Stage {...stageProps} className="text-white">
-          {/* Eyebrow — liquid-glass trust badge */}
-          <Item {...itemProps} className="mb-6">
-            <span className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-md">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-              </span>
-              Đối tác logistics tin cậy tại Đông Nam Á
-            </span>
-          </Item>
+        <Stage {...stageProps} className="text-white lg:col-span-7 xl:col-span-6">
+          {/* Spacer kept where the eyebrow badge was, so the heading doesn't ride up over the rooftop SEATRANS sign */}
+          <Item {...itemProps} className="mb-6 h-10" aria-hidden />
 
           {/* Heading — company name, second line in a solid accent (no gradient text) */}
           <Item {...itemProps} className="max-w-[640px]">
-            <h1 className="text-balance font-extrabold leading-[1.12] tracking-[-0.02em] text-white text-[clamp(1.9rem,1.2rem+2.4vw,3.1rem)] [text-shadow:0_2px_20px_rgba(6,16,40,0.5)]">
+            <h1 className="text-balance font-extrabold leading-[1.12] tracking-[-0.02em] text-white text-[clamp(1.7rem,1.05rem+2vw,2.6rem)] [text-shadow:0_2px_20px_rgba(6,16,40,0.5)]">
               Công ty Cổ phần Vận tải{' '}
               <span className="text-sky-300">&amp; Giao nhận Đông Nam Á</span>
             </h1>
@@ -136,40 +132,36 @@ export function Hero({ primaryCTA, secondaryCTA }: HeroProps = {}) {
           </Item>
 
           {/* CTAs with circular-arrow badge */}
-          <Item {...itemProps} className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Item {...itemProps} className="mt-9 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
             <button
               type="button"
               onClick={primary.action}
-              className="group inline-flex items-center justify-between gap-3 rounded-full bg-primary py-2.5 pl-7 pr-2.5 text-sm font-semibold text-primary-foreground shadow-[0_18px_40px_-12px_hsl(var(--primary)/0.95)] ring-1 ring-inset ring-white/25 transition-[transform,background-color] duration-300 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="group inline-flex items-center justify-between gap-2.5 rounded-full bg-primary py-2 pl-5 pr-2 text-sm font-semibold text-primary-foreground shadow-[0_18px_40px_-12px_hsl(var(--primary)/0.95)] ring-1 ring-inset ring-white/25 transition-[transform,background-color] duration-300 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               {primary.text}
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/25 transition-transform duration-300 group-hover:translate-x-0.5">
-                <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/25 transition-transform duration-300 group-hover:translate-x-0.5">
+                <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
               </span>
             </button>
             <button
               type="button"
               onClick={secondary.action}
-              className="group inline-flex items-center justify-between gap-3 rounded-full border border-white/25 py-2.5 pl-7 pr-2.5 text-sm font-medium text-white/85 transition-[transform,border-color,background-color] duration-300 hover:border-white/50 hover:bg-white/10 hover:text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="group inline-flex items-center justify-between gap-2.5 rounded-full border border-white/25 py-2 pl-5 pr-2 text-sm font-medium text-white/85 transition-[transform,border-color,background-color] duration-300 hover:border-white/50 hover:bg-white/10 hover:text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               {secondary.text}
-              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/30 transition-transform duration-300 group-hover:translate-x-0.5">
-                <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              <span className="flex h-7 w-7 items-center justify-center rounded-full border border-white/30 transition-transform duration-300 group-hover:translate-x-0.5">
+                <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
               </span>
             </button>
           </Item>
         </Stage>
-
-        {/* Right — auto-rotating 3D vessel (desktop only for performance) */}
-        <div className="relative hidden h-[420px] lg:block xl:h-[500px]">
-          <Hero3DModel />
-        </div>
+      </div>
       </div>
 
-      {/* White operational contact card — straddles the banner's bottom edge */}
+      {/* White operational contact card — sits below the photo banner, overlapping its bottom edge */}
       <Card
         {...cardProps}
-        className="relative z-10 mx-auto -mt-9 max-w-[1400px] px-4 pb-6 sm:px-6 lg:-mt-11 lg:px-8"
+        className="relative z-10 mx-auto -mt-10 max-w-[1400px] px-4 pb-6 sm:px-6 lg:-mt-12 lg:px-8"
       >
         <div className="overflow-hidden rounded-2xl border border-border/50 bg-white shadow-[0_30px_60px_-28px_rgba(8,24,68,0.45)]">
           <div className="grid grid-cols-1 gap-px bg-border/60 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1.2fr_1.5fr]">

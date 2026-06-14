@@ -120,6 +120,8 @@ function PopupBody({
 interface ProvinceMarkerProps {
   province: MapProvince
   isActive: boolean
+  /** Render the radar ripple only while the map is on screen — stops the SMIL loop when scrolled away */
+  animate: boolean
   onEnter: (id: number) => void
   onLeave: (id: number) => void
   onClick: (id: number) => void
@@ -132,6 +134,7 @@ interface ProvinceMarkerProps {
 const ProvinceMarker = memo(function ProvinceMarker({
   province,
   isActive,
+  animate,
   onEnter,
   onLeave,
   onClick,
@@ -153,7 +156,16 @@ const ProvinceMarker = memo(function ProvinceMarker({
         onClick={handleClick}
         className="cursor-pointer"
       >
-        {/* Ripple rings radiating outward — disabled temporarily */}
+        {/* Radar ripple — GPU-composited CSS scale, only while the map is on screen */}
+        {animate && (
+          <circle
+            className="map-ping"
+            r={8}
+            fill="none"
+            stroke="hsl(var(--success))"
+            strokeWidth={1.5}
+          />
+        )}
 
         {/* Main Marker Circle */}
         <circle
@@ -203,6 +215,9 @@ export function Coverage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [geoData, setGeoData] = useState<any | null>(null)
   const [ref, isInView] = useIntersectionObserver()
+  // Separate toggling observer (once: false) gates the marker ripple so the SMIL
+  // animation loops only while the map is actually on screen.
+  const [mapViewRef, mapInView] = useIntersectionObserver({ once: false, threshold: 0 })
 
   const hoverHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Ref (not state) — only used to guard the hide timer, no render needed
@@ -404,7 +419,7 @@ export function Coverage() {
                   </div>
 
                   {/* Map Container */}
-                  <div className="relative bg-card rounded-lg overflow-hidden border">
+                  <div ref={mapViewRef} className="relative bg-card rounded-lg overflow-hidden border">
                     {selectedPort && (
                       <div className="absolute inset-0 z-30 bg-black/25 backdrop-blur-sm" />
                     )}
@@ -424,6 +439,7 @@ export function Coverage() {
                             key={province.id}
                             province={province}
                             isActive={activeProvince === province.id}
+                            animate={mapInView}
                             onEnter={handleEnter}
                             onLeave={handleLeave}
                             onClick={handleClick}

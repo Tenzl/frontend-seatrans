@@ -158,7 +158,7 @@ export default function Header({ overlay = false, minimal = false }: HeaderProps
           <div
             aria-hidden
             className={cn(
-              'pointer-events-none absolute inset-x-0 top-0 h-[92px] bg-[rgba(5,25,60,0.34)] backdrop-blur-[10px] [mask-image:linear-gradient(to_bottom,black_0%,black_58%,transparent_100%)] transition-opacity duration-[800ms] ease-out motion-reduce:transition-none',
+              'pointer-events-none absolute inset-x-0 top-0 h-[92px] bg-[rgba(5,25,60,0.16)] backdrop-blur-[10px] [mask-image:linear-gradient(to_bottom,black_0%,black_58%,transparent_100%)] transition-opacity duration-[800ms] ease-out motion-reduce:transition-none',
               isScrolled ? 'opacity-0' : 'opacity-100',
             )}
           />
