@@ -114,11 +114,11 @@ export function Hero({ primaryCTA, secondaryCTA }: HeroProps = {}) {
 
           {/* Heading — company name, second line in a solid accent (no gradient text) */}
           <Item {...itemProps} className="max-w-[640px]">
-            <h1 className="text-balance font-extrabold leading-[1.12] tracking-[-0.02em] text-white text-[clamp(1.7rem,1.05rem+2vw,2.6rem)] [text-shadow:0_2px_20px_rgba(6,16,40,0.5)]">
+            <h1 className="text-balance font-bold leading-[1.12] tracking-[-0.02em] text-white text-[clamp(1.7rem,1.05rem+2vw,2.6rem)] [text-shadow:0_2px_20px_rgba(6,16,40,0.5)]">
               Công ty Cổ phần Vận tải{' '}
               <span className="text-sky-300">&amp; Giao nhận Đông Nam Á</span>
             </h1>
-            <p className="mt-4 text-base font-light italic text-white/80 md:text-lg">
+            <p className="mt-4 text-base font-light italic text-white md:text-lg">
               {COMPANY_NAME_EN}
             </p>
             <span className="mt-5 block h-1 w-16 rounded-full bg-sky-400" aria-hidden />
@@ -126,7 +126,7 @@ export function Hero({ primaryCTA, secondaryCTA }: HeroProps = {}) {
 
           <Item
             {...itemProps}
-            className="mt-6 max-w-[54ch] text-[15px] leading-[1.7] text-white/75 md:text-base"
+            className="mt-6 max-w-[54ch] text-[15px] leading-[1.7] text-white md:text-base"
           >
             {LEAD}
           </Item>
