@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { API_CONFIG } from '@/shared/config/api.config'
+import { getServerApiOrigin, getServerApiUrl } from '@/shared/config/server-api.config'
 import ArticleDetailClient from './ArticleDetailClient'
 
 type ArticleDetailPageProps = {
@@ -22,13 +23,19 @@ type PostResponse = {
   publishedAt?: string
 }
 
-const stripHtml = (value: string) => value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+const stripHtml = (value: string) =>
+  value
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 
 const buildDescription = (post?: PostResponse) => {
   if (!post) return 'Industry insights and maritime updates from Seatrans.'
   if (post.summary) return post.summary
   const text = stripHtml(post.content || '')
-  return text.length > 160 ? `${text.slice(0, 157)}...` : text || 'Industry insights and maritime updates from Seatrans.'
+  return text.length > 160
+    ? `${text.slice(0, 157)}...`
+    : text || 'Industry insights and maritime updates from Seatrans.'
 }
 
 const resolveImageUrl = (url?: string) => {
@@ -36,7 +43,7 @@ const resolveImageUrl = (url?: string) => {
   if (url.startsWith('http')) return url
   const normalizedPath = url.replace(/\\/g, '/')
   const path = normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`
-  return `${API_CONFIG.ASSET_BASE_URL}${path}`
+  return `${getServerApiOrigin()}${path}`
 }
 
 export async function generateMetadata({ params }: ArticleDetailPageProps): Promise<Metadata> {
@@ -45,18 +52,26 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
   const canonical = `/insights/${id}`
 
   try {
-    const response = await fetch(
-      `${API_CONFIG.API_URL}${API_CONFIG.POSTS.PUBLIC_BY_ID(Number(id))}`,
-      { next: { revalidate: 300 } }
-    )
+    const response = await fetch(`${getServerApiUrl()}${API_CONFIG.POSTS.PUBLIC_BY_ID(Number(id))}`, {
+      next: { revalidate: 300 },
+    })
 
     if (!response.ok) {
       return {
         title: fallbackTitle,
         description: 'Industry insights and maritime updates from Seatrans.',
         alternates: { canonical },
-        openGraph: { type: 'article', url: canonical, title: fallbackTitle, description: 'Industry insights and maritime updates from Seatrans.' },
-        twitter: { card: 'summary_large_image', title: fallbackTitle, description: 'Industry insights and maritime updates from Seatrans.' },
+        openGraph: {
+          type: 'article',
+          url: canonical,
+          title: fallbackTitle,
+          description: 'Industry insights and maritime updates from Seatrans.',
+        },
+        twitter: {
+          card: 'summary_large_image',
+          title: fallbackTitle,
+          description: 'Industry insights and maritime updates from Seatrans.',
+        },
       }
     }
 
@@ -89,8 +104,17 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
       title: fallbackTitle,
       description: 'Industry insights and maritime updates from Seatrans.',
       alternates: { canonical },
-      openGraph: { type: 'article', url: canonical, title: fallbackTitle, description: 'Industry insights and maritime updates from Seatrans.' },
-      twitter: { card: 'summary_large_image', title: fallbackTitle, description: 'Industry insights and maritime updates from Seatrans.' },
+      openGraph: {
+        type: 'article',
+        url: canonical,
+        title: fallbackTitle,
+        description: 'Industry insights and maritime updates from Seatrans.',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: fallbackTitle,
+        description: 'Industry insights and maritime updates from Seatrans.',
+      },
     }
   }
 }

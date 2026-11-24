@@ -1,7 +1,12 @@
 'use client'
 
-import { ArticleDetailPage } from '@/modules/posts/components/public/ArticleDetailPage'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
+
+const ArticleDetailPage = dynamic(
+  () => import('@/modules/posts/components/public/ArticleDetailPage').then((module) => module.ArticleDetailPage),
+  { ssr: false }
+)
 
 type ArticleDetailClientProps = {
   id: string

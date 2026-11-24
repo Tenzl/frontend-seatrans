@@ -1,17 +1,15 @@
-'use client'
+"use client";
 
-import { PostsPage } from '@/modules/posts/components/public/Insights/PostPage'
-import { useRouter } from 'next/navigation'
+import { PostsPage } from "@/modules/posts/components/public/Insights/PostPage";
 
-export default function InsightsClient() {
-  const router = useRouter()
-
+export default function InsightsClient({
+  initialCategory = "",
+}: {
+  initialCategory?: string;
+}) {
   return (
     <main>
-      <PostsPage
-        onNavigateHome={() => router.push('/')}
-        onNavigateToPostDetail={(id) => router.push(`/insights/${id}`)}
-      />
+      <PostsPage initialCategory={initialCategory} />
     </main>
-  )
+  );
 }

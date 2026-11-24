@@ -16,7 +16,8 @@
 
   | Name | Required | Example | Notes |
   | --- | --- | --- | --- |
-  | NEXT_PUBLIC_API_BASE_URL | Yes | https://api.seatrans.com/api/v1 | Must include `/api/v1`; no trailing slash beyond that. Used by `API_CONFIG` for all endpoints. |
+  | API_PROXY_TARGET | Yes (production) | https://api.seatrans.com | Server-side backend origin. Browser requests use the same-origin `/api/*` proxy. |
+  | NEXT_PUBLIC_API_BASE_URL | No | / | Leave unset for the proxy setup. An absolute backend URL remains supported for older direct-API deployments. |
   | NEXT_PUBLIC_API_TIMEOUT | No | 30000 | Request timeout in ms. Defaults to 30000. |
   | NEXT_PUBLIC_ENABLE_API_LOGS | No | false | Enable verbose request/response logging in the browser console. |
   | NEXT_PUBLIC_GOOGLE_CLIENT_ID | Yes (for Google OAuth) | your-client-id.apps.googleusercontent.com | Required for Google login flows. |
@@ -24,14 +25,14 @@
   Example `.env.local`:
 
   ```env
-  NEXT_PUBLIC_API_BASE_URL=https://api.seatrans.com/api/v1
+  API_PROXY_TARGET=https://api.seatrans.com
   NEXT_PUBLIC_API_TIMEOUT=30000
   NEXT_PUBLIC_ENABLE_API_LOGS=false
   NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
   ```
 
   ## API layer
-  - Single source of truth for endpoints lives in `src/shared/config/api.config.ts`; the base URL fails fast if `NEXT_PUBLIC_API_BASE_URL` is missing.
+  - Endpoints live in `src/shared/config/api.config.ts`. The browser defaults to `/api/v1`; no public backend variable is required. Server requests use `src/shared/config/server-api.config.ts` and `API_PROXY_TARGET`. Production builds still require an explicit backend target.
   - `src/shared/utils/apiClient.ts` is the shared fetch wrapper that applies the base URL, optional timeout, auth token injection, and optional logging. Set `skipAuth: true` for public calls and pass `FormData` bodies without setting headers manually.
   - Typical usage:
 
@@ -44,4 +45,4 @@
   ```
 
   For deeper guidance, see `FRONTEND_API_STANDARDIZATION_GUIDE.md` in the project root.
-  
+

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { API_CONFIG } from '@/shared/config/api.config'
+import { getServerApiUrl } from '@/shared/config/server-api.config'
 
 export const dynamic = 'force-dynamic'
 
 async function proxyRequest(req: NextRequest, pathSegments: string[]) {
   const search = new URL(req.url).search
   const targetPath = pathSegments.join('/')
-  const targetUrl = `${API_CONFIG.API_URL}/${targetPath}${search}`
+  const targetUrl = `${getServerApiUrl()}/${targetPath}${search}`
 
   const headers = new Headers(req.headers)
   headers.delete('host')

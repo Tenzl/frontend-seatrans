@@ -22,7 +22,7 @@ export default function HomePageClient() {
         <Solutions onNavigate={(page) => router.push(`/${page}`)} />
         <Coverage />
         <FieldGallery />
-        <Updates onNavigateToArticle={(id: number) => router.push(`/insights/${id}`)} />
+        <Updates />
         <Partners />
       </main>
       <Footer />

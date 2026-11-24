@@ -1,130 +1,218 @@
-'use client'
+"use client";
 
-import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Calendar, Clock, Eye, Tag, User } from 'lucide-react'
-import DOMPurify from 'dompurify'
-import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
-import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
-import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
-import { postService, Post } from '@/modules/posts/services/postService'
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowLeft, Calendar, Clock, Eye, Tag, User } from "lucide-react";
+import DOMPurify from "dompurify";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
+import { useIntersectionObserver } from "@/shared/hooks/useIntersectionObserver";
+import { useReducedMotion } from "@/shared/hooks/useReducedMotion";
+import { postService, Post } from "@/modules/posts/services/postService";
 
 interface ArticleDetailPageProps {
-  articleId: number
-  onNavigateBack: () => void
+  articleId: number;
+  onNavigateBack: () => void;
 }
 
-type ContentBlock = HTMLElement
+type ContentBlock = HTMLElement;
 
-const MEDIA_SELECTOR = 'img, picture, video, iframe, svg, table, pre, code'
+const MEDIA_SELECTOR = "img, picture, video, iframe, svg, table, pre, code";
 
 function decorateContent(html: string): string {
   // Tag blocks so we can style spacing/width without relying on CSS :has()
-  if (typeof window === 'undefined') return html
+  if (typeof window === "undefined") return html;
 
   try {
-    const doc = new DOMParser().parseFromString(html, 'text/html')
+    const doc = new DOMParser().parseFromString(html, "text/html");
 
     const blocks = Array.from(
-      doc.querySelectorAll('p, ul, ol, h1, h2, h3, h4, h5, h6, blockquote')
-    ) as ContentBlock[]
+      doc.querySelectorAll("p, ul, ol, h1, h2, h3, h4, h5, h6, blockquote"),
+    ) as ContentBlock[];
 
     for (const el of blocks) {
-      const hasMedia = el.querySelector(MEDIA_SELECTOR) !== null
+      const hasMedia = el.querySelector(MEDIA_SELECTOR) !== null;
 
       // Used for 42rem width constraint (text-only blocks)
-      if (!hasMedia) el.classList.add('content-text')
+      if (!hasMedia) el.classList.add("content-text");
 
       // Tag paragraphs separately for spacing rules
-      if (el.tagName.toLowerCase() === 'p') {
-        if (hasMedia) el.classList.add('content-media-p')
-        else el.classList.add('content-text-p')
+      if (el.tagName.toLowerCase() === "p") {
+        if (hasMedia) el.classList.add("content-media-p");
+        else el.classList.add("content-text-p");
       }
     }
 
     // Remove empty paragraphs like <p>&nbsp;</p>
-    const paragraphs = Array.from(doc.querySelectorAll('p')) as HTMLParagraphElement[]
+    const paragraphs = Array.from(
+      doc.querySelectorAll("p"),
+    ) as HTMLParagraphElement[];
     for (const p of paragraphs) {
-      const hasMedia = p.querySelector(MEDIA_SELECTOR) !== null
-      const text = (p.textContent || '').replace(/\u00a0/g, ' ').trim()
-      if (!hasMedia && text.length === 0) p.remove()
+      const hasMedia = p.querySelector(MEDIA_SELECTOR) !== null;
+      const text = (p.textContent || "").replace(/\u00a0/g, " ").trim();
+      if (!hasMedia && text.length === 0) p.remove();
     }
 
     // Force all images to be full-width via inline styles
-    const images = Array.from(doc.querySelectorAll('img')) as HTMLImageElement[]
+    const images = Array.from(
+      doc.querySelectorAll("img"),
+    ) as HTMLImageElement[];
     for (const img of images) {
-      img.style.width = '100%'
-      img.style.height = 'auto'
-      img.style.maxWidth = '100%'
-      img.style.display = 'block'
+      img.style.width = "100%";
+      img.style.height = "auto";
+      img.style.maxWidth = "100%";
+      img.style.display = "block";
     }
 
-    return doc.body.innerHTML
+    return doc.body.innerHTML;
   } catch {
-    return html
+    return html;
   }
 }
 
 function formatDate(value?: string | Date | null) {
-  if (!value) return ''
-  const d = typeof value === 'string' ? new Date(value) : value
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
+  if (!value) return "";
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
 }
 
-export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPageProps) {
-  const [post, setPost] = useState<Post | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export function ArticleDetailPage({
+  articleId,
+  onNavigateBack,
+}: ArticleDetailPageProps) {
+  const [post, setPost] = useState<Post | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const prefersReducedMotion = useReducedMotion()
-  const [headerRef, headerVisible] = useIntersectionObserver({ threshold: 0.1 })
-  const [contentRef, contentVisible] = useIntersectionObserver({ threshold: 0.1 })
+  const prefersReducedMotion = useReducedMotion();
+  const [headerRef, headerVisible] = useIntersectionObserver({
+    threshold: 0.1,
+  });
+  const [contentRef, contentVisible] = useIntersectionObserver({
+    threshold: 0.1,
+  });
 
   useEffect(() => {
-    const controller = new AbortController()
+    const controller = new AbortController();
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
+
+    if (!Number.isInteger(articleId) || articleId < 1) {
+      setError("Article not found");
+      setLoading(false);
+      return () => controller.abort();
+    }
 
     postService
-      .getById(articleId)
-      .then((data) => setPost(data))
-      .catch((err) => {
-        if (err?.name === 'AbortError') return
-        setError('Failed to load the article')
+      .getPublicPostById(articleId, controller.signal)
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        setPost(data);
+        void postService
+          .recordPostViewOnce(articleId)
+          .then((viewCount) => {
+            if (!controller.signal.aborted)
+              setPost((current) =>
+                current?.id === articleId ? { ...current, viewCount } : current,
+              );
+          })
+          .catch(() => undefined);
       })
-      .finally(() => setLoading(false))
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        setError("Failed to load the article");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
 
-    return () => controller.abort()
-  }, [articleId])
+    return () => controller.abort();
+  }, [articleId]);
 
-  const decoratedHtml = useMemo(() => decorateContent(post?.content || ''), [post?.content])
+  const decoratedHtml = useMemo(
+    () => decorateContent(post?.content || ""),
+    [post?.content],
+  );
 
   // Sanitize HTML to prevent XSS attacks
   const sanitizedHtml = useMemo(() => {
     return DOMPurify.sanitize(decoratedHtml, {
       ALLOWED_TAGS: [
-        'p', 'br', 'span', 'div',
-        'b', 'i', 'u', 'strong', 'em', 'mark', 'small', 'del', 'ins', 'sub', 'sup',
-        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'ul', 'ol', 'li',
-        'a', 'img', 'picture', 'figure', 'figcaption',
-        'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption',
-        'pre', 'code', 'kbd', 'samp',
-        'blockquote', 'cite', 'q',
-        'hr'
+        "p",
+        "br",
+        "span",
+        "div",
+        "b",
+        "i",
+        "u",
+        "strong",
+        "em",
+        "mark",
+        "small",
+        "del",
+        "ins",
+        "sub",
+        "sup",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "ul",
+        "ol",
+        "li",
+        "a",
+        "img",
+        "picture",
+        "figure",
+        "figcaption",
+        "table",
+        "thead",
+        "tbody",
+        "tfoot",
+        "tr",
+        "th",
+        "td",
+        "caption",
+        "pre",
+        "code",
+        "kbd",
+        "samp",
+        "blockquote",
+        "cite",
+        "q",
+        "hr",
       ],
       ALLOWED_ATTR: [
-        'href', 'title', 'target', 'rel',
-        'src', 'alt', 'width', 'height', 'loading', 'srcset', 'sizes',
-        'class', 'id', 'colspan', 'rowspan',
-        'style'
+        "href",
+        "title",
+        "target",
+        "rel",
+        "src",
+        "alt",
+        "width",
+        "height",
+        "loading",
+        "srcset",
+        "sizes",
+        "class",
+        "id",
+        "colspan",
+        "rowspan",
+        "style",
       ],
       ALLOW_DATA_ATTR: false,
-      ALLOW_UNKNOWN_PROTOCOLS: false
-    })
-  }, [decoratedHtml])
+      ALLOW_UNKNOWN_PROTOCOLS: false,
+    });
+  }, [decoratedHtml]);
 
   if (loading) {
     return (
@@ -137,23 +225,23 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
           <div className="h-4 w-4/6 animate-pulse rounded bg-muted" />
         </div>
       </div>
-    )
+    );
   }
 
   if (error || !post) {
     return (
       <div className="mx-auto max-w-7xl px-6 py-24">
-        <p className="text-destructive">{error || 'Article not found'}</p>
+        <p className="text-destructive">{error || "Article not found"}</p>
         <Button variant="ghost" className="mt-6" onClick={onNavigateBack}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
       </div>
-    )
+    );
   }
 
-  const authorName = post.author?.fullName || post.authorName || 'Admin'
-  const publishedLabel = formatDate(post.publishedAt as any)
-  const readingMinutes = post.readingTime || 5
+  const authorName = post.author?.fullName || post.authorName || "Admin";
+  const publishedLabel = formatDate(post.publishedAt as any);
+  const readingMinutes = post.readingTime || 5;
 
   return (
     <article className="mx-auto max-w-7xl px-6 py-16">
@@ -164,14 +252,24 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
       <header
         ref={headerRef}
         className={`mx-auto max-w-5xl transition-all duration-700 ${
-          headerVisible || prefersReducedMotion ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
+          headerVisible || prefersReducedMotion
+            ? "translate-y-0 opacity-100"
+            : "translate-y-6 opacity-0"
         }`}
       >
         <div className="mb-5 flex flex-wrap items-center gap-2">
           {post.categories?.map((c) => (
-            <Badge key={c.id} variant="secondary" className="text-xs">
-              {c.name}
-            </Badge>
+            <Link
+              key={c.id}
+              href={`/insights?category=${encodeURIComponent(c.slug)}`}
+            >
+              <Badge
+                variant="secondary"
+                className="text-xs hover:bg-primary/10"
+              >
+                {c.name}
+              </Badge>
+            </Link>
           ))}
         </div>
 
@@ -208,50 +306,63 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
         <div className="mt-10 h-px w-full bg-border" />
       </header>
 
-      {/* Thumbnail intentionally not rendered */}
+      {post.thumbnailUrl && (
+        <div className="relative mx-auto mt-10 aspect-[16/8] max-w-5xl overflow-hidden bg-muted">
+          <Image
+            src={post.thumbnailUrl}
+            alt=""
+            fill
+            sizes="(min-width: 1024px) 1024px, 100vw"
+            className="object-cover"
+            priority
+          />
+        </div>
+      )}
 
       <section
         ref={contentRef}
         className={`mx-auto mt-14 max-w-[56rem] transition-all duration-700 ${
-          contentVisible || prefersReducedMotion ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
+          contentVisible || prefersReducedMotion
+            ? "translate-y-0 opacity-100"
+            : "translate-y-6 opacity-0"
         }`}
       >
         <div
           className={[
-            'article-content prose prose-2xl max-w-none',
+            "article-content prose prose-2xl max-w-none",
 
             // Constrain ONLY text-only blocks to 42rem and center them
-            '[&_.content-text]:mx-auto [&_.content-text]:max-w-[42rem]',
+            "[&_.content-text]:mx-auto [&_.content-text]:max-w-[42rem]",
 
             // IMPORTANT: prevent "margin collapse" by controlling ONLY bottom margins.
             // Also neutralize prose default p margins so our rules always win.
-            'prose-p:m-0',
+            "prose-p:m-0",
 
             // Text paragraphs: bottom 20px + line-height 25.92px
-            '[&_.content-text-p]:mt-0 [&_.content-text-p]:mb-[20px] [&_.content-text-p]:leading-[25.92px]',
+            "[&_.content-text-p]:mt-0 [&_.content-text-p]:mb-[20px] [&_.content-text-p]:leading-[25.92px]",
 
             // Media paragraphs (contains image/video/etc): bottom 20px
-            '[&_.content-media-p]:mt-[30px] [&_.content-media-p]:mb-[30px]',
+            "[&_.content-media-p]:mt-[30px] [&_.content-media-p]:mb-[30px]",
 
             // Headings / links / strong
-            'prose-headings:tracking-tight prose-headings:font-semibold',
-            'prose-a:underline prose-a:underline-offset-4',
-            'prose-strong:font-semibold',
+            "prose-headings:tracking-tight prose-headings:font-semibold",
+            "prose-a:underline prose-a:underline-offset-4",
+            "prose-strong:font-semibold",
 
             // Lists
-            'prose-ul:list-disc prose-ol:list-decimal',
-            'prose-ul:pl-6 prose-ol:pl-6',
-            'prose-ul:my-4 prose-ol:my-4',
-            'prose-li:my-1',
-            'prose-li:marker:text-muted-foreground',
+            "prose-ul:list-disc prose-ol:list-decimal",
+            "prose-ul:pl-6 prose-ol:pl-6",
+            "prose-ul:my-4 prose-ol:my-4",
+            "prose-li:my-1",
+            "prose-li:marker:text-muted-foreground",
 
             // Images inside content - always fit container width (force override inline styles)
-            'prose-img:rounded-2xl prose-img:shadow-sm prose-img:!w-full prose-img:!h-auto prose-img:!max-w-full',
-            'prose-img:block',
+            "prose-img:rounded-2xl prose-img:shadow-sm prose-img:!w-full prose-img:!h-auto prose-img:!max-w-full",
+            "prose-img:block",
 
             // Blockquotes
-            'prose-blockquote:border-l-border prose-blockquote:text-muted-foreground',
-          ].join(' ')}
+            "prose-blockquote:border-l-border prose-blockquote:text-muted-foreground",
+          ].join(" ")}
           dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
 
@@ -267,5 +378,5 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
         )}
       </section>
     </article>
-  )
+  );
 }

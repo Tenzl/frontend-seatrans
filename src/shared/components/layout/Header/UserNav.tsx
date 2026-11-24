@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
 import { User, LayoutDashboard, LogOut, ChevronDown } from 'lucide-react'
@@ -22,7 +22,9 @@ export function UserNav({ user, onLogout }: UserNavProps) {
   const router = useRouter()
 
   const derivedGroup = user.role
-    ? (user.role.includes('ADMIN') || user.role.includes('EMPLOYEE') ? 'INTERNAL' : 'EXTERNAL')
+    ? user.role.includes('ADMIN') || user.role.includes('EMPLOYEE')
+      ? 'INTERNAL'
+      : 'EXTERNAL'
     : undefined
   const roleGroup = user.roleGroup ?? derivedGroup
 
@@ -31,7 +33,6 @@ export function UserNav({ user, onLogout }: UserNavProps) {
     router.push(path)
   }
 
-  const isInternal = roleGroup === 'INTERNAL'
   const isExternal = roleGroup === 'EXTERNAL'
 
   // Close dropdown when clicking outside
@@ -59,9 +60,7 @@ export function UserNav({ user, onLogout }: UserNavProps) {
         <div className="flex items-center justify-center w-7 h-7 bg-primary/10 rounded-full">
           <User className="w-4 h-4 text-primary" />
         </div>
-        <span className="hidden sm:inline text-sm font-medium">
-          {user.fullName || user.email}
-        </span>
+        <span className="hidden sm:inline text-sm font-medium">{user.fullName || user.email}</span>
         <ChevronDown className="w-4 h-4 text-muted-foreground" />
       </button>
 
@@ -69,9 +68,7 @@ export function UserNav({ user, onLogout }: UserNavProps) {
         <div className="absolute right-0 top-full pt-2 z-50">
           <div className="bg-card border shadow-lg rounded-lg overflow-hidden min-w-[240px]">
             <div className="px-4 py-3 border-b bg-muted text-sm">
-              <p className="font-medium text-foreground">
-                {user.fullName || user.email}
-              </p>
+              <p className="font-medium text-foreground">{user.fullName || user.email}</p>
               <p className="text-muted-foreground text-xs">{user.email}</p>
             </div>
 
@@ -82,16 +79,6 @@ export function UserNav({ user, onLogout }: UserNavProps) {
               >
                 <LayoutDashboard className="w-4 h-4" />
                 <span>User Dashboard</span>
-              </button>
-            )}
-
-            {isInternal && (
-              <button
-                onClick={() => handleNavigate('/admin')}
-                className="block w-full px-4 py-3 text-left text-sm hover:bg-accent text-foreground flex items-center space-x-2 transition-colors"
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>Admin Dashboard</span>
               </button>
             )}
 

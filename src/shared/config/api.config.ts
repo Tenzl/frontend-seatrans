@@ -1,13 +1,10 @@
 /**
  * Centralized API configuration for frontend services.
- * Validates required environment variables at startup.
+ * Browser requests use the same-origin proxy unless explicitly overridden.
  */
 
-if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
-  throw new Error('NEXT_PUBLIC_API_BASE_URL is not defined. Please set it in your environment.')
-}
-
-const rawBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+const rawBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || '')
+  .trim()
   // Remove any trailing slash
   .replace(/\/+$/, '')
   // Strip accidental /api or /api/v1 from env to keep origin clean
@@ -29,7 +26,7 @@ export const API_CONFIG = {
   API_VERSION,
   /** Combined base path including prefix + version */
   API_BASE_PATH,
-  /** Fully qualified API base (origin + /api/v1) */
+  /** Same-origin /api/v1 by default, or an explicitly configured backend URL. */
   API_URL,
   /** Backwards-compatible alias for API_URL */
   BASE_URL: API_URL,
@@ -114,18 +111,11 @@ export const API_CONFIG = {
     LATEST: '/posts/latest',
     PUBLIC_BASE: '/posts',
     PUBLIC_BY_ID: (id: number) => `/posts/${id}`,
-    ADMIN_BASE: '/admin/posts',
-    ADMIN_BY_ID: (id: number) => `/admin/posts/${id}`,
-    PUBLISH: (id: number) => `/admin/posts/${id}/publish`,
-    UNPUBLISH: (id: number) => `/admin/posts/${id}/unpublish`,
-    UPLOAD_IMAGE: '/admin/posts/upload-image',
-    UPLOAD_THUMBNAIL: '/admin/posts/upload-thumbnail',
+    PUBLIC_RECORD_VIEW: (id: number) => `/posts/${id}/view`,
   },
 
   CATEGORIES: {
     PUBLIC_BASE: '/categories',
-    ADMIN_BASE: '/admin/categories',
-    ADMIN_BY_ID: (id: number) => `/admin/categories/${id}`,
   },
 
   INQUIRIES: {

@@ -5,12 +5,13 @@ import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { useState,useEffect } from 'react'
-import { provinceService,Province } from '@/modules/logistics/services/provinceService'
-import { portService } from '@/modules/logistics/services/portService'
+import type { Province } from '@/modules/logistics/services/provinceService'
+import { officeService, getOfficeMapQuery, type Office } from '@/modules/logistics/services/officeService'
 import { useAuth } from '@/modules/auth/context/AuthContext'
 import { toast } from 'sonner'
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
+import type { ApiResponse } from '@/shared/types/api.types'
 import { Alert,AlertDescription } from '@/shared/components/ui/alert'
 import Link from 'next/link'
 import {
@@ -27,28 +28,6 @@ import { HeroBannerSection } from '@/modules/service-types/components/admin/sect
 
 interface ContactPageProps {
   onNavigateHome: () => void
-}
-
-interface Office {
-  id: number
-  name: string
-  city: string
-  region: string
-  address: string
-  latitude?: number
-  longitude?: number
-  manager: {
-    name: string
-    title: string
-    mobile: string
-    email: string
-  }
-  coordinates?: {
-    lat?: number
-    lng?: number
-  }
-  isHeadquarter: boolean
-  isActive: boolean
 }
 
 interface Department {
@@ -68,6 +47,9 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
 
   const [offices, setOffices] = useState<Office[]>([])
   const [selectedOffice, setSelectedOffice] = useState<Office | null>(null)
+  const [officesLoading, setOfficesLoading] = useState(true)
+  const [officesError, setOfficesError] = useState(false)
+  const [officesRetryKey, setOfficesRetryKey] = useState(0)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [departments, setDepartments] = useState<Department[]>([])
   const [provincesWithPorts, setProvincesWithPorts] = useState<Province[]>([])
@@ -126,23 +108,39 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
     }
   ]
 
-  // Fetch offices and service types on mount
+  useEffect(() => {
+    const controller = new AbortController()
+    setOfficesLoading(true)
+    setOfficesError(false)
+
+    officeService.getActiveOffices(controller.signal)
+      .then((activeOffices) => {
+        if (controller.signal.aborted) return
+        setOffices(activeOffices)
+        setSelectedOffice((current) =>
+          activeOffices.find((office) => office.id === current?.id) ||
+          activeOffices.find((office) => office.isHeadquarter) ||
+          activeOffices[0] || null
+        )
+        setOfficesLoading(false)
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return
+        console.error('Error fetching offices:', error)
+        setOffices([])
+        setSelectedOffice(null)
+        setOfficesError(true)
+        setOfficesLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [officesRetryKey])
+
+  // Fetch form catalogs independently of the office network.
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
-
-        // Fetch offices from backend
-        const officesResponse = await apiClient.get(API_CONFIG.OFFICES.ACTIVE, { skipAuth: true })
-        const officesData = await officesResponse.json()
-
-        if (officesData.success && officesData.data) {
-          setOffices(officesData.data)
-          // Set first office as default selected
-          if (officesData.data.length > 0) {
-            setSelectedOffice(officesData.data[0])
-          }
-        }
 
         // Fetch active service types
         const servicesResponse = await apiClient.get(API_CONFIG.SERVICE_TYPES.ACTIVE, { skipAuth: true })
@@ -159,16 +157,14 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
           })))
         }
 
-        // Load provinces with ports for form selection
-        const allProvinces = await provinceService.getAllProvinces()
-        const allPorts = await portService.getAllPorts()
-        const provinceIdsWithPorts = new Set(allPorts.map(port => port.provinceId))
-        const filtered = allProvinces.filter(province => provinceIdsWithPorts.has(province.id))
-        setProvincesWithPorts(filtered)
+        // The active endpoint already limits this list to provinces with ports.
+        const provincesResponse = await apiClient.get<ApiResponse<Province[]>>(API_CONFIG.PROVINCES.ACTIVE, { skipAuth: true })
+        const provincesData = await provincesResponse.json()
+        if (provincesResponse.ok && provincesData.success !== false && Array.isArray(provincesData.data)) {
+          setProvincesWithPorts(provincesData.data)
+        }
       } catch (error) {
         console.error('Error fetching data:', error)
-        // Fallback to empty arrays
-        setOffices([])
         setDepartments([])
         setProvincesWithPorts([])
       } finally {
@@ -179,20 +175,11 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
     fetchData()
   }, [])
 
-  const getCoordinateQuery = (office: Office) => {
-    const lat = office.coordinates?.lat ?? office.latitude
-    const lng = office.coordinates?.lng ?? office.longitude
-    return lat !== undefined && lng !== undefined ? `${lat},${lng}` : ''
-  }
-
-  // Generate map URL using address first (fallback to lat/lng)
+  // Use the location configured in the backend, with address as fallback.
   const generateMapUrl = () => {
     if (!selectedOffice) return ''
-    const coordQuery = getCoordinateQuery(selectedOffice)
-    const query = selectedOffice.address?.trim()
-      ? encodeURIComponent(selectedOffice.address)
-      : coordQuery
-    return query ? `https://maps.google.com/maps?q=${query}&z=16&output=embed` : ''
+    const query = getOfficeMapQuery(selectedOffice)
+    return query ? `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=16&output=embed` : ''
   }
 
   const handleSelectOffice = (office: Office) => {
@@ -375,9 +362,16 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
             </p>
           </div>
 
-          {loading ? (
+          {officesLoading ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">Loading offices...</p>
+            </div>
+          ) : officesError ? (
+            <div role="alert" className="text-center py-12">
+              <p className="text-muted-foreground mb-3">Could not load offices.</p>
+              <Button type="button" variant="outline" onClick={() => setOfficesRetryKey((key) => key + 1)}>
+                Try again
+              </Button>
             </div>
           ) : selectedOffice ? (
             <div className={`flex flex-col lg:flex-row gap-6 ${mapVisible ? 'fade-rise' : 'opacity-0'}`} style={{ animationDelay: '100ms' }}>
@@ -399,15 +393,15 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h2 className="text-2xl">{selectedOffice.city}</h2>
+                          <h2 className="text-2xl">{selectedOffice.city || selectedOffice.name}</h2>
                           {selectedOffice.isHeadquarter && (
                             <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded">
                               HQ
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground">{selectedOffice.manager.name}</p>
-                        <p className="text-xs text-muted-foreground">{selectedOffice.manager.title}</p>
+                        {selectedOffice.manager.name && <p className="text-sm text-muted-foreground">{selectedOffice.manager.name}</p>}
+                        {selectedOffice.manager.title && <p className="text-xs text-muted-foreground">{selectedOffice.manager.title}</p>}
                       </div>
                       <Button
                         variant={isDrawerOpen ? "secondary" : "outline"}
@@ -451,14 +445,14 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                             <div className="flex items-center justify-between">
                               <div>
                                 <div className="flex items-center gap-2 mb-0.5">
-                                  <p className="font-medium text-sm">{office.city}</p>
+                                  <p className="font-medium text-sm">{office.city || office.name}</p>
                                   {office.isHeadquarter && (
                                     <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded">
                                       HQ
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-xs text-muted-foreground">{office.manager.name}</p>
+                                {office.manager.name && <p className="text-xs text-muted-foreground">{office.manager.name}</p>}
                               </div>
                               {selectedOffice.id === office.id && (
                                 <Check className="h-4 w-4 text-primary" />
@@ -492,10 +486,12 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                     }}
                   >
                     {/* Region */}
-                    <div className="mb-5">
-                      <p className="text-xs text-muted-foreground mb-1">Region</p>
-                      <p className="text-sm font-medium">{selectedOffice.region}</p>
-                    </div>
+                    {selectedOffice.region && (
+                      <div className="mb-5">
+                        <p className="text-xs text-muted-foreground mb-1">Region</p>
+                        <p className="text-sm font-medium">{selectedOffice.region}</p>
+                      </div>
+                    )}
 
                     {/* Address */}
                     <div className="mb-5">
@@ -509,7 +505,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                     </div>
 
                     {/* Phone */}
-                    <div className="mb-5">
+                    {selectedOffice.manager.mobile && <div className="mb-5">
                       <div className="flex items-center gap-2 mb-2">
                         <Phone className="h-4 w-4 text-primary" />
                         <p className="text-sm font-medium">Phone</p>
@@ -520,10 +516,10 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                       >
                         {selectedOffice.manager.mobile}
                       </a>
-                    </div>
+                    </div>}
 
                     {/* Email */}
-                    <div className="mb-6">
+                    {selectedOffice.manager.email && <div className="mb-6">
                       <div className="flex items-center gap-2 mb-2">
                         <Mail className="h-4 w-4 text-primary" />
                         <p className="text-sm font-medium">Email</p>
@@ -534,7 +530,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                       >
                         {selectedOffice.manager.email}
                       </a>
-                    </div>
+                    </div>}
 
                     {/* Action Buttons */}
                     <div className="flex gap-2 pt-4 border-t">
@@ -543,25 +539,26 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                         variant="outline"
                         className="flex-1"
                         onClick={() => {
-                          const query = selectedOffice.address?.trim()
-                            ? encodeURIComponent(selectedOffice.address)
-                            : getCoordinateQuery(selectedOffice)
+                          const query = getOfficeMapQuery(selectedOffice)
                           if (query) {
-                            window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank')
+                            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, '_blank')
                           }
                         }}
                       >
                         <MapPin className="mr-1 h-3.5 w-3.5" />
                         Directions
                       </Button>
-                      <Button
+                      {selectedOffice.manager.mobile && <Button
                         size="sm"
                         className="flex-1"
-                        onClick={() => window.location.href = `tel:${selectedOffice.manager.mobile.replace(/\s/g, '')}`}
+                        onClick={() => {
+                          const mobile = selectedOffice.manager.mobile
+                          if (mobile) window.location.href = `tel:${mobile.replace(/\s/g, '')}`
+                        }}
                       >
                         <Phone className="mr-1 h-3.5 w-3.5" />
                         Call
-                      </Button>
+                      </Button>}
                     </div>
                   </div>
 
@@ -578,7 +575,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                     <h3 className="text-sm font-medium mb-4 text-muted-foreground">Quick Contact</h3>
 
                     {/* Phone */}
-                    <div className="mb-4">
+                    {selectedOffice.manager.mobile && <div className="mb-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Phone className="h-5 w-5 text-primary" />
                         <p className="text-sm font-medium">Phone</p>
@@ -589,10 +586,10 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                       >
                         {selectedOffice.manager.mobile}
                       </a>
-                    </div>
+                    </div>}
 
                     {/* Email */}
-                    <div>
+                    {selectedOffice.manager.email && <div>
                       <div className="flex items-center gap-2 mb-2">
                         <Mail className="h-5 w-5 text-primary" />
                         <p className="text-sm font-medium">Email</p>
@@ -603,7 +600,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                       >
                         {selectedOffice.manager.email}
                       </a>
-                    </div>
+                    </div>}
                   </div>
                 </div>
 

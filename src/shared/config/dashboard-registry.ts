@@ -1,46 +1,10 @@
-import { lazy } from "react"
-import type React from "react"
-import {
-  User,
-  Calculator,
-  ListChecks,
-  Package,
-  Truck,
-  Ship,
-  Anchor,
-  FileText,
-  Upload,
-  Image as ImageIcon,
-  Cog,
-  LayoutDashboard,
-  Database,
-  BriefcaseBusiness,
-} from "lucide-react"
+import { lazy } from 'react'
+import type React from 'react'
+import { FileText, User } from 'lucide-react'
+import type { RoleGroup } from '@/shared/types/dashboard'
 
-import { RoleGroup } from "@/shared/types/dashboard"
-
-// Role strings from backend
-export type SectionRole = "ADMIN" | "EMPLOYEE" | "CUSTOMER"
-
-export type DashboardSection =
-  | "profile"
-  | "create-epda"
-  | "shipping-agency-inquiries"
-  | "freight-forwarding-inquiries"
-  | "logistics-inquiries"
-  | "chartering-inquiries"
-  | "special-request-inquiries"
-  | "add-image"
-  | "manage-images"
-  | "services"
-  | "ports"
-  | "offices"
-  | "cargo-types"
-  | "categories"
-  | "posts"
-  | "booking-partners"
-  | "booking-shipping"
-  | "inquiry"
+export type SectionRole = 'ADMIN' | 'EMPLOYEE' | 'CUSTOMER'
+export type DashboardSection = 'profile' | 'inquiry'
 
 export interface SectionConfig {
   id: DashboardSection
@@ -48,213 +12,43 @@ export interface SectionConfig {
   icon: React.ComponentType<{ className?: string }>
   component: React.LazyExoticComponent<React.ComponentType<any>>
   roles: SectionRole[]
-  roleGroups: RoleGroup[] // allow sharing sections (e.g., profile) across groups
+  roleGroups: RoleGroup[]
   category: string
   title: string
   description?: string
 }
 
-// Lazy loaded components
-const EditProfileTab = lazy(() => import("@/features/admin/components/EditProfileTab").then(m => ({ default: m.EditProfileTab })))
-const CreateInvoiceTab = lazy(() => import("@/features/admin/components/CreateInvoiceTab").then(m => ({ default: m.CreateInvoiceTab })))
-const ShippingAgencyInquiriesTab = lazy(() => import("@/features/admin/components/ShippingAgencyInquiriesTab").then(m => ({ default: m.ShippingAgencyInquiriesTab })))
-const FreightForwardingInquiriesTab = lazy(() => import("@/features/admin/components/FreightForwardingInquiriesTab").then(m => ({ default: m.FreightForwardingInquiriesTab })))
-const LogisticsInquiriesTab = lazy(() => import("@/features/admin/components/LogisticsInquiriesTab").then(m => ({ default: m.LogisticsInquiriesTab })))
-const CharteringInquiriesTab = lazy(() => import("@/features/admin/components/CharteringInquiriesTab").then(m => ({ default: m.CharteringInquiriesTab })))
-const SpecialRequestInquiriesTab = lazy(() => import("@/features/admin/components/SpecialRequestInquiriesTab").then(m => ({ default: m.SpecialRequestInquiriesTab })))
-const AddImageTab = lazy(() => import("@/modules/gallery/components/admin/ImageUpload").then(m => ({ default: m.AddImageTab })))
-const ManageImagesTab = lazy(() => import("@/modules/gallery/components/admin/ImageManagement").then(m => ({ default: m.ManageImagesTab })))
-const ManageServices = lazy(() => import("@/features/admin/components/ManageServices").then(m => ({ default: m.ManageServices })))
-const ManagePorts = lazy(() => import("@/features/admin/components/ManagePorts").then(m => ({ default: m.ManagePorts })))
-const ManageOffices = lazy(() => import("@/features/admin/components/ManageOffices").then(m => ({ default: m.ManageOffices })))
-const ManageImageTypes = lazy(() => import("@/modules/gallery/components/admin/ImageTypeManagement").then(m => ({ default: m.ManageImageTypes })))
-const ManageCategories = lazy(() => import("@/modules/categories/components/admin/CategoryManagement").then(m => ({ default: m.ManageCategories })))
-const ManagePosts = lazy(() => import("@/modules/posts/components/admin/PostManagement").then(m => ({ default: m.ManagePosts })))
-const PartnerManagementTab = lazy(() => import("@/features/admin/components/PartnerManagementTab").then(m => ({ default: m.PartnerManagementTab })))
-const BookingShippingTab = lazy(() => import("@/features/admin/components/BookingShippingTab").then(m => ({ default: m.BookingShippingTab })))
-
-const UserInquiriesPage = lazy(() => import("@/features/user/component/UserInquiriesPage").then(m => ({ default: m.UserInquiriesPage })))
+const EditProfileTab = lazy(() =>
+  import('@/features/admin/components/EditProfileTab').then((module) => ({
+    default: module.EditProfileTab,
+  }))
+)
+const UserInquiriesPage = lazy(() =>
+  import('@/features/user/component/UserInquiriesPage').then((module) => ({
+    default: module.UserInquiriesPage,
+  }))
+)
 
 export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
   profile: {
-    id: "profile",
-    label: "Edit Profile",
+    id: 'profile',
+    label: 'Edit Profile',
     icon: User,
     component: EditProfileTab,
-    roles: ["ADMIN", "EMPLOYEE", "CUSTOMER"],
-    roleGroups: ["INTERNAL", "EXTERNAL"],
-    category: "Profile",
-    title: "Edit Profile",
-  },
-  "create-epda": {
-    id: "create-epda",
-    label: "Create EPDA",
-    icon: Calculator,
-    component: CreateInvoiceTab,
-    roles: ["ADMIN"],
-    roleGroups: ["INTERNAL"],
-    category: "Port Charge",
-    title: "Create EPDA",
-  },
-  "shipping-agency-inquiries": {
-    id: "shipping-agency-inquiries",
-    label: "Shipping Agency",
-    icon: ListChecks,
-    component: ShippingAgencyInquiriesTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Inquiries",
-    title: "Shipping Agency Inquiries",
-  },
-  "freight-forwarding-inquiries": {
-    id: "freight-forwarding-inquiries",
-    label: "Freight Forwarding",
-    icon: Package,
-    component: FreightForwardingInquiriesTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Inquiries",
-    title: "Freight Forwarding Inquiries",
-  },
-  "logistics-inquiries": {
-    id: "logistics-inquiries",
-    label: "Logistics",
-    icon: Truck,
-    component: LogisticsInquiriesTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Inquiries",
-    title: "Logistics Inquiries",
-  },
-  "chartering-inquiries": {
-    id: "chartering-inquiries",
-    label: "Chartering",
-    icon: Anchor,
-    component: CharteringInquiriesTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Inquiries",
-    title: "Chartering Inquiries",
-  },
-  "special-request-inquiries": {
-    id: "special-request-inquiries",
-    label: "Special Request",
-    icon: FileText,
-    component: SpecialRequestInquiriesTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Inquiries",
-    title: "Special Request Inquiries",
-  },
-  "add-image": {
-    id: "add-image",
-    label: "Add Image",
-    icon: Upload,
-    component: AddImageTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Image Management",
-    title: "Add Image",
-  },
-  "manage-images": {
-    id: "manage-images",
-    label: "Manage Images",
-    icon: ImageIcon,
-    component: ManageImagesTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Image Management",
-    title: "Manage Images",
-  },
-  services: {
-    id: "services",
-    label: "Services",
-    icon: Cog,
-    component: ManageServices,
-    roles: [],
-    roleGroups: [],
-    category: "Data Management",
-    title: "Manage Services",
-  },
-  ports: {
-    id: "ports",
-    label: "Ports",
-    icon: Anchor,
-    component: ManagePorts,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Data Management",
-    title: "Manage Ports",
-  },
-  offices: {
-    id: "offices",
-    label: "Offices",
-    icon: LayoutDashboard,
-    component: ManageOffices,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Data Management",
-    title: "Manage Offices",
-  },
-  "cargo-types": {
-    id: "cargo-types",
-    label: "Cargo",
-    icon: Package,
-    component: ManageImageTypes,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Data Management",
-    title: "Manage Cargo",
-  },
-  categories: {
-    id: "categories",
-    label: "Categories",
-    icon: Database,
-    component: ManageCategories,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Content Management",
-    title: "Manage Categories",
-  },
-  posts: {
-    id: "posts",
-    label: "Posts",
-    icon: FileText,
-    component: ManagePosts,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Content Management",
-    title: "Manage Posts",
-  },
-  "booking-partners": {
-    id: "booking-partners",
-    label: "Partner",
-    icon: BriefcaseBusiness,
-    component: PartnerManagementTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Booking Management",
-    title: "Partner Management",
-  },
-  "booking-shipping": {
-    id: "booking-shipping",
-    label: "Shipping",
-    icon: Ship,
-    component: BookingShippingTab,
-    roles: ["ADMIN", "EMPLOYEE"],
-    roleGroups: ["INTERNAL"],
-    category: "Booking Management",
-    title: "Shipping",
+    roles: ['CUSTOMER'],
+    roleGroups: ['EXTERNAL'],
+    category: 'Profile',
+    title: 'Edit Profile',
   },
   inquiry: {
-    id: "inquiry",
-    label: "My Inquiries",
+    id: 'inquiry',
+    label: 'My Inquiries',
     icon: FileText,
     component: UserInquiriesPage,
-    roles: ["CUSTOMER"],
-    roleGroups: ["EXTERNAL"],
-    category: "Inquiries",
-    title: "My Inquiries",
+    roles: ['CUSTOMER'],
+    roleGroups: ['EXTERNAL'],
+    category: 'Inquiries',
+    title: 'My Inquiries',
   },
 }
 
@@ -271,7 +65,5 @@ export function listSectionsByRoleGroup(roleGroup: RoleGroup): SectionConfig[] {
 }
 
 export function canAccessSection(section: DashboardSection, role: SectionRole): boolean {
-  const config = getSectionConfig(section)
-  if (!config) return false
-  return config.roles.includes(role)
+  return getSectionConfig(section)?.roles.includes(role) ?? false
 }
