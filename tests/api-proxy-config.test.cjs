@@ -57,11 +57,31 @@ test('proxy imports without a public base and forwards query to the private back
       return Response.json({ success: true, data: [] })
     })
   const route = app.load('app/api/proxy/[...path]/route.ts')
-  const response = await route.GET(new Request('https://site.test/api/proxy/gallery/images?page=2&size=6'), {
-    params: Promise.resolve({ path: ['gallery', 'images'] }),
+  const response = await route.GET(new Request('https://site.test/api/proxy/v1/gallery/images?page=2&size=6'), {
+    params: Promise.resolve({ path: ['v1', 'gallery', 'images'] }),
   })
   assert.equal(called.url, 'https://backend.test/api/v1/gallery/images?page=2&size=6')
   assert.equal(response.status, 200)
+})
+
+test('proxy removes compressed upstream length after fetch decompresses the body', async () => {
+  const body = JSON.stringify({ success: true, data: [{ name: 'Gia Lai' }, { name: 'Quang Ninh' }] })
+  const app = application({ NODE_ENV: 'production', API_PROXY_TARGET: 'https://backend.test' },
+    async () => new Response(body, {
+      headers: {
+        'content-type': 'application/json',
+        'content-encoding': 'br',
+        'content-length': '18',
+      },
+    }))
+  const route = app.load('app/api/proxy/[...path]/route.ts')
+  const response = await route.GET(new Request('https://site.test/api/proxy/v1/provinces/active'), {
+    params: Promise.resolve({ path: ['v1', 'provinces', 'active'] }),
+  })
+
+  assert.equal(response.headers.get('content-encoding'), null)
+  assert.equal(response.headers.get('content-length'), null)
+  assert.deepEqual((await response.json()).data.map(province => province.name), ['Gia Lai', 'Quang Ninh'])
 })
 
 test('private proxy target wins over legacy public origin and preserves request body', async () => {
@@ -72,8 +92,8 @@ test('private proxy target wins over legacy public origin and preserves request 
       return Response.json({ success: true })
     })
   const route = app.load('app/api/proxy/[...path]/route.ts')
-  await route.POST(new Request('https://site.test/api/proxy/inquiries', { method: 'POST', body: '{"portId":7}' }), {
-    params: Promise.resolve({ path: ['inquiries'] }),
+  await route.POST(new Request('https://site.test/api/proxy/v1/inquiries', { method: 'POST', body: '{"portId":7}' }), {
+    params: Promise.resolve({ path: ['v1', 'inquiries'] }),
   })
   assert.equal(called.url, 'https://backend.test/api/v1/inquiries')
   assert.equal(new TextDecoder().decode(called.options.body), '{"portId":7}')
@@ -93,11 +113,10 @@ test('article metadata uses an absolute backend URL when browser API is same-ori
   assert.equal(result.openGraph.images[0], 'https://backend.test/uploads/photo.jpg')
 })
 
-test('production rewrites work with API_PROXY_TARGET alone and reject missing target', async () => {
+test('production rewrites route through the local API proxy', async () => {
   const source = fs.readFileSync(path.resolve(__dirname, '../next.config.js'), 'utf8')
   const module = { exports: {} }
   vm.runInNewContext(source, { module, process: { env: { NODE_ENV: 'production', API_PROXY_TARGET: 'https://backend.test/api/v1/' } } })
   const [rewrite] = await module.exports.rewrites()
-  assert.equal(rewrite.destination, 'https://backend.test/api/:path*')
-  assert.throws(() => vm.runInNewContext(source, { module: { exports: {} }, process: { env: { NODE_ENV: 'production' } } }), /API_PROXY_TARGET/)
+  assert.equal(rewrite.destination, '/api/proxy/:path*')
 })

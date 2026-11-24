@@ -27,7 +27,10 @@ async function proxyRequest(req: NextRequest, pathSegments: string[]) {
     })
 
     const responseHeaders = new Headers(upstream.headers)
+    // Node's fetch decodes compressed responses, so the upstream byte count no
+    // longer matches the body streamed to the browser.
     responseHeaders.delete('content-encoding')
+    responseHeaders.delete('content-length')
     responseHeaders.delete('transfer-encoding')
 
     return new NextResponse(upstream.body, {
