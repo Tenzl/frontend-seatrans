@@ -737,7 +737,7 @@ export function ManageImageTypes() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete cargo type "<strong>{deleteDialog.type?.displayName}</strong>"? 
+              Are you sure you want to delete cargo type &quot;<strong>{deleteDialog.type?.displayName}</strong>&quot;?
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

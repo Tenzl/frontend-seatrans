@@ -36,7 +36,7 @@ export interface BookingPartnerListItem {
   deletedAt?: string | null
 }
 
-export interface BookingPartnerDetail extends BookingPartnerListItem {}
+export type BookingPartnerDetail = BookingPartnerListItem
 
 export interface BookingPartnerUpsertRequest {
   name: string

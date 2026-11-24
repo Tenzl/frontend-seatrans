@@ -192,7 +192,7 @@ export function Coverage() {
                   <span className="text-primary">South East Asia Transport and Logistics (SEATRANS)</span>
                 </h2>
                 <p className="text-xl text-muted-foreground">
-                  Comprehensive network spanning Vietnam's key ports and beyond, ensuring seamless connectivity for your cargo.
+                  Comprehensive network spanning Vietnam&apos;s key ports and beyond, ensuring seamless connectivity for your cargo.
                 </p>
               </div>
 

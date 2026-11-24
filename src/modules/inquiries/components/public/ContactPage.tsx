@@ -358,7 +358,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
           <div className={`text-center mb-12 ${mapVisible ? 'fade-rise' : 'opacity-0'}`}>
             <h2 className="fade-rise text-3xl md:text-4xl font-bold mb-4">Our Offices</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Nationwide presence across Vietnam's key maritime hubs
+              Nationwide presence across Vietnam&apos;s key maritime hubs
             </p>
           </div>
 

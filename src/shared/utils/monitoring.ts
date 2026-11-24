@@ -3,11 +3,17 @@
 
 type Level = "info" | "warning" | "error"
 
-function getSentry(): any | null {
+type SentryLike = {
+  captureException?: (error: unknown, context?: { extra?: Record<string, unknown> }) => void
+  captureMessage?: (message: string, level: Level) => void
+  setUser?: (user: { id?: string; email?: string; role?: string }) => void
+  addBreadcrumb?: (breadcrumb: { category: string; message: string; level: Level }) => void
+}
+
+function getSentry(): SentryLike | null {
   // Expect Sentry to be registered globally when @sentry/nextjs is set up.
   // Avoid static imports to prevent build errors when dependency is missing.
-  // @ts-ignore
-  return (globalThis as any).Sentry || null
+  return (globalThis as typeof globalThis & { Sentry?: SentryLike }).Sentry || null
 }
 
 export const monitoring = {

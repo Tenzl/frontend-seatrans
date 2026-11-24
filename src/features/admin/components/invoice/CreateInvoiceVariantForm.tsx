@@ -567,7 +567,7 @@ export function CreateInvoiceVariantForm({
               htmlFor="tallyFeeAmount"
               className={computed.isTallyFeeEligibleCargo ? '' : 'text-muted-foreground'}
             >
-              Ship's side tally fee (USD)
+              Ship&apos;s side tally fee (USD)
             </Label>
             <Input
               id="tallyFeeAmount"

@@ -38,7 +38,7 @@ export interface MappedCoverageProvince extends CoverageProvinceBase {
   coordinates: [number, number]
 }
 
-export interface UnmappedCoverageProvince extends CoverageProvinceBase {}
+export type UnmappedCoverageProvince = CoverageProvinceBase
 
 export interface CoverageNetwork {
   mapped: MappedCoverageProvince[]
