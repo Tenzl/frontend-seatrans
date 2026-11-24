@@ -1,20 +1,6 @@
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === 'production'
 
-// '/' makes browser requests same-origin; the server proxy still needs a backend.
-const publicApiBase = (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim()
-const explicitProxyTarget =
-  (process.env.API_PROXY_TARGET || '').trim() ||
-  (/^https?:\/\//.test(publicApiBase) ? publicApiBase : '')
-
-if (isProd && !explicitProxyTarget) {
-  throw new Error('API_PROXY_TARGET is required in production (backend HTTPS origin).')
-}
-
-const apiProxyTarget = (explicitProxyTarget || 'http://127.0.0.1:8080')
-  .replace(/\/+$/, '')
-  .replace(/\/api(?:\/v\d+)?$/, '')
-
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: [
@@ -49,7 +35,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${apiProxyTarget}/api/:path*`,
+        destination: '/api/proxy/:path*',
       },
     ]
   },

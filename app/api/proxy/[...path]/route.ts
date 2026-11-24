@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerApiUrl } from '@/shared/config/server-api.config'
+import { getServerApiOrigin } from '@/shared/config/server-api.config'
 
 export const dynamic = 'force-dynamic'
 
 async function proxyRequest(req: NextRequest, pathSegments: string[]) {
   const search = new URL(req.url).search
   const targetPath = pathSegments.join('/')
-  const targetUrl = `${getServerApiUrl()}/${targetPath}${search}`
 
   const headers = new Headers(req.headers)
   headers.delete('host')
@@ -19,6 +18,7 @@ async function proxyRequest(req: NextRequest, pathSegments: string[]) {
   const body = hasBody ? await req.arrayBuffer() : undefined
 
   try {
+    const targetUrl = `${getServerApiOrigin()}/api/${targetPath}${search}`
     const upstream = await fetch(targetUrl, {
       method,
       headers,
@@ -35,9 +35,10 @@ async function proxyRequest(req: NextRequest, pathSegments: string[]) {
       statusText: upstream.statusText,
       headers: responseHeaders,
     })
-  } catch (error: any) {
-    const message = error?.message || 'Proxy request failed'
-    return NextResponse.json({ success: false, message }, { status: 502 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Proxy request failed'
+    const status = message.includes('API_PROXY_TARGET') ? 503 : 502
+    return NextResponse.json({ success: false, message }, { status })
   }
 }
 
