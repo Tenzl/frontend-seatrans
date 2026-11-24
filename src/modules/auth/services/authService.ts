@@ -3,7 +3,7 @@ import { API_CONFIG } from '@/shared/config/api.config'
 import { User } from '@/shared/types/dashboard'
 
 interface LoginRequest {
-  identifier: string
+  email: string
   password: string
 }
 
@@ -39,50 +39,34 @@ interface ApiResponse<T> {
   data: T | null
 }
 
+const TOKEN_KEY = 'auth_token'
 const USER_KEY = 'auth_user'
 
-const canUseStorage = (): boolean => typeof window !== 'undefined'
-
-const persistAuthUser = (user: User, remember = true) => {
-  if (!canUseStorage()) return
+const persistAuth = (auth: AuthResponse, remember = true) => {
+  // Keep one session copy: a previous tab token must not shadow this login.
+  clearAuth()
   const storage = remember ? localStorage : sessionStorage
-  storage.setItem(USER_KEY, JSON.stringify(user))
+  storage.setItem(TOKEN_KEY, auth.token)
+  storage.setItem(USER_KEY, JSON.stringify(auth.user))
 }
 
 const clearAuth = () => {
-  if (!canUseStorage()) return
+  localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
+  sessionStorage.removeItem(TOKEN_KEY)
   sessionStorage.removeItem(USER_KEY)
-
-  // Back-compat (older builds)
-  localStorage.removeItem('auth_token')
-  sessionStorage.removeItem('auth_token')
-
-  // Clear cookie
-  if (typeof document !== 'undefined') {
-    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure;'
-  }
 }
 
-const readUser = (): string | null => {
-  if (!canUseStorage()) return null
-  return sessionStorage.getItem(USER_KEY) || localStorage.getItem(USER_KEY)
-}
-
-const getActiveStorage = (): Storage => {
-  if (!canUseStorage()) {
-    throw new Error('Storage is only available in the browser')
-  }
-  // No token storage anymore; pick session if it has user, else local.
-  return sessionStorage.getItem(USER_KEY) ? sessionStorage : localStorage
-}
+const readToken = () => sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY)
+const readUser = () => sessionStorage.getItem(USER_KEY) || localStorage.getItem(USER_KEY)
+const getActiveStorage = () => (sessionStorage.getItem(TOKEN_KEY) ? sessionStorage : localStorage)
 
 export const authService = {
-  login: async (identifier: string, password: string, remember = true): Promise<LoginResponse> => {
+  login: async (email: string, password: string, remember = true): Promise<LoginResponse> => {
     try {
       // Skip auth for login endpoint
-      const response = await apiClient.post(API_CONFIG.AUTH.LOGIN, 
-        { identifier, password } satisfies LoginRequest,
+      const response = await apiClient.post(API_CONFIG.AUTH.LOGIN,
+        { email, password } satisfies LoginRequest,
         { skipAuth: true }
       )
 
@@ -96,10 +80,9 @@ export const authService = {
         }
       }
 
-      // Persist only the non-sensitive user profile. The JWT session lives in an
-      // HttpOnly cookie set by the backend — never store the token in JS (XSS-safe).
+      // Save token and user to localStorage
       if (data.success && data.data) {
-        persistAuthUser(data.data.user, remember)
+        persistAuth(data.data, remember)
       }
 
       return {
@@ -116,37 +99,27 @@ export const authService = {
     }
   },
 
-  logout: async () => {
+  logout: () => {
     clearAuth()
-    try {
-      await apiClient.post(API_CONFIG.AUTH.LOGOUT, undefined, { skipAuth: true })
-    } catch {
-      // best-effort: cookie may already be cleared/expired
-    }
   },
 
   getToken: () => {
-    return null
+    return readToken()
   },
 
   getUser: (): User | null => {
     const user = readUser()
-    if (!user) return null
-    try {
-      return JSON.parse(user) as User
-    } catch {
-      return null
-    }
+    return user ? JSON.parse(user) : null
   },
 
   isAuthenticated: () => {
-    return !!readUser()
+    return !!readToken()
   },
 
   register: async (email: string, fullName: string, password: string, phone?: string, company?: string): Promise<SignupResponse> => {
     try {
       // Skip auth for register endpoint
-      const response = await apiClient.post(API_CONFIG.AUTH.REGISTER,
+      const response = await apiClient.post(API_CONFIG.AUTH.REGISTER_CUSTOMER,
         { email, fullName, password, phone, company } as SignupRequest,
         { skipAuth: true }
       )
@@ -161,10 +134,9 @@ export const authService = {
         }
       }
 
-      // Persist only the non-sensitive user profile; the JWT stays in the
-      // backend's HttpOnly cookie (never stored in JS).
+      // Save token and user to localStorage
       if (data.success && data.data) {
-        persistAuthUser(data.data.user, true)
+        persistAuth(data.data)
       }
 
       return {
@@ -181,15 +153,24 @@ export const authService = {
     }
   },
 
-  // Auth is cookie-based; keep a stable helper signature for legacy callers.
-  getAuthHeader: (): Record<string, string> => ({} as Record<string, string>),
+  // Helper function to get authorization header
+  getAuthHeader: (): Record<string, string> => {
+    const token = authService.getToken()
+    return token ? { Authorization: `Bearer ${token}` } : ({} as Record<string, string>)
+  },
 
   getCurrentUser: async (): Promise<ApiResponse<User>> => {
+    const requestToken = readToken()
     try {
       // apiClient will automatically handle 401 and logout
-      const response = await apiClient.get(API_CONFIG.AUTH.ME)
+      const response = await apiClient.get(API_CONFIG.AUTH.CURRENT_USER)
 
       const result = await response.json()
+
+      // A profile request from before a new login must not replace its user.
+      if (requestToken !== readToken()) {
+        return { success: false, message: 'Session changed. Please retry.', data: null }
+      }
 
       if (!response.ok) {
         return {
@@ -199,7 +180,7 @@ export const authService = {
         }
       }
 
-      if (result?.data && canUseStorage()) {
+      if (result?.data) {
         const storage = getActiveStorage()
         storage.setItem(USER_KEY, JSON.stringify(result.data))
       }
@@ -218,26 +199,24 @@ export const authService = {
     }
   },
 
-  updateProfile: async (_userId: number, _data: Partial<User>): Promise<ApiResponse<User>> => ({
-    success: false,
-    message: 'Deprecated: use updateMyProfile instead.',
-    data: null,
-  }),
-
-  updateMyProfile: async (data: Pick<User, 'fullName' | 'phone' | 'company'>): Promise<ApiResponse<User>> => {
+  updateProfile: async (data: Partial<User>): Promise<ApiResponse<User>> => {
     try {
-      const response = await apiClient.patch(API_CONFIG.AUTH.ME, data)
+      // apiClient will automatically handle 401 and logout
+      // User self-update endpoint - available for all authenticated users
+      const response = await apiClient.put('/users/profile/me', data)
+
       const result = await response.json()
 
       if (!response.ok) {
         return {
           success: false,
-          message: result.message || 'Unable to update profile',
+          message: result.message || 'Update failed',
           data: null,
         }
       }
 
-      if (result?.data && canUseStorage()) {
+      // Update local storage with new user data
+      if (result.data) {
         const storage = getActiveStorage()
         storage.setItem(USER_KEY, JSON.stringify(result.data))
       }
@@ -255,34 +234,5 @@ export const authService = {
       }
     }
   },
-
-  getGoogleAuthUrl: async (): Promise<{ success: boolean; authUrl?: string; message?: string }> => {
-    try {
-      const response = await apiClient.get(API_CONFIG.AUTH.GOOGLE_OAUTH, { skipAuth: true })
-      const data = await response.json()
-
-      if (!response.ok) {
-        return {
-          success: false,
-          message: data.message || 'Google login is unavailable',
-        }
-      }
-
-      const authUrl = data.data?.authUrl as string | undefined
-      if (!authUrl) {
-        return {
-          success: false,
-          message: 'Google login is not configured',
-        }
-      }
-
-      return { success: true, authUrl }
-    } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : 'Network error',
-      }
-    }
-  },
 }
- 
+

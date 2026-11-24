@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { toast } from '@/shared/utils/toast'
-import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Loader2, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react'
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
 import type { ApiResponse } from '@/shared/types/api.types'
@@ -124,10 +124,18 @@ export function ManageServices() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-end border-b border-border/50 pb-4">
-          <Button onClick={() => openEditor()}>
-            <Plus className="mr-2 h-4 w-4" /> New Service
-          </Button>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5" /> Service Types
+              </CardTitle>
+              <CardDescription>Manage logistics service offerings</CardDescription>
+            </div>
+            <Button onClick={() => openEditor()}>
+              <Plus className="mr-2 h-4 w-4" /> New Service
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>

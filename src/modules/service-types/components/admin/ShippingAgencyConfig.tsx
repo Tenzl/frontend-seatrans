@@ -5,140 +5,150 @@ interface ShippingAgencyProps {
   onNavigateHome?: () => void
 }
 
+// Configuration for Shipping Agency Service
 export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
   const config: ServiceTemplateProps = {
     serviceName: 'Shipping Agency',
     serviceIcon: Ship,
     onNavigateHome,
-    serviceTypeId: 1,
+    serviceTypeId: 1, // Shipping Agency ID (check your backend)
 
     hero: {
-      subtitle: 'Shipping Agency',
-      title: 'Full Vessel Husbandry — From Berth Approach to Departure',
-      description:
-        'Seatrans handles every port call detail on your behalf — port clearance, crew logistics, cash disbursements, and 24/7 emergency coordination across major Vietnamese ports.',
-      image: 'https://picsum.photos/seed/seatrans-page-shipping/1600/900',
+      title: 'Shipping Agency Services',
+      // description: 'Comprehensive vessel agency services across major Vietnamese ports. Available 24/7 for emergency support and operational assistance.',
+      description: "",
+      image: 'https://images.unsplash.com/photo-1614568111194-3c251800e81e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXJnbyUyMHNoaXAlMjBwb3J0JTIwY29udGFpbmVyfGVufDF8fHx8MTc2NTA3NDMwMnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
     },
 
     contacts: {
       showEmergencyBadge: true,
-      sectionTitle: 'Reach the Shipping Agency Desk',
-      sectionDescription:
-        'Our port operations team monitors vessel movements around the clock. Direct contact lines are available for urgent matters at any hour.',
+      sectionTitle: 'Contact our Team',
+      sectionDescription: 'Our experienced team is ready to assist you with immediate support',
       teams: [
         {
           title: 'Shipping Agency',
           subtitle: 'Vessel Operations & Husbandry',
           icon: Ship,
           contacts: [
-            { name: 'Duc Tuyen', mobile: '+84.914.282.649' },
-            { name: 'Le Hung', mobile: '+84.128.231.0497' },
+            { name: 'DUC TUYEN', mobile: '+84.914282649' },
+            { name: 'LE HUNG', mobile: '+84.1282310497' }
           ],
-          email: 'ship.agency@seatrans.com.vn',
+          email: 'ship.agency@seatrans.com.vn'
         },
         {
-          title: 'Operations Center',
-          subtitle: '24/7 On-Call Support',
+          title: 'Operations',
+          subtitle: '24/7 Operational Support',
           icon: Clock,
           contacts: [
-            { name: 'Do Duy An', mobile: '+84.935.015.679' },
+            { name: 'DO DUY AN', mobile: '+84.935015679' }
           ],
-          email: 'operation@seatrans.com.vn',
-        },
+          email: 'operation@seatrans.com.vn'
+        }
       ],
       stats: [
-        { icon: Clock, value: '24/7', label: 'On-call coverage' },
-        { icon: TrendingUp, value: '< 2 hrs', label: 'Response time' },
-        { icon: MapPin, value: '6 ports', label: 'VN coverage' },
-        { icon: Ship, value: '2,500+', label: 'Vessels handled' },
-      ],
+        { icon: Clock, value: '24/7', label: 'Available' },
+        { icon: TrendingUp, value: '< 2hrs', label: 'Response' },
+        { icon: MapPin, value: '150+', label: 'Ports' },
+        { icon: Ship, value: '2,500+', label: 'Vessels' }
+      ]
     },
 
     services: {
-      sectionTitle: 'Shipping Agency Services',
-      sectionDescription:
-        'We cover the full lifecycle of a port call — pre-arrival planning through final departure documentation.',
+      sectionTitle: 'Seatrans - Agency Services',
+      sectionDescription: 'Complete vessel support services for all your maritime needs',
       items: [
         {
-          name: 'Full Husbandry Agency',
-          description:
-            'End-to-end port operations: berth booking, port authority coordination, pre-arrival notices, and final port clearance.',
-          icon: Ship,
+          name: 'Full husbandry agency',
+          description: 'Complete vessel care and port operations management',
+          icon: Ship
         },
         {
-          name: 'Protecting Agency',
-          description:
-            'Independent oversight for shipowners and charterers — ensuring compliance and safeguarding your interests throughout the port call.',
-          icon: Shield,
+          name: 'Protecting agency',
+          description: 'Legal and operational protection for vessel owners',
+          icon: Shield
         },
         {
-          name: 'Visa & Crew Change',
-          description:
-            'Immigration liaison, work permit applications, repatriation flights, and crew boarding coordination.',
-          icon: Users,
+          name: 'Visa application & Crew change',
+          description: 'Immigration support and crew logistics',
+          icon: Users
         },
         {
-          name: 'Cash To Master Delivery',
-          description:
-            'Secure and traceable fund delivery to vessel masters, with full documentation and signature receipt.',
-          icon: FileText,
+          name: 'Cash To Master delivery',
+          description: 'Secure financial services for vessel masters',
+          icon: FileText
         },
         {
-          name: 'Repair, Engineering & Cleaning',
-          description:
-            'Technical service coordination: certified repair crews, underwater surveys, hold cleaning, and inspection support.',
-          icon: Award,
+          name: 'Repairing / Engineering / Cleaning',
+          description: 'Technical support and maintenance services',
+          icon: Award
         },
         {
-          name: 'Bunkering & Provision Supply',
-          description:
-            'Competitive fuel sourcing and provisions delivery, timed precisely to your vessel schedule.',
-          icon: Anchor,
-        },
-      ],
+          name: 'Bunkering & Provision supplies',
+          description: 'Fuel and supplies coordination',
+          icon: Anchor
+        }
+      ]
     },
 
     form: {
-      badgeText: 'Port D/A Inquiry',
-      sectionTitle: 'Port Disbursement Account Inquiry',
-      sectionDescription:
-        'Submit your vessel details and we will prepare a detailed cost estimate for your upcoming port call.',
+      badgeText: 'Get a Quote',
+      sectionTitle: 'Port D/A inquiry',
+      sectionDescription: 'Submit your vessel details for a detailed port disbursement account',
       submitButtonText: 'Submit Inquiry',
       submitPath: '/inquiries',
       serviceTypeSlug: 'shipping-agency',
       sections: [
         {
-          title: 'Port & Cargo',
+          title: 'Party & Vessel',
           fields: [
-            { id: 'portArea', label: 'Area', type: 'select', required: true, options: ['NORTHERN', 'MIDDLE', 'SOUTHERN'], gridSpan: 1, enableSearch: false },
-            { id: 'portOfCall', label: 'Port of call', type: 'port', required: true, placeholder: 'Select port of call', gridSpan: 1 },
-            { id: 'cargoType', label: 'Cargo type', type: 'select', required: true, placeholder: 'Select cargo type', gridSpan: 1 },
-            { id: 'cargoName', label: 'Cargo name', type: 'select', required: true, placeholder: 'Select cargo name', gridSpan: 1 },
-            { id: 'cargoNameOther', label: 'Cargo name (specify)', type: 'text', placeholder: 'Enter cargo name', gridSpan: 2, showWhen: { field: 'cargoName', value: 'OTHER' } },
-            { id: 'quantityTons', label: 'Quantity (MT)', type: 'number', required: true, placeholder: 'e.g. 12,500', gridSpan: 1 },
-          ],
+            { id: 'to', label: 'To (Shipowner)', type: 'text', required: true, placeholder: 'Owner/Principal name', gridSpan: 1 },
+            { id: 'mv', label: 'MV (Vessel name)', type: 'mv-prefix', required: true, placeholder: 'MV Your Vessel', gridSpan: 1 },
+            { id: 'grt', label: 'GRT', type: 'number', placeholder: 'Gross tonnage', gridSpan: 1 },
+            { id: 'dwt', label: 'DWT', type: 'number', placeholder: 'Deadweight (tons)', gridSpan: 1 },
+            { id: 'loa', label: 'LOA', type: 'number', placeholder: 'Length overall (m)', gridSpan: 1 },
+            { id: 'eta', label: 'ETA', type: 'date', required: false, placeholder: 'dd/mm/yyyy', gridSpan: 1 },
+          ]
         },
         {
-          title: 'Vessel particulars',
+          title: 'Cargo',
           fields: [
-            { id: 'grt', label: 'GRT', type: 'number', placeholder: 'Gross tonnage', gridSpan: 1 },
-            { id: 'dwt', label: 'DWT', type: 'number', placeholder: 'Deadweight (MT)', gridSpan: 1 },
-            { id: 'loa', label: 'LOA (m)', type: 'number', placeholder: 'Length overall', gridSpan: 1 },
-          ],
+            { id: 'cargoType', label: 'Cargo type', type: 'select', required: true, options: ['IN BULK', 'IN BAGS', 'IN EQUIPMENT'], gridSpan: 1 },
+            { id: 'cargoName', label: 'Cargo name', type: 'select', required: true, options: ['WOOD PELLET', 'WOODCHIP', 'EQUIPMENT', 'OTHER'], placeholder: 'Select or choose OTHER', gridSpan: 1 },
+            { id: 'cargoNameOther', label: 'Cargo name (if OTHER)', type: 'text', placeholder: 'Enter cargo name', gridSpan: 2, showWhen: { field: 'cargoName', value: 'other' } },
+            { id: 'quantityTons', label: 'Quantity (tons)', type: 'number', required: true, placeholder: 'e.g., 15000', gridSpan: 1 },
+          ]
         },
+        {
+          title: 'Trade & Port',
+          fields: [
+            { id: 'frtTaxType', label: 'Frt tax type (import/export)', type: 'select', required: true, options: ['Import', 'Export'], gridSpan: 1, helperText: 'Export may incur freight tax; import may not.', enableSearch: false },
+            { id: 'purposeOfCalling', label: 'Purpose of calling', type: 'select', required: true, options: ['NHAP_XUAT', 'NHAP_CHUYEN_CANG', 'CHUYEN_CANG_XUAT', 'CHUYEN_CANG_CHUYEN_CANG', 'MUC_DICH_KHAC'], gridSpan: 1, enableSearch: false },
+            { id: 'portOfCall', label: 'Port of call', type: 'port', required: true, placeholder: 'e.g., Quy Nhon, SOUTH...', gridSpan: 1 },
+            { id: 'dischargeLoadingLocation', label: 'Discharge/Loading at', type: 'select', required: true, options: ['Berth', 'Anchorage'], gridSpan: 1, enableSearch: false }
+          ]
+        },
+        {
+          title: 'Service options',
+          fields: [
+            { id: 'boatHireAmount', label: 'Boat-hire for agency service (USD)', type: 'number', placeholder: '0', gridSpan: 1, required: false, showWhen: { field: 'dischargeLoadingLocation', value: 'Anchorage' } },
+            { id: 'tallyFeeAmount', label: "Ship's side tally fee (USD)", type: 'number', placeholder: '0', gridSpan: 1, required: false, showWhen: { field: 'cargoType', value: ['IN BAGS', 'IN EQUIPMENT'] } },
+            { id: 'transportLs', label: 'Taxi/Courrier/Communication for agency service', type: 'number', placeholder: '0', gridSpan: 2 },
+            { id: 'transportQuarantine', label: 'Transport for entry quarantine formality (optional)', type: 'number', placeholder: '0', gridSpan: 2 },
+          ]
+        }
       ],
       fields: [],
       onSubmit: (data) => {
-        console.log('Port D/A inquiry submitted:', data)
-      },
+        console.log('Form submitted:', data)
+        // Handle form submission
+      }
     },
 
     gallery: {
       enabled: true,
-      sectionTitle: 'Shipping Agency Operations',
-      sectionDescription:
-        'Port calls, crew changes, cargo operations — a look inside our shipping agency work across Vietnamese ports.',
-    },
+      sectionTitle: 'Our Shipping Agency Operations',
+      sectionDescription: 'Browse images from our shipping agency services across Vietnamese ports'
+    }
   }
 
   return <ServiceTemplate {...config} />

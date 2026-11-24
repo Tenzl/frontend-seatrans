@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ColumnDef } from '@tanstack/react-table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
@@ -8,7 +9,7 @@ import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Loader2, AlertCircle, RefreshCw, FileText, ArrowUpDown } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
-import { QuotePreview } from '@/modules/inquiries/components/common/Quote-hcm'
+import { QuotePreview } from '@/modules/inquiries/components/common/Quote-south'
 import { InquiryDataTable } from './InquiryDataTable'
 import { InquiryDetailDrawer } from './InquiryDetailDrawer'
 import { useInquiryData } from './useInquiryData'
@@ -37,17 +38,20 @@ export function BaseInquiryHistoryLayout({
   serviceType,
   serviceLabel,
   isAdmin = false,
-  title,
+  title = 'Inquiry History',
   description = 'View and manage your inquiry submissions',
 }: BaseInquiryHistoryLayoutProps) {
-  const { inquiries, isLoading, error, fetchInquiries, deleteInquiries, updateStatus } = useInquiryData({
+  const router = useRouter()
+
+  const { inquiries, isLoading, error, fetchInquiries, deleteInquiries, updateStatus, updateForm, formUpdatingId } = useInquiryData({
     serviceType,
     isAdmin,
   })
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null)
-  
+  const [pdfOpeningId, setPdfOpeningId] = useState<number | null>(null)
+
   const { quoteHtml, isLoading: loadingQuote, generateInvoicePreview, clearPreview } = useInvoicePreview()
-  
+
   const [detailInquiry, setDetailInquiry] = useState<any | null>(null)
   const [quoteInquiry, setQuoteInquiry] = useState<any | null>(null)
 
@@ -76,6 +80,27 @@ export function BaseInquiryHistoryLayout({
     }
   }
 
+  const handleManagePdf = async (inquiry: any) => {
+    const slug = getServiceSlugFromInquiry(inquiry) || serviceType
+
+    if (slug === 'shipping-agency' && isAdmin) {
+      setPdfOpeningId(inquiry.id)
+      try {
+        if (inquiry.status !== STATUS_PROCESSING) {
+          await updateStatus(inquiry.id, STATUS_PROCESSING, slug)
+        }
+        router.push(`/admin/inquiries/${slug}/${inquiry.id}/pdf`)
+      } catch (err) {
+        console.error('Failed to open PDF manager', err)
+      } finally {
+        setPdfOpeningId(null)
+      }
+      return
+    }
+
+    handleViewQuote(inquiry)
+  }
+
   const handleOpenDetail = (inquiry: any) => {
     setDetailInquiry(inquiry)
   }
@@ -101,17 +126,6 @@ export function BaseInquiryHistoryLayout({
 
   // Define columns
   const columns: ColumnDef<any>[] = [
-    {
-      id: 'no',
-      header: 'No.',
-      cell: ({ row }) => (
-        <span className="text-muted-foreground text-sm tabular-nums">
-          {row.original.code || `#${row.original.id}`}
-        </span>
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
     {
       accessorKey: 'fullName',
       header: ({ column }) => (
@@ -207,8 +221,48 @@ export function BaseInquiryHistoryLayout({
         },
       }
     )
+
+    // Form column only for admin
+    if (isAdmin) {
+      columns.push({
+        id: 'form',
+        header: 'Form',
+        cell: ({ row }) => {
+          const inq = row.original
+          const current = (inq.quoteForm || '').toUpperCase() || 'SOUTH'
+          const options = ['SOUTH', 'CENTRAL']
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={formUpdatingId === inq.id} className="px-2">
+                  {formUpdatingId === inq.id ? <Loader2 className="h-4 w-4 animate-spin" /> : current}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {options.map(opt => (
+                  <DropdownMenuItem
+                    key={opt}
+                    disabled={formUpdatingId === inq.id || opt === current}
+                    onSelect={async () => {
+                      if (opt === current) return
+                      try {
+                        await updateForm(inq.id, opt, getServiceSlugFromInquiry(inq) || serviceType)
+                      } catch (err) {
+                        console.error('Failed to update form', err)
+                      }
+                    }}
+                  >
+                    {opt}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      })
+    }
   }
-  
+
   columns.push(
     {
       accessorKey: 'submittedAt',
@@ -251,15 +305,28 @@ export function BaseInquiryHistoryLayout({
               </Button>
             )
           }
+          // Shipping agency: both View Details and Manage PDF
           return (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleOpenDetail(inq)}
-              className="gap-2"
-            >
-              View Details
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleOpenDetail(inq)}
+                className="gap-2"
+              >
+                View Details
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => handleManagePdf(inq)}
+                className="gap-2"
+                disabled={pdfOpeningId === inq.id}
+              >
+                {pdfOpeningId === inq.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                Manage PDF
+              </Button>
+            </div>
           )
         }
 
@@ -307,29 +374,25 @@ export function BaseInquiryHistoryLayout({
     }
   )
 
-  const detailSchema = detailInquiry 
+  const detailSchema = detailInquiry
     ? getSchemaForService(getServiceSlugFromInquiry(detailInquiry) || serviceType || '')
     : []
 
   return (
     <>
       <Card>
-        <CardHeader className="border-b border-border/50 pb-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1.5">
-              {title ? (
-                <CardTitle className="text-lg font-semibold tracking-tight">{title}</CardTitle>
-              ) : null}
-              {description ? (
-                <CardDescription className="max-w-2xl text-sm leading-relaxed">{description}</CardDescription>
-              ) : null}
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{title}</CardTitle>
+              <CardDescription>{description}</CardDescription>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={fetchInquiries}
               disabled={isLoading}
-              className="gap-2 shrink-0"
+              className="gap-2"
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Reload
@@ -376,8 +439,8 @@ export function BaseInquiryHistoryLayout({
 
       {/* Invoice Preview Dialog */}
       {quoteInquiry && (
-        <Dialog 
-          open={!!quoteInquiry} 
+        <Dialog
+          open={!!quoteInquiry}
           onOpenChange={(open) => {
             if (!open) {
               setQuoteInquiry(null)
@@ -397,13 +460,13 @@ export function BaseInquiryHistoryLayout({
               <div className="flex flex-col gap-4 min-h-[70vh]">
                 <div className="flex-1 min-h-[70vh] rounded-md border overflow-hidden bg-white">
                   {loadingQuote ? (
-                    <div className="flex items-center justify-center h-full bg-muted">
-                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    <div className="flex items-center justify-center h-full bg-gray-100">
+                      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                     </div>
                   ) : quoteHtml ? (
                     <QuotePreview html={quoteHtml} />
                   ) : (
-                    <div className="flex items-center justify-center h-full bg-muted text-muted-foreground">
+                    <div className="flex items-center justify-center h-full bg-gray-100 text-muted-foreground">
                       <FileText className="h-10 w-10 mr-2" />
                       No invoice available
                     </div>
@@ -417,7 +480,7 @@ export function BaseInquiryHistoryLayout({
                     variant="outline"
                     onClick={async () => {
                       if (!quoteHtml) return
-                      
+
                       const iframe = document.createElement('iframe')
                       iframe.style.position = 'fixed'
                       iframe.style.right = '0'
@@ -426,22 +489,22 @@ export function BaseInquiryHistoryLayout({
                       iframe.style.height = '0'
                       iframe.style.border = 'none'
                       document.body.appendChild(iframe)
-                      
+
                       const iframeDoc = iframe.contentWindow?.document
                       if (!iframeDoc) {
                         document.body.removeChild(iframe)
                         return
                       }
-                      
+
                       iframeDoc.open()
                       iframeDoc.write(quoteHtml)
                       iframeDoc.close()
-                      
+
                       await new Promise(resolve => setTimeout(resolve, 1000))
-                      
+
                       iframe.contentWindow?.focus()
                       iframe.contentWindow?.print()
-                      
+
                       setTimeout(() => {
                         document.body.removeChild(iframe)
                       }, 1000)

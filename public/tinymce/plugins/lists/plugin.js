@@ -13,7 +13,7 @@
         }
     });
 
-     
+    /* eslint-disable @typescript-eslint/no-wrapper-object-types */
     const isSimpleType = (type) => (value) => typeof value === type;
     const isNullable = (a) => a === null || a === undefined;
     const isNonNullable = (a) => !isNullable(a);

@@ -55,7 +55,7 @@ export interface ServiceTemplateProps {
     sectionTitle: string
     sectionDescription: string
     enabled: boolean
-    commodities?: { label: string; value: number }[]
+    imageTypes?: { label: string; value: number }[]
   }
 
   customSections?: ReactNode[]
@@ -98,13 +98,11 @@ export function ServiceTemplate({
         onNavigateHome={onNavigateHome}
       />
 
-      <div className="container max-w-7xl">
+      <div className="container pb-10">
         {contacts && <ContactSection contacts={contacts} />}
-      </div>
 
-      {services && <ServicesSection services={services} />}
+        {services && <ServicesSection services={services} />}
 
-      <div className="container max-w-7xl pb-16 md:pb-24">
         {form && mergedForm && <FormSection form={mergedForm} />}
 
         {gallery?.enabled && serviceTypeId && (

@@ -61,7 +61,7 @@ export function ManageCategories() {
       setErrorMessage(null)
       const data = await categoryService.getAdminCategories()
       setCategories(data)
-      
+
       // Show info message if no categories loaded from backend
       if (data.length === 0) {
         console.log('No categories loaded. Backend endpoints may not be implemented yet.')
@@ -77,7 +77,7 @@ export function ManageCategories() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     try {
       if (editingId) {
         await categoryService.updateCategory(editingId, formData)
@@ -86,7 +86,7 @@ export function ManageCategories() {
         await categoryService.createCategory(formData)
         setSuccessMessage('Category created successfully')
       }
-      
+
       resetForm()
       loadCategories()
       setTimeout(() => setSuccessMessage(null), 3000)
@@ -149,6 +149,13 @@ export function ManageCategories() {
 
   return (
     <div className="bg-card border rounded-lg p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="flex items-center gap-2">
+          <Tag className="h-5 w-5 text-primary" />
+          News Categories
+        </h2>
+      </div>
+
       {/* Create/Edit Form */}
       <div className="mb-6 p-4 border rounded-lg bg-muted/20">
         <h3 className="font-medium mb-4">
@@ -162,8 +169,8 @@ export function ManageCategories() {
               value={formData.name}
               onChange={(e) => {
                 const newName = capitalizeWords(e.target.value)
-                setFormData({ 
-                  ...formData, 
+                setFormData({
+                  ...formData,
                   name: newName,
                   slug: generateSlug(newName)
                 })
@@ -179,7 +186,7 @@ export function ManageCategories() {
               </p>
             )}
           </div>
-          
+
           <div>
             <Label htmlFor="description">Description</Label>
             <Textarea
@@ -221,14 +228,14 @@ export function ManageCategories() {
         <div>
           {/* Success/Error Messages */}
           {successMessage && (
-            <div className="mb-4 p-4 bg-success/10 border-2 border-success text-success rounded-lg flex items-center justify-between">
+            <div className="mb-4 p-4 bg-green-50 border-2 border-green-500 text-green-800 rounded-lg flex items-center justify-between">
               <span className="font-medium">{successMessage}</span>
               <button onClick={() => setSuccessMessage(null)} className="cursor-pointer">
                 <Plus className="h-4 w-4 rotate-45" />
               </button>
             </div>
           )}
-          
+
           {errorMessage && (
             <div className="mb-4 p-4 bg-red-50 border-2 border-red-500 text-red-800 rounded-lg flex items-center justify-between">
               <span className="font-medium">{errorMessage}</span>
@@ -237,7 +244,7 @@ export function ManageCategories() {
               </button>
             </div>
           )}
-          
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-muted/50">
@@ -295,7 +302,7 @@ export function ManageCategories() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete category "<strong>{deleteDialog.category?.name}</strong>"? 
+              Are you sure you want to delete category "<strong>{deleteDialog.category?.name}</strong>"?
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

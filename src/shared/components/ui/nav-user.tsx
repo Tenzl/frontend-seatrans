@@ -1,37 +1,32 @@
 "use client"
 
 import {
-  BadgeCheck,
-  Bell,
-  ChevronsUpDown,
-  CreditCard,
-  LayoutDashboard,
-  LogOut,
-  Sparkles,
+ChevronsUpDown,LayoutDashboard,
+LogOut
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import NProgress from "nprogress"
 import { useAuth } from "@/modules/auth/context/AuthContext"
 
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
+Avatar,
+AvatarFallback,
+AvatarImage,
 } from "@/shared/components/ui/avatar"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+DropdownMenu,
+DropdownMenuContent,
+DropdownMenuGroup,
+DropdownMenuItem,
+DropdownMenuLabel,
+DropdownMenuSeparator,
+DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu"
 import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
+SidebarMenu,
+SidebarMenuButton,
+SidebarMenuItem,
+useSidebar,
 } from "@/shared/components/ui/sidebar"
 
 export function NavUser({

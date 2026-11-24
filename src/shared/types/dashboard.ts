@@ -30,14 +30,12 @@ export interface ProjectItem {
 export interface User {
   id: number
   email: string
-  username?: string | null
-  fullName: string | null
+  fullName: string
   nation?: string
-  phone?: string | null
-  company?: string | null
+  phone?: string
+  company?: string
   role?: string
   roleId?: number
   roleGroup?: RoleGroup
-  oauthProvider?: string | null
-  emailVerified?: boolean
+  oauthProvider?: string
 }

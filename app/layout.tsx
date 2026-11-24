@@ -1,39 +1,13 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
-import { Archivo, Merriweather, Fira_Code } from 'next/font/google'
-import { connection } from 'next/server'
-import { headers } from 'next/headers'
 import { Suspense } from 'react'
 import { AuthProvider } from '@/modules/auth/context/AuthContext'
 import { Toaster } from '@/shared/components/ui/sonner'
 import { NProgressProvider } from '@/shared/components/NProgressProvider'
 import '@/styles/nprogress.css'
 import './globals.css'
-import { organizationSchemaJson, siteUrl } from '@/shared/seo/organizationSchema'
 
-const archivo = Archivo({
-  subsets: ['latin', 'vietnamese'],
-  weight: ['400', '600', '700', '800'],
-  variable: '--font-sans',
-  display: 'swap',
-})
-
-const merriweather = Merriweather({
-  subsets: ['latin', 'vietnamese'],
-  weight: ['400', '700'],
-  variable: '--font-serif',
-  display: 'swap',
-  preload: false,
-})
-
-const firaCode = Fira_Code({
-  subsets: ['latin'],
-  weight: ['400', '500'],
-  variable: '--font-mono',
-  display: 'swap',
-  preload: false,
-})
-
+const siteUrl = 'https://seatrans.vercel.app'
 const gaMeasurementId = 'G-NQK767RG2P'
 
 export const metadata: Metadata = {
@@ -83,26 +57,41 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  await connection()
-
-  const nonceHeader = (await headers()).get('x-nonce')
-  const nonce = nonceHeader?.trim() ? nonceHeader.trim() : undefined
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Seatrans',
+    url: siteUrl,
+    logo: `${siteUrl}/landing-image/web_Logo.png`,
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: '+84 935 015 679',
+      contactType: 'customer service',
+      areaServed: 'VN',
+    },
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: '51 Luu Huu Phuoc',
+      addressRegion: 'Gia Lai',
+      addressCountry: 'VN',
+    },
+    sameAs: ['https://www.facebook.com/seatrans.info'],
+  }
 
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body className={`${archivo.variable} ${merriweather.variable} ${firaCode.variable}`} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
           strategy="afterInteractive"
-          nonce={nonce}
         />
-        <Script id="ga4-init" strategy="afterInteractive" nonce={nonce}>
+        <Script id="ga4-init" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -110,9 +99,10 @@ export default async function RootLayout({
             gtag('config', '${gaMeasurementId}');
           `}
         </Script>
-        <script
+        <Script
+          id="organization-schema"
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: organizationSchemaJson }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
         <AuthProvider>
           <Suspense fallback={null}>

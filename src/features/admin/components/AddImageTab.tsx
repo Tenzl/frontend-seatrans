@@ -1,1 +1,3 @@
-export { GalleryImageHub as AddImageTab } from '@/modules/gallery/components/admin/GalleryImageHub'
+'use client'
+
+export { AddImageTab } from '@/modules/gallery/components/admin/ImageUpload'

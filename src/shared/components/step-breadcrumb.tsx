@@ -1,15 +1,14 @@
 "use client"
-import { memo, useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { Check } from "lucide-react"
 import { cn } from "@/shared/lib/utils"
 
 interface StepBreadcrumbProps {
   className?: string
   steps?: Array<{ id: string; name: string; status: "complete" | "current" | "upcoming" }>
-  onStepClick?: (stepId: string) => void
 }
 
-export const Breadcrumb = memo(function Breadcrumb({
+export function Breadcrumb({
   className,
   steps = [
     { id: "01", name: "Cart", status: "complete" },
@@ -17,7 +16,6 @@ export const Breadcrumb = memo(function Breadcrumb({
     { id: "03", name: "Payment", status: "upcoming" },
     { id: "04", name: "Confirmation", status: "upcoming" },
   ],
-  onStepClick,
 }: StepBreadcrumbProps) {
   const [isMobile, setIsMobile] = useState(false)
 
@@ -37,27 +35,19 @@ export const Breadcrumb = memo(function Breadcrumb({
   return (
     <nav
       className={cn(
-        "p-2 sm:p-3 rounded-xl bg-muted text-foreground overflow-x-auto scrollbar-hide",
+        "p-2 sm:p-3 rounded-xl bg-gray-100 dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 overflow-x-auto scrollbar-hide",
         className,
       )}
       aria-label="Progress"
     >
       <ol className={cn("flex w-full min-w-max", isMobile ? "flex-col space-y-3" : "items-center justify-between")}>
         {steps.map((step, stepIdx) => (
-          <li
-            key={step.id}
-            className={cn(
-              "relative",
-              !isMobile && stepIdx !== steps.length - 1 && "pr-8 md:pr-16",
-              onStepClick && "cursor-pointer hover:opacity-80 transition-opacity"
-            )}
-            onClick={() => onStepClick?.(step.id)}
-          >
+          <li key={step.id} className={cn("relative", !isMobile && stepIdx !== steps.length - 1 && "pr-8 md:pr-16")}>
             {!isMobile && stepIdx !== steps.length - 1 && (
               <div
                 className={cn(
                   "absolute top-4 left-7 -ml-px mt-0.5 h-0.5 w-full",
-                  step.status === "complete" ? "bg-success" : "bg-border",
+                  step.status === "complete" ? "bg-green-600 dark:bg-green-500" : "bg-gray-300 dark:bg-zinc-700",
                 )}
                 aria-hidden="true"
               />
@@ -68,10 +58,10 @@ export const Breadcrumb = memo(function Breadcrumb({
                   className={cn(
                     "flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full",
                     step.status === "complete"
-                      ? "bg-success text-success-foreground"
+                      ? "bg-green-600 dark:bg-green-500 text-white"
                       : step.status === "current"
-                        ? "border-2 border-success bg-card"
-                        : "border-2 border-border bg-card",
+                        ? "border-2 border-green-600 dark:border-green-500 bg-white dark:bg-zinc-900"
+                        : "border-2 border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900",
                   )}
                 >
                   {step.status === "complete" ? (
@@ -81,8 +71,8 @@ export const Breadcrumb = memo(function Breadcrumb({
                       className={cn(
                         "text-[10px] sm:text-xs",
                         step.status === "current"
-                          ? "text-success"
-                          : "text-muted-foreground",
+                          ? "text-green-600 dark:text-green-500"
+                          : "text-gray-500 dark:text-zinc-500",
                       )}
                     >
                       {step.id}
@@ -95,10 +85,10 @@ export const Breadcrumb = memo(function Breadcrumb({
                   className={cn(
                     "font-medium",
                     step.status === "complete"
-                      ? "text-foreground"
+                      ? "text-gray-900 dark:text-zinc-100"
                       : step.status === "current"
-                        ? "text-success"
-                        : "text-muted-foreground",
+                        ? "text-green-600 dark:text-green-500"
+                        : "text-gray-500 dark:text-zinc-500",
                   )}
                 >
                   {step.name}
@@ -110,4 +100,4 @@ export const Breadcrumb = memo(function Breadcrumb({
       </ol>
     </nav>
   )
-})
+}

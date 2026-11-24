@@ -1,96 +1,86 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { LucideIcon } from 'lucide-react'
-import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
-import { useScreenSize } from '@/shared/hooks/use-screen-size'
-import { ImageWithFallback } from '@/shared/components/ImageWithFallback'
-import { GooeyFilter } from '@/shared/components/ui/gooey-filter'
-import { PixelTrail } from '@/shared/components/ui/pixel-trail'
+import { useEffect, useRef } from 'react'
+import { LucideIcon, ChevronRight } from 'lucide-react'
 
-const EASE_OUT = [0.23, 1, 0.32, 1] as const
-const FALLBACK_HERO_IMAGE = '/landing-image/other_hero.png'
-
-// Per-page hero image, keyed by the short service name passed to this component.
-const HERO_IMAGES: Record<string, string> = {
-  'Shipping Agency': '/landing-image/solution/shipping_agency.png',
-  'Freight Forwarding': '/landing-image/solution/freight_forwarding.png',
-  'Chartering & Broking': '/landing-image/solution/chatering_broking.png',
-  'Total Logistics': '/landing-image/solution/total_logistic.png',
-  Contact: '/landing-image/solution/contact.png',
-  Insights: '/landing-image/solution/insight.png',
-}
-
-export interface HeroBannerSectionProps {
+interface HeroBannerSectionProps {
   title: string
   subtitle?: string
   description?: string
-  image?: string
+  image: string
   serviceName: string
   serviceIcon?: LucideIcon
   onNavigateHome?: () => void
-  variant?: 'service' | 'contact'
 }
 
-export function HeroBannerSection({ serviceName }: HeroBannerSectionProps) {
-  const prefersReducedMotion = useReducedMotion()
-  const screenSize = useScreenSize()
-  const gooeyId = 'gooey-hero-pixel-trail'
-  const heroImage = HERO_IMAGES[serviceName] ?? FALLBACK_HERO_IMAGE
+export function HeroBannerSection({
+  title,
+  subtitle = 'Services',
+  description,
+  image,
+  serviceName,
+  serviceIcon: ServiceIcon,
+  onNavigateHome,
+}: HeroBannerSectionProps) {
+  const bgRef = useRef<HTMLDivElement>(null)
 
-  const Title = prefersReducedMotion ? 'h1' : motion.h1
-  const titleProps = prefersReducedMotion
-    ? {}
-    : {
-        initial: { opacity: 0, transform: 'translateY(10px)' },
-        animate: { opacity: 1, transform: 'translateY(0)' },
-        transition: { duration: 0.4, ease: EASE_OUT },
-      }
+  useEffect(() => {
+    if (bgRef.current && image) {
+      bgRef.current.style.setProperty('--hero-bg', `url(${image})`)
+    }
+  }, [image])
+
+  const handleHome = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (onNavigateHome) {
+      e.preventDefault()
+      onNavigateHome()
+    }
+  }
 
   return (
-    <section
-      className="relative isolate flex min-h-[min(46dvh,380px)] items-center justify-center overflow-hidden bg-black"
-      aria-label={`${serviceName} introduction`}
-    >
-      {/* Background image */}
-      <div className="absolute inset-0 -z-10" aria-hidden>
-        <ImageWithFallback
-          src={heroImage}
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="h-full w-full object-cover object-center"
-        />
-      </div>
-      {/* Dark scrim — keeps the white title and gooey trail legible over the photo */}
-      <div className="absolute inset-0 -z-10 bg-black/45" aria-hidden />
-
-      {/* Interactive gooey pixel trail — sits behind the text, which occludes it */}
-      {!prefersReducedMotion && (
-        <>
-          <GooeyFilter id={gooeyId} strength={5} />
-          <div
-            className="absolute inset-0 z-0"
-            style={{ filter: `url(#${gooeyId})` }}
-            aria-hidden
-          >
-            <PixelTrail
-              pixelSize={screenSize.lessThan('md') ? 24 : 32}
-              fadeDuration={0}
-              delay={500}
-              pixelClassName="bg-white"
-            />
-          </div>
-        </>
-      )}
-
-      <Title
-        {...titleProps}
-        className="pointer-events-none relative z-10 px-6 text-center text-3xl font-bold leading-[1.05] tracking-tight text-white md:text-4xl lg:text-5xl"
+    <div className="relative w-full">
+      <div
+        ref={bgRef}
+        className="relative overflow-hidden rounded-b-[32px] service-hero-bg"
       >
-        {serviceName}
-      </Title>
-    </section>
+        <div className="absolute inset-0" aria-hidden="true" />
+        <div className="relative z-10 max-w-5xl mx-auto px-6 py-20 text-center text-white flex flex-col items-center gap-3">
+          <div className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-white/85">
+            {ServiceIcon ? (
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/15 border border-white/20">
+                <ServiceIcon className="h-4 w-4" />
+              </span>
+            ) : (
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/15 border border-white/20">
+                <ChevronRight className="h-4 w-4" />
+              </span>
+            )}
+            <span>{subtitle}</span>
+          </div>
+
+          <h1 className="text-4xl md:text-5xl font-bold leading-tight drop-shadow-md">{title}</h1>
+          {description && (
+            <p className="mt-2 max-w-3xl text-base md:text-lg text-white/85 leading-relaxed">
+              {description}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="relative z-20 -mt-8">
+        <div className="container flex justify-center">
+          <div className="flex items-center gap-2 rounded-xl bg-white px-6 py-3 shadow-xl border border-border/80 text-sm font-medium">
+            <button
+              onClick={handleHome}
+              className="text-primary hover:text-primary/80 transition-colors"
+            >
+              Home
+            </button>
+            <span className="text-muted-foreground">•</span>
+            <span className="text-foreground/80">{serviceName}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

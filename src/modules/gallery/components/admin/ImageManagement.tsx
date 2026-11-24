@@ -9,12 +9,7 @@ import {
   useReactTable,
   type RowSelectionState,
 } from '@tanstack/react-table'
-import { Image as ImageIcon, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Info, Edit2, Loader2, RefreshCw, ArrowUpDown } from 'lucide-react'
-import {
-  GalleryImageFilters,
-  GalleryManageProvider,
-  useGalleryManageFilters,
-} from './galleryManageContext'
+import { Image as ImageIcon, Filter, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Info, Edit2, Loader2, RefreshCw, ArrowUpDown } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/shared/components/ui/dialog'
@@ -31,96 +26,113 @@ import {
 import { ImageWithFallback } from '@/shared/components/ImageWithFallback'
 import { provinceService, Province } from '@/modules/logistics/services/provinceService'
 import { portService, Port } from '@/modules/logistics/services/portService'
-import { commodityService, Commodity } from '@/modules/gallery/services/commodityService'
+import { serviceTypeService, ServiceType } from '@/modules/service-types/services/serviceTypeService'
+import { imageTypeService, ImageType } from '@/modules/gallery/services/imageTypeService'
 import { galleryService, GalleryImage } from '@/modules/gallery/services/galleryService'
 import { API_CONFIG } from '@/shared/config/api.config'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { Checkbox } from '@/shared/components/ui/checkbox'
-import { Card, CardContent, CardDescription, CardHeader } from '@/shared/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
+
+const AREA_OPTIONS = ['NORTHERN', 'MIDDLE', 'SOUTHERN'] as const
 
 // Helper function to construct proper image URL
 const getImageUrl = (url: string) => {
   if (!url) return ''
   // If it's already a full URL, return it
   if (url.startsWith('http')) return url
-  
+
   // Normalize slashes
   const normalizedPath = url.replace(/\\/g, '/')
-  
+
   // Ensure it starts with / if not present
   const path = normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`
-  
+
   const assetBase = API_CONFIG.ASSET_BASE_URL
   return `${assetBase}${path}`
 }
 
-export interface ManageImagesTabProps {
-  embedded?: boolean
-  /** Filters render in GalleryImageHub sidebar; requires GalleryManageProvider ancestor. */
-  hideFilters?: boolean
-}
-
-export function ManageImagesTab({ embedded = false, hideFilters = false }: ManageImagesTabProps = {}) {
-  if (hideFilters) {
-    return <ManageImagesBody embedded />
-  }
-
-  return (
-    <GalleryManageProvider>
-      <div className="space-y-6">
-        <GalleryImageFilters layout="bar" />
-        <ManageImagesBody embedded />
-      </div>
-    </GalleryManageProvider>
-  )
-}
-
-function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
-  const {
-    filterArea,
-    filterPort,
-    filterServiceType,
-    filterCommodity,
-    filterProvinceId,
-    serviceTypes,
-  } = useGalleryManageFilters()
-
+export function ManageImagesTab() {
   const [provinces, setProvinces] = useState<Province[]>([])
   const [provincesWithPorts, setProvincesWithPorts] = useState<Province[]>([])
+  const [allPorts, setAllPorts] = useState<Port[]>([])
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([])
+
+  const [filterArea, setFilterArea] = useState<string>('')
+  const [filterPort, setFilterPort] = useState<number | null>(null)
+  const [filterServiceType, setFilterServiceType] = useState<number | null>(null)
+  const [filterImageType, setFilterImageType] = useState<number | null>(null)
+
+  const [availablePorts, setAvailablePorts] = useState<Port[]>([])
+  const [availableImageTypes, setAvailableImageTypes] = useState<ImageType[]>([])
 
   const [images, setImages] = useState<GalleryImage[]>([])
   const [totalPages, setTotalPages] = useState(0)
   const [totalImages, setTotalImages] = useState(0)
-  const [isTableLoading, setIsTableLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
-  
+
   const [currentPage, setCurrentPage] = useState(0)
   const [deleteModalImage, setDeleteModalImage] = useState<GalleryImage | null>(null)
   const [editModalImage, setEditModalImage] = useState<GalleryImage | null>(null)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [editPorts, setEditPorts] = useState<Port[]>([])
-  const [editCommodities, setEditCommodities] = useState<Commodity[]>([])
+  const [editImageTypes, setEditImageTypes] = useState<ImageType[]>([])
   const [editForm, setEditForm] = useState<{
     provinceId: number | null
     portId: number | null
     serviceTypeId: number | null
-    commodityId: number | null
+    imageTypeId: number | null
   }>({
     provinceId: null,
     portId: null,
     serviceTypeId: null,
-    commodityId: null,
+    imageTypeId: null,
   })
-  const [commodityCounts, setCommodityCounts] = useState<Record<string, number>>({})
+  const [imageTypeCounts, setImageTypeCounts] = useState<Record<string, number>>({})
 
-  const imagesPerPage = 6
+  const imagesPerPage = 20
 
   useEffect(() => {
     loadProvinces()
+    loadServiceTypes()
   }, [])
+
+  // Update available ports when area changes
+  useEffect(() => {
+    if (filterArea) {
+      const provinceIdsByArea = new Set(
+        provinces
+          .filter((province) => province.area === filterArea)
+          .map((province) => province.id)
+      )
+      setAvailablePorts(allPorts.filter((port) => provinceIdsByArea.has(port.provinceId)))
+      setFilterPort(null)
+    } else {
+      setAvailablePorts([])
+      setFilterPort(null)
+    }
+  }, [filterArea, provinces, allPorts])
+
+  // Update available image types when service type changes
+  useEffect(() => {
+    if (filterServiceType) {
+      loadImageTypes(filterServiceType)
+    } else {
+      setAvailableImageTypes([])
+      setFilterImageType(null)
+    }
+  }, [filterServiceType])
+
+  // Load image type counts
+  useEffect(() => {
+    if (filterImageType) {
+      loadImageTypeCount(filterImageType)
+    }
+  }, [filterImageType])
 
   // kick off initial load
   useEffect(() => {
@@ -135,21 +147,57 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
     try {
       const data = await provinceService.getAllProvinces()
       setProvinces(data)
-      setProvincesWithPorts(data)
+
+      // Load all ports to filter provinces with at least one port
+      const allPorts = await portService.getAllPorts()
+      setAllPorts(allPorts)
+      const provinceIdsWithPorts = new Set(allPorts.map(port => port.provinceId))
+      const filtered = data.filter(province => provinceIdsWithPorts.has(province.id))
+      setProvincesWithPorts(filtered)
     } catch (error) {
       console.error('Error loading provinces:', error)
     }
   }
 
-  const loadCommodityCount = async (commodityId: number, provinceId?: number, portId?: number, serviceTypeId?: number) => {
+  const loadServiceTypes = async () => {
     try {
-      const countData = await commodityService.getImageCount(commodityId, provinceId, portId, serviceTypeId)
-      const key = `${provinceId || 0}_${portId || 0}_${serviceTypeId || 0}_${commodityId}`
-      console.log('Loading count for key:', key, 'count:', countData.current, 'params:', { provinceId, portId, serviceTypeId, commodityId })
-      setCommodityCounts(prev => ({ ...prev, [key]: countData.current }))
+      const data = await serviceTypeService.getAllServiceTypes()
+      setServiceTypes(data)
+    } catch (error) {
+      console.error('Error loading service types:', error)
+    }
+  }
+
+  const loadImageTypes = async (serviceTypeId: number) => {
+    try {
+      const data = await imageTypeService.getImageTypesByServiceType(serviceTypeId)
+      setAvailableImageTypes(data)
+      setFilterImageType(null)
+    } catch (error) {
+      console.error('Error loading image types:', error)
+    }
+  }
+
+  const loadImageTypeCount = async (imageTypeId: number, provinceId?: number, portId?: number, serviceTypeId?: number) => {
+    try {
+      const countData = await imageTypeService.getImageCount(imageTypeId, provinceId, portId, serviceTypeId)
+      const key = `${provinceId || 0}_${portId || 0}_${serviceTypeId || 0}_${imageTypeId}`
+      console.log('Loading count for key:', key, 'count:', countData.current, 'params:', { provinceId, portId, serviceTypeId, imageTypeId })
+      setImageTypeCounts(prev => ({ ...prev, [key]: countData.current }))
     } catch (error) {
       console.error('Error loading image count:', error)
     }
+  }
+
+  const handleClearAll = () => {
+    setFilterArea('')
+    setFilterPort(null)
+    setFilterServiceType(null)
+    setFilterImageType(null)
+    setImages([])
+    setCurrentPage(0)
+    setTotalPages(0)
+    setTotalImages(0)
   }
 
   const handleDeleteClick = (image: GalleryImage) => {
@@ -166,18 +214,18 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
     }
   }
 
-  const loadEditCommodities = async (serviceTypeId: number) => {
+  const loadEditImageTypes = async (serviceTypeId: number) => {
     try {
-      const data = await commodityService.getCommoditiesByServiceType(serviceTypeId)
-      setEditCommodities(data)
+      const data = await imageTypeService.getImageTypesByServiceType(serviceTypeId)
+      setEditImageTypes(data)
     } catch (error) {
       console.error('Error loading edit image types:', error)
-      setEditCommodities([])
+      setEditImageTypes([])
     }
   }
 
   const handleEditClick = async (image: GalleryImage) => {
-    if (!image.provinceId || !image.portId || !image.serviceTypeId || !image.commodityId) {
+    if (!image.provinceId || !image.portId || !image.serviceTypeId || !image.imageTypeId) {
       alert('Image metadata is incomplete and cannot be edited.')
       return
     }
@@ -186,19 +234,19 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
       provinceId: image.provinceId,
       portId: image.portId,
       serviceTypeId: image.serviceTypeId,
-      commodityId: image.commodityId,
+      imageTypeId: image.imageTypeId,
     })
     setEditModalImage(image)
 
     await Promise.all([
       loadEditPorts(image.provinceId),
-      loadEditCommodities(image.serviceTypeId),
+      loadEditImageTypes(image.serviceTypeId),
     ])
   }
 
   const handleSaveEdit = async () => {
     if (!editModalImage) return
-    if (!editForm.provinceId || !editForm.portId || !editForm.serviceTypeId || !editForm.commodityId) {
+    if (!editForm.provinceId || !editForm.portId || !editForm.serviceTypeId || !editForm.imageTypeId) {
       alert('Please select all required fields.')
       return
     }
@@ -209,7 +257,7 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
         provinceId: editForm.provinceId,
         portId: editForm.portId,
         serviceTypeId: editForm.serviceTypeId,
-        commodityId: editForm.commodityId,
+        imageTypeId: editForm.imageTypeId,
       })
 
       setEditModalImage(null)
@@ -227,7 +275,7 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
     const confirmed = typeof window === 'undefined' ? true : window.confirm('Delete selected images? This cannot be undone.')
     if (!confirmed) return
 
-    setIsTableLoading(true)
+    setIsLoading(true)
     const ids = selectedRows.map((row) => row.original.id)
     try {
       await Promise.allSettled(ids.map(id => galleryService.deleteImage(id)))
@@ -237,7 +285,7 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
       console.error('Error deleting selected images:', error)
       alert('Failed to delete some images')
     } finally {
-      setIsTableLoading(false)
+      setIsLoading(false)
     }
   }
 
@@ -246,16 +294,16 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
 
     try {
       await galleryService.deleteImage(deleteModalImage.id)
-      
+
       // Remove from list
       setImages(images.filter(img => img.id !== deleteModalImage.id))
-      
+
       // Update count
-      const key = `${deleteModalImage.provinceId}_${deleteModalImage.portId}_${deleteModalImage.serviceTypeId}_${deleteModalImage.commodityId}`
-      if (commodityCounts[key]) {
-        setCommodityCounts({
-          ...commodityCounts,
-          [key]: commodityCounts[key] - 1
+      const key = `${deleteModalImage.provinceId}_${deleteModalImage.portId}_${deleteModalImage.serviceTypeId}_${deleteModalImage.imageTypeId}`
+      if (imageTypeCounts[key]) {
+        setImageTypeCounts({
+          ...imageTypeCounts,
+          [key]: imageTypeCounts[key] - 1
         })
       }
 
@@ -267,26 +315,30 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
   }
 
   const getDeleteWarningType = (image: GalleryImage): 'over' | 'below' | 'normal' => {
-    const key = `${image.provinceId}_${image.portId}_${image.serviceTypeId}_${image.commodityId}`
-    const count = commodityCounts[key] || 0
+    const key = `${image.provinceId}_${image.portId}_${image.serviceTypeId}_${image.imageTypeId}`
+    const count = imageTypeCounts[key] || 0
     if (count > 18) return 'over'
     if (count === 18) return 'below'
     return 'normal'
   }
 
+  const hasActiveFilters = Boolean(filterArea || filterPort || filterServiceType || filterImageType)
+  const selectedFilterPortData = filterPort ? allPorts.find((port) => port.id === filterPort) : null
+  const filterProvinceId = selectedFilterPortData?.provinceId
+
   // Load when filters or page changes (realtime)
   useEffect(() => {
     loadPage(currentPage)
-  }, [currentPage, filterArea, filterPort, filterServiceType, filterCommodity])
+  }, [currentPage, filterArea, filterPort, filterServiceType, filterImageType])
 
   const loadPage = async (page: number) => {
-    setIsTableLoading(true)
+    setIsLoading(true)
     try {
       const response = await galleryService.getAllImages(
         filterProvinceId || undefined,
         filterPort || undefined,
         filterServiceType || undefined,
-        filterCommodity || undefined,
+        filterImageType || undefined,
         page,
         imagesPerPage
       )
@@ -294,22 +346,23 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
       setTotalPages(response.totalPages)
       setTotalImages(response.totalElements)
 
+      // Load counts for each unique combination on this page
       const uniqueCombinations = new Set<string>()
-      response.content.forEach((img) => {
-        const key = `${img.provinceId}_${img.portId}_${img.serviceTypeId}_${img.commodityId}`
+      response.content.forEach(img => {
+        const key = `${img.provinceId}_${img.portId}_${img.serviceTypeId}_${img.imageTypeId}`
         uniqueCombinations.add(key)
       })
 
-      void Promise.all(
-        Array.from(uniqueCombinations).map((key) => {
-          const [provinceId, portId, serviceTypeId, commodityId] = key.split('_').map(Number)
-          return loadCommodityCount(commodityId, provinceId, portId, serviceTypeId)
-        }),
-      )
+      // Load counts in parallel
+      const countPromises = Array.from(uniqueCombinations).map(key => {
+        const [provinceId, portId, serviceTypeId, imageTypeId] = key.split('_').map(Number)
+        return loadImageTypeCount(imageTypeId, provinceId, portId, serviceTypeId)
+      })
+      await Promise.all(countPromises)
     } catch (error) {
       console.error('Error loading images:', error)
     } finally {
-      setIsTableLoading(false)
+      setIsLoading(false)
     }
   }
 
@@ -371,13 +424,27 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
                 <div className="flex gap-2 flex-wrap">
                   <Badge variant="secondary">{image.provinceName}</Badge>
                   <Badge variant="secondary">{image.serviceTypeName}</Badge>
-                  <Badge variant="outline">{image.commodityName}</Badge>
+                  <Badge variant="outline">{image.imageTypeName}</Badge>
                 </div>
               </div>
             </DialogContent>
           </Dialog>
         )
       },
+    },
+    {
+      accessorKey: 'provinceName',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          className="px-0 hover:bg-transparent"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Province
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="text-sm">{row.original.provinceName}</span>,
     },
     {
       accessorKey: 'portName',
@@ -394,7 +461,21 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
       cell: ({ row }) => <span className="text-sm">{row.original.portName}</span>,
     },
     {
-      accessorKey: 'commodityName',
+      accessorKey: 'serviceTypeName',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          className="px-0 hover:bg-transparent"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Service
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="text-sm">{row.original.serviceTypeName}</span>,
+    },
+    {
+      accessorKey: 'imageTypeName',
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -405,9 +486,27 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => (
-        <span className="text-sm">{row.original.commodityName}</span>
-      ),
+      cell: ({ row }) => {
+        const image = row.original
+        const warningType = getDeleteWarningType(image)
+        const key = `${image.provinceId}_${image.portId}_${image.serviceTypeId}_${image.imageTypeId}`
+        const count = imageTypeCounts[key] || 0
+
+        return (
+          <div className="text-sm">
+            <div className="flex items-center gap-2">
+              <span>{image.imageTypeName}</span>
+              {warningType === 'over' && (
+                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  OVER
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground">{count}/18</div>
+          </div>
+        )
+      },
     },
     {
       accessorKey: 'uploadedAt',
@@ -475,7 +574,8 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
         image.fileName,
         image.provinceName,
         image.portName,
-        image.commodityName,
+        image.serviceTypeName,
+        image.imageTypeName,
       ]
         .filter(Boolean)
         .join(' ')
@@ -493,19 +593,115 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
 
   const selectedRows = table.getFilteredSelectedRowModel().rows
   const selectedCount = selectedRows.length
-  const showEmptyState = !isTableLoading && images.length === 0
 
-  const tablePanel = (
-      <Card className={embedded ? 'border-border/60 shadow-none' : undefined}>
-        <CardHeader className="border-b border-border/50 pb-4">
+  return (
+    <div className="space-y-6">
+      {/* Filters */}
+      <Card>
+        <CardHeader>
           <div className="flex items-center justify-between gap-3">
-            <CardDescription className="text-sm">{totalImages} image(s) found</CardDescription>
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5 text-primary" />
+                Image Filters
+              </CardTitle>
+              <CardDescription>Filter images by province, port, service and cargo type. Data updates automatically.</CardDescription>
+            </div>
+            {hasActiveFilters && (
+              <Button variant="outline" onClick={handleClearAll} className="cursor-pointer">
+                <X className="mr-2 h-4 w-4" />
+                Clear All
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Area</label>
+              <select
+                value={filterArea}
+                onChange={(e) => setFilterArea(e.target.value)}
+                title="Area filter"
+                aria-label="Area filter"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">All Areas</option>
+                {AREA_OPTIONS.map((area) => (
+                  <option key={area} value={area}>{area}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Port</label>
+              <select
+                value={filterPort || ''}
+                onChange={(e) => setFilterPort(e.target.value ? Number(e.target.value) : null)}
+                disabled={!filterArea}
+                title="Port filter"
+                aria-label="Port filter"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
+              >
+                <option value="">All Ports</option>
+                {availablePorts.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Service Type</label>
+              <select
+                value={filterServiceType || ''}
+                onChange={(e) => setFilterServiceType(e.target.value ? Number(e.target.value) : null)}
+                title="Service type filter"
+                aria-label="Service type filter"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">All Services</option>
+                {serviceTypes.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Image Type</label>
+              <select
+                value={filterImageType || ''}
+                onChange={(e) => setFilterImageType(e.target.value ? Number(e.target.value) : null)}
+                disabled={!filterServiceType}
+                title="Image type filter"
+                aria-label="Image type filter"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
+              >
+                <option value="">All Types</option>
+                {availableImageTypes.map(t => (
+                  <option key={t.id} value={t.id}>
+                    {t.displayName} ({imageTypeCounts[t.id] || t.requiredImageCount}/{t.requiredImageCount})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Images Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle>Manage Images</CardTitle>
+              <CardDescription>{totalImages} image(s) found</CardDescription>
+            </div>
             <div className="flex items-center gap-2">
               {images.length > 0 && (
                 <Button
                   variant="destructive"
                   onClick={deleteSelected}
-                  disabled={selectedCount === 0 || isTableLoading}
+                  disabled={selectedCount === 0 || isLoading}
                   className="cursor-pointer"
                 >
                   Delete Selected ({selectedCount})
@@ -515,17 +711,22 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
                 variant="outline"
                 size="sm"
                 onClick={() => loadPage(currentPage)}
-                disabled={isTableLoading}
+                disabled={isLoading}
                 className="gap-2"
               >
-                <RefreshCw className={`h-4 w-4 ${isTableLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                 Reload
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-        {showEmptyState ? (
+        {isLoading ? (
+          <div className="p-12 text-center">
+            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading images...</p>
+          </div>
+        ) : images.length === 0 ? (
           <div className="p-12 text-center">
             <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground">No images found</p>
@@ -534,23 +735,13 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
           <>
             <div className="mb-4">
               <Input
-                placeholder="Search by file, port, cargo..."
+                placeholder="Search by file, province, port, service, cargo..."
                 value={globalFilter}
                 onChange={(e) => setGlobalFilter(e.target.value)}
                 className="max-w-md"
-                disabled={isTableLoading && images.length === 0}
               />
             </div>
-            <div className="relative min-h-[12rem] rounded-md border overflow-x-auto">
-              {isTableLoading && (
-                <div
-                  className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-[1px]"
-                  aria-live="polite"
-                  aria-busy="true"
-                >
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              )}
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   {table.getHeaderGroups().map((headerGroup) => (
@@ -587,13 +778,17 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
               </Table>
             </div>
 
+            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-end space-x-2 py-4">
+                <div className="flex-1 text-sm text-muted-foreground">
+                  {selectedCount} of {totalImages} row(s) selected.
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
-                  disabled={currentPage === 0 || isTableLoading}
+                  disabled={currentPage === 0}
                   className="cursor-pointer disabled:cursor-not-allowed"
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
@@ -603,7 +798,7 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
-                  disabled={currentPage === totalPages - 1 || isTableLoading}
+                  disabled={currentPage === totalPages - 1}
                   className="cursor-pointer disabled:cursor-not-allowed"
                 >
                   Next
@@ -615,11 +810,6 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
         )}
         </CardContent>
       </Card>
-  )
-
-  return (
-    <div className={embedded ? 'space-y-0' : 'space-y-6'}>
-      {tablePanel}
 
       <Dialog open={!!editModalImage} onOpenChange={(open) => !open && setEditModalImage(null)}>
         <DialogContent className="max-w-xl">
@@ -674,11 +864,11 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
                 value={editForm.serviceTypeId || ''}
                 onChange={async (e) => {
                   const serviceTypeId = e.target.value ? Number(e.target.value) : null
-                  setEditForm(prev => ({ ...prev, serviceTypeId, commodityId: null }))
+                  setEditForm(prev => ({ ...prev, serviceTypeId, imageTypeId: null }))
                   if (serviceTypeId) {
-                    await loadEditCommodities(serviceTypeId)
+                    await loadEditImageTypes(serviceTypeId)
                   } else {
-                    setEditCommodities([])
+                    setEditImageTypes([])
                   }
                 }}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
@@ -694,14 +884,14 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
             <div>
               <label className="block text-sm font-medium mb-2">Cargo Type</label>
               <select
-                value={editForm.commodityId || ''}
-                onChange={(e) => setEditForm(prev => ({ ...prev, commodityId: e.target.value ? Number(e.target.value) : null }))}
+                value={editForm.imageTypeId || ''}
+                onChange={(e) => setEditForm(prev => ({ ...prev, imageTypeId: e.target.value ? Number(e.target.value) : null }))}
                 disabled={!editForm.serviceTypeId}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
                 title="Cargo Type"
               >
                 <option value="">Select cargo type</option>
-                {editCommodities.map(t => (
+                {editImageTypes.map(t => (
                   <option key={t.id} value={t.id}>{t.displayName}</option>
                 ))}
               </select>
@@ -727,9 +917,9 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
                 <AlertTriangle className="h-5 w-5 text-orange-500" />
               )}
               {deleteModalImage && getDeleteWarningType(deleteModalImage) === 'below' && (
-                <Info className="h-5 w-5 text-info" />
+                <Info className="h-5 w-5 text-blue-500" />
               )}
-              {deleteModalImage && getDeleteWarningType(deleteModalImage) === 'over' 
+              {deleteModalImage && getDeleteWarningType(deleteModalImage) === 'over'
                 ? '⚠️ Image Limit Exceeded'
                 : deleteModalImage && getDeleteWarningType(deleteModalImage) === 'below'
                 ? 'ℹ️ Warning: Below Required Limit'
@@ -739,13 +929,13 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
             <AlertDialogDescription className="space-y-2">
               {deleteModalImage && getDeleteWarningType(deleteModalImage) === 'over' ? (
                 <>
-                  This type has <strong>{commodityCounts[`${deleteModalImage.provinceId}_${deleteModalImage.portId}_${deleteModalImage.serviceTypeId}_${deleteModalImage.commodityId}`]}/18 images</strong>. 
+                  This type has <strong>{imageTypeCounts[`${deleteModalImage.provinceId}_${deleteModalImage.portId}_${deleteModalImage.serviceTypeId}_${deleteModalImage.imageTypeId}`]}/18 images</strong>.
                   You MUST delete this image to meet the requirement.
                 </>
               ) : deleteModalImage && getDeleteWarningType(deleteModalImage) === 'below' ? (
                 <>
-                  Deleting this image will bring the count below 18. 
-                  After deletion: <strong>{(commodityCounts[`${deleteModalImage.provinceId}_${deleteModalImage.portId}_${deleteModalImage.serviceTypeId}_${deleteModalImage.commodityId}`] || 18) - 1}/18</strong>
+                  Deleting this image will bring the count below 18.
+                  After deletion: <strong>{(imageTypeCounts[`${deleteModalImage.provinceId}_${deleteModalImage.portId}_${deleteModalImage.serviceTypeId}_${deleteModalImage.imageTypeId}`] || 18) - 1}/18</strong>
                 </>
               ) : (
                 <>
@@ -756,11 +946,11 @@ function ManageImagesBody({ embedded = false }: { embedded?: boolean }) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleConfirmDelete}
               className={
-                deleteModalImage && getDeleteWarningType(deleteModalImage) === 'over' 
-                  ? 'bg-orange-500 hover:bg-orange-600' 
+                deleteModalImage && getDeleteWarningType(deleteModalImage) === 'over'
+                  ? 'bg-orange-500 hover:bg-orange-600'
                   : 'bg-destructive hover:bg-destructive/90'
               }
             >

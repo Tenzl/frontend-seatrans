@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
-import { Card } from '@/shared/components/ui/card'
+import { Tabs,TabsContent,TabsList,TabsTrigger } from '@/shared/components/ui/tabs'
 import { ShippingAgencyInquiryTab } from './ShippingAgencyInquiryTab'
 import { CharteringInquiryTab } from './CharteringInquiryTab'
 import { FreightForwardingInquiryTab } from './FreightForwardingInquiryTab'

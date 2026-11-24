@@ -1,27 +1,25 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { Building2, MapPin, Plus, Edit, Trash2, Save, X, ExternalLink, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Building2, MapPin, Plus, Edit, Trash2, Save, X } from 'lucide-react'
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
 import { provinceService, type Province } from '@/modules/logistics/services/provinceService'
 import type { ApiResponse } from '@/shared/types/api.types'
-import { parseGoogleMapsUrl } from '@/shared/utils/parseGoogleMapsUrl'
 
 interface Office {
   id: number
-  provinceId?: number | null
+  provinceId?: number
   name: string
   city: string
   region: string
   address: string
-  mapUrl?: string | null
-  latitude?: string | number | null
-  longitude?: string | number | null
+  latitude?: number
+  longitude?: number
   manager: {
     name: string
     title: string
@@ -29,23 +27,11 @@ interface Office {
     email: string
   }
   coordinates?: {
-    lat?: string | number | null
-    lng?: string | number | null
+    lat?: number
+    lng?: number
   }
   isHeadquarter: boolean
   isActive: boolean
-}
-
-const EMPTY_FORM = {
-  provinceId: '',
-  name: '',
-  address: '',
-  mapUrl: '',
-  managerName: '',
-  managerTitle: '',
-  managerMobile: '',
-  managerEmail: '',
-  isHeadquarter: false,
 }
 
 export function ManageOffices() {
@@ -54,9 +40,19 @@ export function ManageOffices() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<number | null>(null)
   const [adding, setAdding] = useState(false)
-  const [formData, setFormData] = useState(EMPTY_FORM)
-
-  const parsedMap = useMemo(() => parseGoogleMapsUrl(formData.mapUrl), [formData.mapUrl])
+  const [useManualCoordinates, setUseManualCoordinates] = useState(false)
+  const [formData, setFormData] = useState({
+    provinceId: '',
+    name: '',
+    address: '',
+    latitude: '',
+    longitude: '',
+    managerName: '',
+    managerTitle: '',
+    managerMobile: '',
+    managerEmail: '',
+    isHeadquarter: false
+  })
 
   useEffect(() => {
     fetchOffices()
@@ -88,7 +84,19 @@ export function ManageOffices() {
   const handleAdd = () => {
     setAdding(true)
     setEditing(null)
-    setFormData(EMPTY_FORM)
+    setUseManualCoordinates(false)
+    setFormData({
+      provinceId: '',
+      name: '',
+      address: '',
+      latitude: '',
+      longitude: '',
+      managerName: '',
+      managerTitle: '',
+      managerMobile: '',
+      managerEmail: '',
+      isHeadquarter: false
+    })
   }
 
   const handleEdit = (office: Office) => {
@@ -98,32 +106,35 @@ export function ManageOffices() {
     const matchedProvinceId = office.provinceId
       ?? provinces.find(p => normalize(p.name) === normalize(office.city) || normalize(p.name) === normalize(office.region))?.id
 
+    // Set manual coordinates mode if office has coordinates
+    const hasCoordinates = office.latitude != null && office.longitude != null &&
+                          (office.latitude !== 0 || office.longitude !== 0)
+    setUseManualCoordinates(hasCoordinates)
+
     setFormData({
       provinceId: matchedProvinceId ? matchedProvinceId.toString() : '',
       name: office.name,
       address: office.address,
-      mapUrl: office.mapUrl || '',
+      latitude: office.latitude?.toString() || '',
+      longitude: office.longitude?.toString() || '',
       managerName: office.manager?.name || '',
       managerTitle: office.manager?.title || '',
       managerMobile: office.manager?.mobile || '',
       managerEmail: office.manager?.email || '',
-      isHeadquarter: office.isHeadquarter,
+      isHeadquarter: office.isHeadquarter
     })
   }
 
   const handleSave = async () => {
+    // Validate required fields
     if (!formData.provinceId || !formData.name || !formData.address) {
       alert('Please fill in required fields (Province, Name, Address)')
       return
     }
 
-    if (!formData.mapUrl.trim()) {
-      alert('Please paste a Google Maps URL.')
-      return
-    }
-
-    if (!parsedMap.ok) {
-      alert(parsedMap.message)
+    // Validate coordinates if manual mode is enabled
+    if (useManualCoordinates && (!formData.latitude || !formData.longitude)) {
+      alert('Please enter both Latitude and Longitude when using manual coordinates mode')
       return
     }
 
@@ -132,14 +143,24 @@ export function ManageOffices() {
         provinceId: parseInt(formData.provinceId),
         name: formData.name,
         address: formData.address,
-        mapUrl: formData.mapUrl.trim(),
         managerName: formData.managerName,
         managerTitle: formData.managerTitle,
         managerMobile: formData.managerMobile,
         managerEmail: formData.managerEmail,
         isHeadquarter: formData.isHeadquarter,
-        isActive: true,
+        isActive: true
       }
+
+      // If manual coordinates enabled, send coordinates; otherwise send 0
+      if (useManualCoordinates) {
+        payload.latitude = formData.latitude ? parseFloat(formData.latitude) : 0
+        payload.longitude = formData.longitude ? parseFloat(formData.longitude) : 0
+      } else {
+        payload.latitude = 0
+        payload.longitude = 0
+      }
+
+      console.log('Saving office:', payload)
 
       const url = editing
         ? API_CONFIG.OFFICES.ADMIN_BY_ID(editing)
@@ -178,7 +199,7 @@ export function ManageOffices() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this office?')) return
-    
+
     try {
       const response = await apiClient.delete(API_CONFIG.OFFICES.ADMIN_BY_ID(id))
 
@@ -200,8 +221,12 @@ export function ManageOffices() {
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-end gap-4 border-b border-border/50 pb-4">
+    <div className="p-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Manage Offices</h1>
+          <p className="text-muted-foreground">Manage company office locations and contact information</p>
+        </div>
         <Button onClick={handleAdd} disabled={adding || editing !== null}>
           <Plus className="mr-2 h-4 w-4" />
           Add Office
@@ -258,55 +283,52 @@ export function ManageOffices() {
               />
             </div>
 
-            <div className="md:col-span-2 space-y-2">
-              <div className="flex items-baseline justify-between gap-3">
-                <Label htmlFor="mapUrl">Google Maps Link *</Label>
-                <span className="text-xs text-muted-foreground">
-                  Open the place in Google Maps and paste the URL from the browser address bar.
-                </span>
-              </div>
-              <Textarea
-                id="mapUrl"
-                value={formData.mapUrl}
-                onChange={(e) => setFormData({ ...formData, mapUrl: e.target.value })}
-                placeholder="https://www.google.com/maps/place/..."
-                rows={2}
-                required
-                spellCheck={false}
-                className={`font-mono text-xs ${
-                  formData.mapUrl && !parsedMap.ok
-                    ? 'border-destructive focus-visible:ring-destructive/30'
-                    : ''
-                }`}
+            <div className="md:col-span-2 flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+              <input
+                type="checkbox"
+                id="useManualCoordinates"
+                name="useManualCoordinates"
+                aria-label="Use manual coordinates instead of address"
+                checked={useManualCoordinates}
+                onChange={(e) => {
+                  setUseManualCoordinates(e.target.checked)
+                  if (!e.target.checked) {
+                    setFormData({ ...formData, latitude: '', longitude: '' })
+                  }
+                }}
+                className="h-4 w-4"
               />
-              {formData.mapUrl ? (
-                parsedMap.ok ? (
-                  <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200/60 bg-emerald-50/60 px-3 py-2 text-sm dark:border-emerald-900/50 dark:bg-emerald-950/30">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                      <span className="font-mono text-xs tabular-nums text-emerald-900 dark:text-emerald-200">
-                        {parsedMap.lat.toFixed(7)}, {parsedMap.lng.toFixed(7)}
-                      </span>
-                      <span className="text-[10px] uppercase tracking-wider text-emerald-700/70 dark:text-emerald-400/70">
-                        {parsedMap.source === 'pin' ? 'place pin' : parsedMap.source === 'viewport' ? 'viewport center' : 'query'}
-                      </span>
-                    </div>
-                    <a
-                      href={formData.mapUrl.trim()}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-200"
-                    >
-                      Preview <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                    <span>{parsedMap.message}</span>
-                  </div>
-                )
-              ) : null}
+              <Label htmlFor="useManualCoordinates" className="!mb-0 cursor-pointer">
+                Nhập tọa độ thủ công (Latitude/Longitude) thay vì dùng địa chỉ để hiển thị trên bản đồ Google
+              </Label>
+            </div>
+
+            <div>
+              <Label htmlFor="latitude">Latitude {useManualCoordinates && '*'}</Label>
+              <Input
+                id="latitude"
+                type="number"
+                step="0.00000001"
+                value={formData.latitude}
+                onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+                placeholder="e.g., 10.7769"
+                disabled={!useManualCoordinates}
+                required={useManualCoordinates}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="longitude">Longitude {useManualCoordinates && '*'}</Label>
+              <Input
+                id="longitude"
+                type="number"
+                step="0.00000001"
+                value={formData.longitude}
+                onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                placeholder="e.g., 106.7009"
+                disabled={!useManualCoordinates}
+                required={useManualCoordinates}
+              />
             </div>
 
             <div>
@@ -392,7 +414,7 @@ export function ManageOffices() {
                   <Building2 className="h-4 w-4" />
                   {office.city}
                   {office.isHeadquarter && (
-                    <span className="text-xs px-2 py-0.5 bg-warning/20 text-warning rounded">
+                    <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded">
                       HQ
                     </span>
                   )}

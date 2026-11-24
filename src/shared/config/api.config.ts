@@ -1,14 +1,16 @@
 /**
- * Centralized API configuration — aligned with backend2.0.
- * Only endpoints used by the frontend are listed here.
+ * Centralized API configuration for frontend services.
+ * Validates required environment variables at startup.
  */
 
-// Backend origin for the client. Leave EMPTY to call the API same-origin via the
-// Next.js rewrite proxy (BFF) — recommended in production so the HttpOnly session
-// cookie stays first-party and works on mobile (cross-site cookies are blocked
-// there). Set an absolute origin only for direct cross-origin calls (dev/testing).
-const rawBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || '')
+if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
+  throw new Error('NEXT_PUBLIC_API_BASE_URL is not defined. Please set it in your environment.')
+}
+
+const rawBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+  // Remove any trailing slash
   .replace(/\/+$/, '')
+  // Strip accidental /api or /api/v1 from env to keep origin clean
   .replace(/\/api(?:\/v\d+)?$/, '')
 
 const API_PREFIX = process.env.NEXT_PUBLIC_API_PREFIX || 'api'
@@ -19,42 +21,56 @@ const API_URL = `${rawBaseUrl}${API_BASE_PATH}`
 const ASSET_BASE_URL = rawBaseUrl
 
 export const API_CONFIG = {
+  /** Origin host without /api prefix (e.g., https://api.seatrans.com) */
   API_ORIGIN: rawBaseUrl,
+  /** API prefix segment, defaults to "api" */
   API_PREFIX,
+  /** API version segment, defaults to "v1" */
   API_VERSION,
+  /** Combined base path including prefix + version */
   API_BASE_PATH,
+  /** Fully qualified API base (origin + /api/v1) */
   API_URL,
+  /** Backwards-compatible alias for API_URL */
   BASE_URL: API_URL,
+  /** Asset/base origin for file URLs */
   ASSET_BASE_URL,
   TIMEOUT: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '30000', 10),
   ENABLE_LOGS: process.env.NEXT_PUBLIC_ENABLE_API_LOGS === 'true',
 
   AUTH: {
     LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    ME: '/auth/me',
-    LOGOUT: '/auth/logout',
-    SESSION: '/auth/session',
+    REGISTER_CUSTOMER: '/auth/register/customer',
     GOOGLE_OAUTH: '/auth/oauth2/google',
+    GOOGLE_CALLBACK: '/auth/oauth2/callback',
+    CURRENT_USER: '/auth/current-user',
+    CHANGE_PASSWORD: '/auth/change-password',
+    REFRESH_TOKEN: '/auth/refresh-token',
+  },
+
+  USERS: {
+    BASE: '/users',
+    ADMIN_LIST: '/admin/users',
+    BY_ID: (id: number) => `/users/${id}`,
+    ADMIN_BY_ID: (id: number) => `/admin/users/${id}`,
   },
 
   PROVINCES: {
     BASE: '/provinces',
     ACTIVE: '/provinces/active',
+    SEARCH: '/provinces/search',
     BY_ID: (id: number) => `/provinces/${id}`,
-    ADMIN_BASE: '/admin/provinces',
-    ADMIN_BY_ID: (id: number) => `/admin/provinces/${id}`,
   },
 
   PORTS: {
     BASE: '/ports',
-    OPTIONS: '/ports/options',
     ACTIVE: '/ports/active',
+    OPTIONS: '/ports/options',
     BY_PROVINCE: (provinceId: number) => `/ports/province/${provinceId}`,
+    SEARCH: '/ports/search',
+    SEARCH_BY_PROVINCE: (provinceId: number) => `/ports/province/${provinceId}/search`,
     BY_ID: (id: number) => `/ports/${id}`,
-    ADMIN_BASE: '/admin/ports',
-    ADMIN_BY_ID: (id: number) => `/admin/ports/${id}`,
-    ADMIN_HAS_INFO: (id: number) => `/admin/ports/${id}/has-info`,
+    IMPORT: '/ports/import',
   },
 
   OFFICES: {
@@ -64,35 +80,33 @@ export const API_CONFIG = {
   },
 
   BOOKING_PARTNERS: {
-    OPTIONS: '/admin/booking-management/partners/options',
     ADMIN_BASE: '/admin/booking-management/partners',
     ADMIN_BY_ID: (id: number) => `/admin/booking-management/partners/${id}`,
-    UPDATE_CUSTOMER_STATUS: (id: number) =>
-      `/admin/booking-management/partners/${id}/customer-status`,
-    IMPORT_PREVIEW: '/admin/booking-management/partners/import/preview',
-    IMPORT_COMMIT: '/admin/booking-management/partners/import/commit',
-    IMPORT_TEMPLATE: '/admin/booking-management/partners/import/template',
-    BY_PARTNER: (partnerId: number) =>
-      `/admin/booking-management/partners/${partnerId}/shipping`,
+    RESTORE: (id: number) => `/admin/booking-management/partners/${id}/restore`,
+    UPDATE_CUSTOMER_STATUS: (id: number) => `/admin/booking-management/partners/${id}/customer-status`,
   },
 
   SERVICE_TYPES: {
     BASE: '/service-types',
     ACTIVE: '/service-types/active',
     BY_ID: (id: number) => `/service-types/${id}`,
+    ADMIN_BASE: '/admin/service-types',
+    ADMIN_BY_ID: (id: number) => `/admin/service-types/${id}`,
   },
 
-  COMMODITIES: {
-    BY_SERVICE_TYPE: (serviceTypeId: number) => `/commodities/service-type/${serviceTypeId}`,
-    ADMIN_BASE: '/admin/commodities',
-    ADMIN_BY_ID: (id: number) => `/admin/commodities/${id}`,
+  IMAGE_TYPES: {
+    BASE: '/image-types',
+    BY_SERVICE_TYPE: (serviceTypeId: number) => `/image-types/service-type/${serviceTypeId}`,
+    PUBLIC_BY_SERVICE: (serviceTypeId: number) => `/image-types/public/service-type/${serviceTypeId}`,
+    ADMIN_BASE: '/admin/image-types',
+    ADMIN_CARGO_TYPES: '/admin/image-types/cargo-types',
+    ADMIN_BY_ID: (id: number) => `/admin/image-types/${id}`,
   },
 
   GALLERY: {
-    PUBLIC_IMAGES: '/gallery/images',
-    ADMIN_BASE: '/admin/gallery-images',
-    ADMIN_BATCH: '/admin/gallery-images/batch',
-    ADMIN_FROM_URL: '/admin/gallery-images/from-url',
+    IMAGES: '/gallery/images',
+    PUBLIC_IMAGES: '/gallery/page-image',
+    ADMIN_IMAGES: '/admin/gallery-images',
     ADMIN_BY_ID: (id: number) => `/admin/gallery-images/${id}`,
   },
 
@@ -100,9 +114,12 @@ export const API_CONFIG = {
     LATEST: '/posts/latest',
     PUBLIC_BASE: '/posts',
     PUBLIC_BY_ID: (id: number) => `/posts/${id}`,
-    PUBLIC_RECORD_VIEW: (id: number) => `/posts/${id}/view`,
     ADMIN_BASE: '/admin/posts',
     ADMIN_BY_ID: (id: number) => `/admin/posts/${id}`,
+    PUBLISH: (id: number) => `/admin/posts/${id}/publish`,
+    UNPUBLISH: (id: number) => `/admin/posts/${id}/unpublish`,
+    UPLOAD_IMAGE: '/admin/posts/upload-image',
+    UPLOAD_THUMBNAIL: '/admin/posts/upload-thumbnail',
   },
 
   CATEGORIES: {
@@ -111,57 +128,29 @@ export const API_CONFIG = {
     ADMIN_BY_ID: (id: number) => `/admin/categories/${id}`,
   },
 
-  USERS: {
-    ADMIN_EXTERNAL_CUSTOMERS: '/admin/users/external-customers',
-    ADMIN_USERS: '/admin/users',
-    ADMIN_USER_ROLES: '/admin/users/roles',
-  },
-
   INQUIRIES: {
     SUBMIT: '/inquiries',
+    BASE: '/inquiries',
     USER_HISTORY: (userId: number) => `/inquiries/user/${userId}`,
     ADMIN_BASE: '/admin/inquiries',
-    ADMIN_DETAIL: (serviceType: string, id: number) =>
-      `/admin/inquiries/${encodeURIComponent(serviceType)}/${id}`,
-    ADMIN_STATUS: (serviceType: string, id: number) =>
-      `/admin/inquiries/${encodeURIComponent(serviceType)}/${id}/status`,
-    ADMIN_FORM: (serviceType: string, id: number) =>
-      `/admin/inquiries/${encodeURIComponent(serviceType)}/${id}/form`,
-    ADMIN_HOURS: (serviceType: string, id: number) =>
-      `/admin/inquiries/${encodeURIComponent(serviceType)}/${id}/hours`,
-    ADMIN_SHIPPING_AGENCY_CREATE: '/admin/inquiries/shipping-agency',
-    ADMIN_SHIPPING_AGENCY_EPDA: (id: number) =>
-      `/admin/inquiries/shipping-agency/${id}/epda`,
-    ADMIN_SHIPPING_AGENCY_EPDA_ISSUE: (id: number) =>
-      `/admin/inquiries/shipping-agency/${id}/epda/issue`,
-    ADMIN_SHIPPING_AGENCY_FIELD_CHANGES: (id: number, page = 0, size = 6) =>
-      `/admin/inquiries/shipping-agency/${id}/epda/field-changes?page=${page}&size=${size}`,
-    ADMIN_SHIPPING_AGENCY_CUSTOMER_FIELD_CHANGES: (id: number) =>
-      `/admin/inquiries/shipping-agency/${id}/epda/customer-field-changes`,
-    USER_BATCH_DELETE: '/inquiries/batch',
-    ADMIN_BATCH_DELETE: '/admin/inquiries/batch',
+    ADMIN_BY_ID: (id: number) => `/admin/inquiries/${id}`,
+    UPDATE_STATUS: (id: number) => `/admin/inquiries/${id}/status`,
   },
 
   DOCUMENTS: {
-    ADMIN_UPLOAD: (serviceSlug: string, targetId: number) =>
-      `/admin/inquiries/${serviceSlug}/${targetId}/documents`,
-    ADMIN_DELETE: (serviceSlug: string, targetId: number, documentId: number) =>
-      `/admin/inquiries/${serviceSlug}/${targetId}/documents/${documentId}`,
-    LIST: (serviceSlug: string, targetId: number) =>
-      `/inquiries/${serviceSlug}/${targetId}/documents`,
-    LIST_BY_TYPE: (serviceSlug: string, targetId: number) =>
-      `/inquiries/${serviceSlug}/${targetId}/documents/by-type`,
-    CONTENT: (serviceSlug: string, targetId: number, documentId: number, disposition?: 'inline' | 'attachment') => {
-      const base = `/inquiries/${serviceSlug}/${targetId}/documents/${documentId}/content`
-      return disposition ? `${base}?disposition=${disposition}` : base
-    },
+    UPLOAD: '/inquiry-documents/upload',
+    BY_INQUIRY: (inquiryId: number) => `/inquiry-documents/inquiry/${inquiryId}`,
+    LIST: (serviceSlug: string, targetId: number) => `/inquiry-documents/${serviceSlug}/${targetId}`,
+    DOWNLOAD: (id: number) => `/inquiry-documents/download/${id}`,
+    DELETE: (id: number) => `/inquiry-documents/${id}`,
   },
 
-  NOTIFICATIONS: {
-    BASE: '/notifications',
-    UNREAD_COUNT: '/notifications/unread-count',
-    READ_ALL: '/notifications/read-all',
-    MARK_READ: (id: number) => `/notifications/${id}/read`,
+  SPREADSHEET_FILES: {
+    ALL: '/spreadsheet-files/all',
+    BY_SERVICE: (serviceName: string) => `/spreadsheet-files/service/${serviceName}`,
+    UPLOAD: '/spreadsheet-files/upload',
+    DELETE: (fileId: number) => `/spreadsheet-files/${fileId}`,
+    DOWNLOAD: (fileId: number) => `/spreadsheet-files/download/${fileId}`,
   },
 } as const
 

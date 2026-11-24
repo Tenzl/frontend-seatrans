@@ -1,124 +1,144 @@
 'use client'
 
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/shared/components/ui/dialog'
+import { Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription } from '@/shared/components/ui/dialog'
 import { Button } from '@/shared/components/ui/button'
-import { useRef, useState, useEffect } from 'react'
-import { Loader2, Printer, X } from 'lucide-react'
-import { toast } from '@/shared/utils/toast'
+import { Document,Page,pdfjs } from 'react-pdf'
+import { useState,useEffect } from 'react'
+import { ChevronLeft,ChevronRight,Loader2,ZoomIn,ZoomOut } from 'lucide-react'
+
+// Configure worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
 
 interface PdfPreviewDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  html: string | null
+  url: string | null
   fileName: string
-  isGenerating?: boolean
 }
 
-export function PdfPreviewDialog({
-  open,
-  onOpenChange,
-  html,
-  fileName,
-  isGenerating = false,
-}: PdfPreviewDialogProps) {
-  const [iframeKey, setIframeKey] = useState(0)
-  const [isExporting, setIsExporting] = useState(false)
-  const iframeRef = useRef<HTMLIFrameElement | null>(null)
+export function PdfPreviewDialog({ open, onOpenChange, url, fileName }: PdfPreviewDialogProps) {
+  const [numPages, setNumPages] = useState<number>(0)
+  const [pageNumber, setPageNumber] = useState<number>(1)
+  const [scale, setScale] = useState<number>(1.0)
+  const [loading, setLoading] = useState(true)
 
+  // Reset state when opening a new document
   useEffect(() => {
-    if (open && html) {
-      setIframeKey((k) => k + 1)
+    if (open) {
+      setPageNumber(1)
+      setScale(1.0)
+      setLoading(true)
     }
-  }, [open, html])
+  }, [open, url])
 
-  const showGenerating = isGenerating || !html
-
-  const handlePrintPdf = async () => {
-    if (!html) return
-    const frameWin = iframeRef.current?.contentWindow
-    if (!frameWin) {
-      toast.error('Preview is not ready yet. Please try again.')
-      return
-    }
-
-    setIsExporting(true)
-    try {
-      // Give the browser a moment so layout/fonts settle before printing.
-      await new Promise<void>((resolve) => window.setTimeout(resolve, 2000))
-
-      frameWin.focus()
-      frameWin.print()
-
-      // Close the preview right after triggering print dialog.
-      window.setTimeout(() => onOpenChange(false), 150)
-    } catch (err) {
-      console.error('Failed to print EPDA:', err)
-      toast.error(err instanceof Error ? err.message : 'Failed to open print dialog')
-    } finally {
-      setIsExporting(false)
-    }
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+    setNumPages(numPages)
+    setLoading(false)
   }
+
+  function changePage(offset: number) {
+    setPageNumber(prevPageNumber => prevPageNumber + offset)
+  }
+
+  function previousPage() {
+    changePage(-1)
+  }
+
+  function nextPage() {
+    changePage(1)
+  }
+
+  if (!url) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton={false}
-        className="max-w-5xl h-[90vh] flex flex-col p-0 gap-0"
-      >
-        <DialogHeader className="gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 shrink-0">
-          <div className="min-w-0 flex-1 space-y-1">
-            <DialogTitle className="truncate">{fileName}</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Print will open the browser Save as PDF dialog.
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+        <DialogHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0">
+          <div className="flex flex-col gap-1 min-w-0 flex-1">
+            <DialogTitle className="truncate pr-8">{fileName}</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground truncate">
+              Previewing document
             </DialogDescription>
-          </div>
-          <div className="flex shrink-0 items-center justify-end gap-2">
-            {!showGenerating ? (
-              <Button
-                size="sm"
-                onClick={handlePrintPdf}
-                disabled={!html || isExporting}
-                className="gap-2"
-              >
-                {isExporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Printer className="h-4 w-4" />
-                )}
-                Print / Save PDF
-              </Button>
-            ) : null}
-            <DialogClose asChild>
-              <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0">
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </Button>
-            </DialogClose>
           </div>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 overflow-hidden bg-muted">
-          {showGenerating ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 p-12">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Building EPDA preview…</p>
-            </div>
-          ) : (
-            <iframe
-              key={iframeKey}
-              ref={iframeRef}
-              srcDoc={html ?? ''}
-              title={fileName}
-              className="h-full w-full border-0 bg-white"
-            />
-          )}
+        <div className="flex-1 overflow-auto bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4">
+          <div className="relative shadow-lg">
+            {loading && (
+              <div className="flex items-center justify-center p-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
+            <Document
+              file={url}
+              onLoadSuccess={onDocumentLoadSuccess}
+              loading={
+                <div className="flex items-center justify-center p-12">
+                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              }
+              error={
+                <div className="text-destructive p-4 bg-destructive/10 rounded-md">
+                   Failed to load PDF. Please try downloading it instead.
+                </div>
+              }
+              className="max-w-full"
+            >
+              <Page
+                pageNumber={pageNumber}
+                scale={scale}
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+                className="bg-white dark:bg-black"
+              />
+            </Document>
+          </div>
+        </div>
+
+        <div className="p-4 border-t flex items-center justify-between bg-background">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setScale(s => Math.max(0.5, s - 0.1))}
+              disabled={scale <= 0.5}
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <span className="text-sm w-12 text-center">{Math.round(scale * 100)}%</span>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setScale(s => Math.min(2.0, s + 0.1))}
+              disabled={scale >= 2.0}
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={previousPage}
+              disabled={pageNumber <= 1}
+            >
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Previous
+            </Button>
+            <span className="text-sm">
+              Page {pageNumber} of {numPages || '--'}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={nextPage}
+              disabled={pageNumber >= numPages}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

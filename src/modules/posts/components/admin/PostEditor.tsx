@@ -43,6 +43,7 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
     thumbnailPublicId: '',
     isPublished: false,
   })
+  const [uploadedImageUrl, setUploadedImageUrl] = useState('')
   const [availableCategories, setAvailableCategories] = useState<Category[]>([])
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
   const categoryDropdownRef = useRef<HTMLDivElement>(null)
@@ -50,11 +51,35 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
 
   const handleImageUpload = async (blobInfo: any, _progress: any) => {
     try {
-      const url = await postService.uploadImage(blobInfo.blob())
+      const url = await postService.uploadImage(blobInfo.blob(), postId)
       return url
     } catch (error) {
       console.error('Image upload failed:', error)
       throw error
+    }
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      setLoading(true)
+      console.log('Uploading thumbnail to:', API_CONFIG.POSTS.UPLOAD_THUMBNAIL)
+      const response = await postService.uploadThumbnail(file)
+      console.log('Upload response:', response)
+      setUploadedImageUrl(response.secureUrl)
+      setFormData(prev => ({
+        ...prev,
+        thumbnailUrl: response.secureUrl,
+        thumbnailPublicId: response.publicId
+      }))
+      toast.success("Thumbnail uploaded successfully!")
+    } catch (error: any) {
+      console.error('Upload error:', error)
+      toast.error(error.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -132,7 +157,7 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    
+
     try {
       if (postId) {
         // Update existing post
@@ -140,7 +165,7 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
         toast.success("Post updated successfully! Returning to posts...")
       } else {
         // Create new post as draft first to get ID
-        const newPost = await postService.createPost({
+        await postService.createPost({
           ...formData,
           isPublished: false // Force draft on creation
         })
@@ -158,18 +183,18 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
   }
 
   if (loading && postId && !formData.title) {
-    return <div className="px-8 pb-8 pt-32 text-center">Loading post data...</div>
+    return <div className="p-8 text-center">Loading post data...</div>
   }
 
   return (
-    <div className="min-h-screen bg-muted px-8 pb-8 pt-32">
-      <div className="max-w-5xl mx-auto bg-card rounded-lg shadow-lg overflow-hidden">
-        <div className="bg-primary px-6 py-4 flex justify-between items-center">
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-blue-600 px-6 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-white">
             {postId ? 'Edit Post' : 'Create New Post'}
           </h1>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="text-primary-foreground hover:bg-primary/90 cursor-pointer"
             onClick={() => router.push('/admin/posts')}
           >
@@ -207,12 +232,12 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
                         <span className="text-sm text-muted-foreground">Select category...</span>
                         <ChevronDown className="h-4 w-4" />
                       </Button>
-                      
+
                       {categoryDropdownOpen && (
-                        <div className="absolute z-50 mt-2 w-full bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+                        <div className="absolute z-50 mt-2 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
                           {availableCategoriesFiltered.length === 0 ? (
                             <div className="p-3 text-sm text-muted-foreground text-center">
-                              {availableCategories.length === 0 
+                              {availableCategories.length === 0
                                 ? 'No categories available. Create categories first.'
                                 : 'All categories selected'
                               }
@@ -224,7 +249,7 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
                                   key={cat.id}
                                   type="button"
                                   onClick={() => handleAddCategory(cat.id)}
-                                  className="w-full px-4 py-2 text-left text-sm hover:bg-muted flex items-center gap-2 cursor-pointer"
+                                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 cursor-pointer"
                                 >
                                   <Plus className="h-4 w-4" />
                                   {cat.name}
@@ -244,8 +269,8 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
                         formData.categoryIds?.map((categoryId) => {
                           const category = availableCategories.find(c => c.id === categoryId)
                           return category ? (
-                            <Badge 
-                              key={categoryId} 
+                            <Badge
+                              key={categoryId}
                               variant="secondary"
                               className="cursor-pointer hover:bg-red-100"
                               onClick={() => handleRemoveCategory(categoryId)}
@@ -262,18 +287,42 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
 
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="thumbnailUrl">Thumbnail URL</Label>
-                  <Input
-                    id="thumbnailUrl"
-                    value={formData.thumbnailUrl}
-                    onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                    placeholder="https://..."
-                    className="mt-1"
-                  />
+                  <Label htmlFor="thumbnailUrl">Thumbnail Image</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="thumbnailUrl"
+                      value={formData.thumbnailUrl}
+                      onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
+                      placeholder="/uploads/gallery/posts/content/image.jpg"
+                      className="mt-1"
+                    />
+                    <div className="relative">
+                        <input
+                            type="file"
+                            id="file-upload"
+                            className="hidden"
+                            onChange={handleFileUpload}
+                            accept="image/*"
+                        />
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="mt-1 cursor-pointer"
+                            onClick={() => document.getElementById('file-upload')?.click()}
+                        >
+                            Upload
+                        </Button>
+                    </div>
+                  </div>
+                  {uploadedImageUrl && (
+                    <div className="mt-2 text-sm text-green-600 break-all">
+                        <span className="mr-2">✓ Uploaded to Cloudinary</span>
+                    </div>
+                  )}
                   {formData.thumbnailUrl && (
                     <div className="mt-3">
                       <Label className="text-sm text-muted-foreground mb-2 block">Preview:</Label>
-                      <div className="relative rounded-lg overflow-hidden border bg-muted aspect-video max-w-md">
+                      <div className="relative rounded-lg overflow-hidden border bg-gray-100 aspect-video max-w-md">
                         <ImageWithFallback
                           src={getImageUrl(formData.thumbnailUrl)}
                           alt="Thumbnail preview"
@@ -313,7 +362,7 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
                       body { font-family:Helvetica,Arial,sans-serif; font-size:14px }
                       figure { margin: 1.5rem 0; text-align: center; }
                       figure img { margin: 0; display: inline-block; max-width: 100%; }
-                      figcaption { margin-top: 0.75rem; font-size: 0.875rem; color: hsl(var(--muted-foreground)); font-style: italic; }
+                      figcaption { margin-top: 0.75rem; font-size: 0.875rem; color: #666; font-style: italic; }
                     `,
                     branding: false,
                     promotion: false,
@@ -333,7 +382,7 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
                   id="isPublished"
                   checked={formData.isPublished}
                   onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
-                  className="h-5 w-5 text-primary rounded focus:ring-ring"
+                  className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
                 />
                 <Label htmlFor="isPublished" className="cursor-pointer text-base">
                   Publish immediately

@@ -8,6 +8,7 @@ export function FreightForwardingInquiriesTab() {
       serviceType="freight-forwarding"
       serviceLabel="Freight Forwarding"
       isAdmin={true}
+      title="Freight Forwarding Inquiries"
       description="Manage all freight forwarding service inquiries"
     />
   )

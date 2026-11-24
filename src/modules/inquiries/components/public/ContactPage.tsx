@@ -1,29 +1,27 @@
-import { Phone, Mail, MapPin, Clock, Ship, Anchor, Truck, FileText, ArrowRight, User, Building2, Send, Paperclip, CheckCircle2, ChevronDown, ChevronUp, Check, ArrowUp, Upload, X, AlertCircle, Loader2 } from 'lucide-react'
+import { Phone,Mail,MapPin,Ship,Anchor,Truck,FileText,Building2,Send,Paperclip,CheckCircle2,Check,X,AlertCircle,Loader2 } from 'lucide-react'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { useState, useEffect } from 'react'
-import { provinceService, Province } from '@/modules/logistics/services/provinceService'
+import { useState,useEffect } from 'react'
+import { provinceService,Province } from '@/modules/logistics/services/provinceService'
 import { portService } from '@/modules/logistics/services/portService'
 import { useAuth } from '@/modules/auth/context/AuthContext'
 import { toast } from 'sonner'
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
-import { Alert, AlertDescription } from '@/shared/components/ui/alert'
+import { Alert,AlertDescription } from '@/shared/components/ui/alert'
 import Link from 'next/link'
 import {
-  FileUpload,
-  FileUploadDropzone,
-  FileUploadItem,
-  FileUploadItemDelete,
-  FileUploadItemMetadata,
-  FileUploadItemPreview,
-  FileUploadItemProgress,
-  FileUploadList,
-  type FileUploadProps,
-  FileUploadTrigger,
+FileUpload,FileUploadItem,
+FileUploadItemDelete,
+FileUploadItemMetadata,
+FileUploadItemPreview,
+FileUploadItemProgress,
+FileUploadList,
+type FileUploadProps,
+FileUploadTrigger
 } from '@/shared/components/ui/file-upload'
 import { HeroBannerSection } from '@/modules/service-types/components/admin/sections/HeroBannerSection'
 
@@ -80,12 +78,13 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
     message: ''
   })
   const [files, setFiles] = useState<File[]>([])
-  const [formSubmitted, setFormSubmitted] = useState(false)
+  const [formSubmitted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const heroImage = 'https://picsum.photos/seed/seatrans-contact-hero/1600/900'
+  const heroImage =
+    'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80'
 
   // Hardcoded department contacts with full information
   const departmentContacts = [
@@ -132,11 +131,11 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
     const fetchData = async () => {
       try {
         setLoading(true)
-        
+
         // Fetch offices from backend
         const officesResponse = await apiClient.get(API_CONFIG.OFFICES.ACTIVE, { skipAuth: true })
         const officesData = await officesResponse.json()
-        
+
         if (officesData.success && officesData.data) {
           setOffices(officesData.data)
           // Set first office as default selected
@@ -144,11 +143,11 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
             setSelectedOffice(officesData.data[0])
           }
         }
-        
+
         // Fetch active service types
         const servicesResponse = await apiClient.get(API_CONFIG.SERVICE_TYPES.ACTIVE, { skipAuth: true })
         const servicesData = await servicesResponse.json()
-        
+
         if (servicesData.success && servicesData.data) {
           setDepartments(servicesData.data.map((s: any) => ({
             id: s.id,
@@ -159,7 +158,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
             isActive: s.isActive
           })))
         }
-        
+
         // Load provinces with ports for form selection
         const allProvinces = await provinceService.getAllProvinces()
         const allPorts = await portService.getAllPorts()
@@ -176,7 +175,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
         setLoading(false)
       }
     }
-    
+
     fetchData()
   }, [])
 
@@ -209,15 +208,9 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
     })
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFiles(Array.from(e.target.files))
-    }
-  }
 
-  const handleRemoveFile = (index: number) => {
-    setFiles(files.filter((_, i) => i !== index))
-  }
+
+
 
   const onUpload: NonNullable<FileUploadProps["onUpload"]> = async (files, { onProgress, onSuccess, onError }) => {
     try {
@@ -257,7 +250,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Require authentication
     if (!user) {
       toast.error('Authentication Required', {
@@ -265,12 +258,12 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       })
       return
     }
-    
+
     setIsSubmitting(true)
     try {
       // Create FormData for file upload
       const submitData = new FormData()
-      
+
       // Add inquiry data as JSON
       const inquiryData = {
         serviceTypeSlug: 'special-request',
@@ -279,11 +272,11 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
         relatedDepartmentId: formData.department ? parseInt(formData.department) : null,
         message: formData.message
       }
-      
+
       submitData.append('inquiry', new Blob([JSON.stringify(inquiryData)], {
         type: 'application/json'
       }))
-      
+
       // Add files if any
       files.forEach((file) => {
         submitData.append('files', file)
@@ -295,15 +288,15 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       console.log('Files:', files)
       console.log('FormData Inquiry:', submitData.get('inquiry'))
       console.log('FormData Files Count:', submitData.getAll('files').length)
-      
+
       // Submit to backend
       const response = await apiClient.post(API_CONFIG.INQUIRIES.SUBMIT, submitData)
-      
+
       if (response.ok) {
         toast.success('Request Sent Successfully', {
           description: 'Your inquiry has been submitted. We will contact you shortly.'
         })
-        
+
         // Reset form
         setFormData({
           subject: '',
@@ -333,11 +326,10 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       <HeroBannerSection
         title="Contact SEATRANS"
         subtitle="Customer Support"
-        description="Our nationwide network is ready to support your maritime logistics needs — port agency, chartering, forwarding, and customs from one desk."
+        description="Our nationwide network is ready to support your maritime logistics needs."
         image={heroImage}
         serviceName="Contact"
         onNavigateHome={onNavigateHome}
-        variant="contact"
       />
 
       {/* Company Contact - General Manager Hotline */}
@@ -362,8 +354,8 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                   </a>
                 </div>
               </div>
-              <a 
-                href="tel:+84935015679" 
+              <a
+                href="tel:+84935015679"
                 className="text-3xl font-semibold hover:underline whitespace-nowrap"
               >
                 +84 93-501-5679
@@ -374,7 +366,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       </section>
 
       {/* Office Network - 2 Card System (Office Panel + Selector) */}
-      <section ref={mapRef} id="contact-offices" className="py-16">
+      <section ref={mapRef} className="py-16">
         <div className="container">
           <div className={`text-center mb-12 ${mapVisible ? 'fade-rise' : 'opacity-0'}`}>
             <h2 className="fade-rise text-3xl md:text-4xl font-bold mb-4">Our Offices</h2>
@@ -391,9 +383,9 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
             <div className={`flex flex-col lg:flex-row gap-6 ${mapVisible ? 'fade-rise' : 'opacity-0'}`} style={{ animationDelay: '100ms' }}>
               {/* Left Column: 2 Cards (Selector Top + Panel Bottom) - 600px total */}
               <div className="w-full lg:w-[clamp(420px,38vw,560px)] flex-shrink-0 flex flex-col gap-3">
-                
+
                 {/* Card A: Office Selector (Top) - 160px → 360px */}
-                <div 
+                <div
                   className="bg-card border rounded-2xl shadow-lg"
                   style={{
                     height: isDrawerOpen ? '360px' : '160px',
@@ -409,7 +401,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                         <div className="flex items-center gap-3 mb-2">
                           <h2 className="text-2xl">{selectedOffice.city}</h2>
                           {selectedOffice.isHeadquarter && (
-                            <span className="text-xs px-2 py-1 bg-warning/20 text-warning rounded">
+                            <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded">
                               HQ
                             </span>
                           )}
@@ -430,7 +422,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                   </div>
 
                   {/* Dropdown List - Appears when OPEN */}
-                  <div 
+                  <div
                     style={{
                       height: isDrawerOpen ? '248px' : '0px',
                       opacity: isDrawerOpen ? 1 : 0,
@@ -461,7 +453,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                                 <div className="flex items-center gap-2 mb-0.5">
                                   <p className="font-medium text-sm">{office.city}</p>
                                   {office.isHeadquarter && (
-                                    <span className="text-xs px-2 py-0.5 bg-warning/20 text-warning rounded">
+                                    <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded">
                                       HQ
                                     </span>
                                   )}
@@ -480,7 +472,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                 </div>
 
                 {/* Card B: Office Panel (Bottom) - 428px → 228px */}
-                <div 
+                <div
                   className="bg-card border rounded-2xl shadow-lg relative"
                   style={{
                     height: isDrawerOpen ? '228px' : '428px',
@@ -490,7 +482,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                   }}
                 >
                   {/* Full Details Content - Visible when CLOSED */}
-                  <div 
+                  <div
                     className="absolute inset-0 px-6 py-6"
                     style={{
                       opacity: isDrawerOpen ? 0 : 1,
@@ -522,7 +514,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                         <Phone className="h-4 w-4 text-primary" />
                         <p className="text-sm font-medium">Phone</p>
                       </div>
-                      <a 
+                      <a
                         href={`tel:${selectedOffice.manager.mobile.replace(/\s/g, '')}`}
                         className="text-sm text-primary hover:underline block"
                       >
@@ -536,7 +528,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                         <Mail className="h-4 w-4 text-primary" />
                         <p className="text-sm font-medium">Email</p>
                       </div>
-                      <a 
+                      <a
                         href={`mailto:${selectedOffice.manager.email}`}
                         className="text-sm text-primary hover:underline block break-all"
                       >
@@ -546,8 +538,8 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
 
                     {/* Action Buttons */}
                     <div className="flex gap-2 pt-4 border-t">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         className="flex-1"
                         onClick={() => {
@@ -562,7 +554,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                         <MapPin className="mr-1 h-3.5 w-3.5" />
                         Directions
                       </Button>
-                      <Button 
+                      <Button
                         size="sm"
                         className="flex-1"
                         onClick={() => window.location.href = `tel:${selectedOffice.manager.mobile.replace(/\s/g, '')}`}
@@ -574,7 +566,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                   </div>
 
                   {/* Compact Contact Only - Visible when OPEN */}
-                  <div 
+                  <div
                     className="absolute inset-0 px-6 py-6 flex flex-col justify-center"
                     style={{
                       opacity: isDrawerOpen ? 1 : 0,
@@ -584,14 +576,14 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                     }}
                   >
                     <h3 className="text-sm font-medium mb-4 text-muted-foreground">Quick Contact</h3>
-                    
+
                     {/* Phone */}
                     <div className="mb-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Phone className="h-5 w-5 text-primary" />
                         <p className="text-sm font-medium">Phone</p>
                       </div>
-                      <a 
+                      <a
                         href={`tel:${selectedOffice.manager.mobile.replace(/\s/g, '')}`}
                         className="text-lg text-primary hover:underline block font-medium"
                       >
@@ -605,7 +597,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                         <Mail className="h-5 w-5 text-primary" />
                         <p className="text-sm font-medium">Email</p>
                       </div>
-                      <a 
+                      <a
                         href={`mailto:${selectedOffice.manager.email}`}
                         className="text-sm text-primary hover:underline block break-all"
                       >
@@ -665,7 +657,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                       <Icon className="h-6 w-6 text-primary group-hover:text-primary-foreground" />
                     </div>
                   </div>
-                  
+
                   <h3 className="text-sm mb-2">{dept.title}</h3>
                   <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                     {dept.description}
@@ -676,7 +668,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                       <p className="text-xs text-muted-foreground mb-1">{dept.role}</p>
                       <p className="text-sm font-medium">{dept.manager}</p>
                     </div>
-                    
+
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <Phone className="h-3.5 w-3.5 text-muted-foreground" />
@@ -699,8 +691,8 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="outline"
                       className="flex-1"
                       onClick={() => window.location.href = `mailto:${dept.email}`}
@@ -708,7 +700,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                       <Mail className="mr-1 h-3.5 w-3.5" />
                       Email
                     </Button>
-                    <Button 
+                    <Button
                       size="sm"
                       className="flex-1"
                       onClick={() => window.location.href = `tel:${dept.phone.replace(/\s/g, '')}`}
@@ -725,7 +717,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       </section>
 
       {/* Special Request Form */}
-      <section ref={formRef} id="contact-form" className="py-16">
+      <section ref={formRef} className="py-16">
         <div className="container">
           <div className={`max-w-3xl mx-auto ${formVisible ? 'fade-rise' : 'opacity-0'}`}>
             <div className="text-center mb-12">
@@ -736,10 +728,10 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
             </div>
 
             {formSubmitted ? (
-              <div className="bg-success/10 border border-success/30 rounded-lg p-12 text-center">
-                <CheckCircle2 className="h-16 w-16 text-success mx-auto mb-4" />
-                <h3 className="text-xl text-success mb-2">Thank You!</h3>
-                <p className="text-success/80">
+              <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-lg p-12 text-center">
+                <CheckCircle2 className="h-16 w-16 text-green-600 dark:text-green-500 mx-auto mb-4" />
+                <h3 className="text-xl text-green-900 dark:text-green-100 mb-2">Thank You!</h3>
+                <p className="text-green-700 dark:text-green-300">
                   Your special request has been received. Our team will contact you shortly.
                 </p>
               </div>
@@ -889,9 +881,9 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                     </FileUpload>
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    className="w-full hover-lift" 
+                  <Button
+                    type="submit"
+                    className="w-full hover-lift"
                     size="lg"
                     disabled={isSubmitting || (user ? !profileComplete : false)}
                   >

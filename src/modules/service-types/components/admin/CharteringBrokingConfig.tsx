@@ -5,125 +5,114 @@ interface CharteringBrokingProps {
   onNavigateHome?: () => void
 }
 
+// Configuration for Chartering & Broking Service
 export function CharteringBroking({ onNavigateHome }: CharteringBrokingProps) {
   const config: ServiceTemplateProps = {
     serviceName: 'Chartering & Broking',
     serviceIcon: Anchor,
     onNavigateHome,
-    serviceTypeId: 3,
+    serviceTypeId: 3, // Chartering & Broking ID (backend seed)
 
     hero: {
-      subtitle: 'Chartering & Broking',
-      title: 'Competitive Tonnage Fixtures Across Asia-Pacific Trade Routes',
-      description:
-        "Backed by a trusted shipowner network, Seatrans consistently arranges suitable vessels at competitive freight rates — fixing cargo on time from Vietnam to China, Korea, and beyond.",
-      image: 'https://picsum.photos/seed/seatrans-page-chartering/1600/900',
+      title: 'Chartering & Broking Services',
+      description:"",
+      // description: "Thanks to the support of shipowners community, Seatrans is always recommended to have suitable tonnage with competitive rates to fix our charterer's shipments on time.",
+      image:
+        'https://images.unsplash.com/photo-1645255315921-09c386465750?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvY2VhbiUyMGZyZWlnaHQlMjBzaGlwJTIwY2hhcnRlcmluZ3xlbnwxfHx8fDE3NjUwNzQzMTJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
     },
 
     contacts: {
       showEmergencyBadge: false,
-      sectionTitle: 'Chartering & Broking Desk',
-      sectionDescription:
-        'Our chartering team tracks live vessel positions daily. Send your cargo requirement and we will return with a shortlist of tonnage within hours.',
+      sectionTitle: 'Contact our Broking Team',
+      sectionDescription: 'Our experienced chartering professionals are ready to arrange suitable tonnage for your cargo',
       teams: [
         {
           title: 'Chartering & Broking',
           subtitle: 'Vessel Fixture & Cargo Operations',
           icon: Anchor,
           contacts: [
-            { name: 'Phan Duy Cong', mobile: '+84.905.001.077' },
-            { name: 'Do Duy An', mobile: '+84.935.015.679' },
+            { name: 'PHAN DUY CONG', mobile: '+84.905001077' },
+            { name: 'DO DUY AN', mobile: '+84.935015679' },
           ],
           email: 'chartering@seatrans.com.vn',
         },
       ],
       stats: [
-        { icon: Ship, value: '130+', label: 'Active vessels' },
-        { icon: Globe, value: '17', label: 'Trade routes' },
-        { icon: Package, value: '480K+', label: 'MT / year' },
-        { icon: FileText, value: '97.1%', label: 'On-time fixtures' },
+        { icon: Ship, value: '100+', label: 'Vessels' },
+        { icon: Globe, value: '15+', label: 'Trade Routes' },
+        { icon: Package, value: '500K+', label: 'Tons/Year' },
+        { icon: FileText, value: '98%', label: 'On-Time Fixtures' },
       ],
     },
 
     services: {
       sectionTitle: 'Cargo & Tonnage Arrangements',
-      sectionDescription:
-        'We specialize in bulk and breakbulk commodities across key intra-Asia corridors — with direct access to qualified vessel owners on each route.',
+      sectionDescription: 'Seatrans arranges tonnages for major cargo types across key trade routes',
       items: [
         {
           name: 'Tapioca Chip',
-          description:
-            '7–20K MT per shipment from Vietnamese ports to Shatian, Fangcheng, Lianyungang, Rizhao, and Qingdao.',
+          description: '7-20K tons per shipment Ex Vietnam to China (Shatian, Fangcheng, Lianyungang, Rizhao, Qingdao)',
           icon: Package,
         },
         {
           name: 'Wood-Chip',
-          description:
-            '8–15K BDMT per shipment from Vietnam to China and Korea on purpose-built chip carriers.',
+          description: '8-15K BDMT per shipment Ex Vietnam to China, Korea',
           icon: TreePine,
         },
         {
           name: 'Wood-Pellets',
-          description:
-            '8–15K MT per shipment from Vietnam to Kunsan and Pyeongtaek, South Korea under long-term charter arrangements.',
+          description: '8-15K tons per shipment Ex Vietnam to Korea (Kunsan, Pyongteak)',
           icon: TreePine,
         },
         {
           name: 'Fertilizer in Bulk',
-          description:
-            '5–10K MT per shipment from Fuzhou (CN) and Nagoya (JP) to Vietnamese agricultural ports.',
+          description: '5-10K tons per shipment Ex Fuzhou (CN), Nagoya (JP) to Vietnam',
           icon: Wheat,
         },
         {
           name: 'Sand & Ore in Bulk',
-          description:
-            '7–10K MT per shipment from Vietnamese mining ports to Huanghua, Qingdao, and Taichung.',
+          description: '7-10K tons per shipment Ex Vietnam to Huanghua (CN), Qingdao (CN), Taichung (TW)',
           icon: Mountain,
         },
         {
           name: 'Round Logs',
-          description:
-            '3–5K CBM per shipment from Papua New Guinea and Malaysian ports to Vietnamese processing facilities.',
+          description: '3-5K cbm per shipment Ex Papua New Guinea & Malaysian ports to Vietnam',
           icon: TreePine,
         },
         {
-          name: 'Domestic Sea Transport',
-          description:
-            'Coastal feeder services within Vietnam — connecting Hai Phong, Da Nang, Quy Nhon, and Ho Chi Minh City.',
+          name: 'Domestic Sea Transportation',
+          description: 'Coastal shipping services within Vietnamese ports for domestic cargo',
           icon: Truck,
         },
       ],
     },
 
     form: {
-      badgeText: 'Tonnage Inquiry',
-      sectionTitle: 'Vessel / Tonnage Order',
-      sectionDescription:
-        'Tell us your cargo requirement and laycan window. We will identify and propose suitable tonnage with competitive freight rates.',
-      submitButtonText: 'Submit Cargo Order',
+      badgeText: 'Request Tonnage',
+      sectionTitle: 'Tonnage/Vessel order',
+      sectionDescription: 'Submit your cargo requirements and we will arrange suitable tonnage with competitive rates',
+      submitButtonText: 'Submit Order',
       submitPath: '/inquiries',
       serviceTypeSlug: 'chartering-ship-broking',
       fields: [
-        { id: 'loadingArea', label: 'Loading area', type: 'select', required: true, options: ['NORTHERN', 'MIDDLE', 'SOUTHERN'], gridSpan: 1, enableSearch: false },
-        { id: 'loadingPort', label: 'Port of loading', type: 'port', required: true, gridSpan: 1, placeholder: 'Select port of loading' },
-        { id: 'dischargingArea', label: 'Discharging area', type: 'select', required: true, options: ['NORTHERN', 'MIDDLE', 'SOUTHERN'], gridSpan: 1, enableSearch: false },
-        { id: 'dischargingPort', label: 'Port of discharge', type: 'port', required: true, gridSpan: 1, placeholder: 'Select port of discharge' },
-        { id: 'cargoQuantity', label: 'Cargo type & quantity (MT)', type: 'number', required: true, placeholder: 'e.g. 15,000', gridSpan: 2 },
-        { id: 'laycanFrom', label: 'Laycan — opening date', type: 'date', required: true, gridSpan: 1 },
-        { id: 'laycanTo', label: 'Laycan — closing date', type: 'date', required: true, gridSpan: 1 },
-        { id: 'otherInfo', label: 'Additional terms / notes', type: 'textarea', placeholder: 'Vessel size preference, freight basis, special cargo conditions…', gridSpan: 2 },
+        { id: 'cargoQuantity', label: 'Cargo/Quantity', type: 'number', required: true, placeholder: 'e.g., Tapioca chip 15,000 tons', gridSpan: 2 },
+        { id: 'loadingPort', label: 'Loading port', type: 'port', required: true, gridSpan: 1 },
+        { id: 'dischargingPort', label: 'Discharging port', type: 'port', required: true, gridSpan: 1 },
+        { id: 'laycanFrom', label: 'Laycan - From date', type: 'date', required: true, gridSpan: 1 },
+        { id: 'laycanTo', label: 'Laycan - To date', type: 'date', required: true, gridSpan: 1 },
+        { id: 'otherInfo', label: 'Other information (optional)', type: 'textarea', placeholder: 'Any additional details...', gridSpan: 2 },
       ],
-      onSubmit: (data) => {
+      onSubmit: (data: any) => {
         console.log('Tonnage order submitted:', data)
+        // Handle form submission
       },
     },
 
     gallery: {
       enabled: true,
-      sectionTitle: 'Chartering Operations',
-      sectionDescription:
-        'Bulk cargo loading, vessel fixtures, and trade route coverage across the Asia-Pacific region.',
-    },
+      sectionTitle: 'Our Chartering Operations',
+      sectionDescription: 'Major cargo operations and trade routes across Asia-Pacific region'
+    }
   }
 
   return <ServiceTemplate {...config} />

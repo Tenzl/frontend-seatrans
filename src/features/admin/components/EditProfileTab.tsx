@@ -1,125 +1,321 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Mail, Building } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader } from '@/shared/components/ui/card'
+import { useState, useEffect } from 'react'
+import { User, Mail, Building, Loader2, Lock, Edit3, X } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
 import { PhoneInput } from '@/shared/components/ui/phone-input'
 import { Label } from '@/shared/components/ui/label'
-import { useAuth } from '@/modules/auth/context/AuthContext'
 import { Button } from '@/shared/components/ui/button'
+import { useAuth } from '@/modules/auth/context/AuthContext'
 import { toast } from '@/shared/utils/toast'
+import { authService } from '@/modules/auth/services/authService'
+import { apiClient } from '@/shared/utils/apiClient'
+import { API_CONFIG } from '@/shared/config/api.config'
 
 export function EditProfileTab() {
-  const { user, updateMyProfile } = useAuth()
+  const { user, refreshUser } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [editingProfile, setEditingProfile] = useState(false)
+  const [editingPassword, setEditingPassword] = useState(false)
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     company: '',
     phone: '',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
   })
-  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     if (user) {
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         fullName: user.fullName || '',
         email: user.email || '',
         company: user.company || '',
-        phone: user.phone || '',
-      })
+        phone: user.phone || ''
+      }))
     }
   }, [user])
 
-  const handleSave = async () => {
-    if (!user) return
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }))
+  }
 
-    const fullName = formData.fullName.trim()
-    const phone = formData.phone.trim()
-    const company = formData.company.trim()
-
-    if (!fullName || !phone || !company) {
-      toast.error('Please fill in full name, phone, and company.')
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formData.fullName || !formData.email || !formData.phone || !formData.company) {
+      toast.error('Please complete Full Name, Company, Email, and Phone before updating.')
       return
     }
 
-    setIsSaving(true)
+    setLoading(true)
+
     try {
-      const res = await updateMyProfile({
-        fullName,
-        phone,
-        company,
+      if (!user) throw new Error('No user session')
+
+      const result = await authService.updateProfile({
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        company: formData.company,
       })
-      if (!res.success) {
-        toast.error(res.message || 'Failed to update profile')
-        return
+
+      if (!result.success || !result.data) {
+        throw new Error(result.message || 'Failed to update profile')
       }
-      toast.success('Profile updated')
+
+      toast.success('Profile updated successfully')
+      await refreshUser()
+      setEditingProfile(false)
+    } catch (error) {
+      toast.error('Failed to update profile')
     } finally {
-      setIsSaving(false)
+      setLoading(false)
+    }
+  }
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
+      toast.error('Please fill all password fields before updating.')
+      return
+    }
+
+    if (formData.newPassword !== formData.confirmPassword) {
+      toast.error('Passwords do not match')
+      return
+    }
+
+    try {
+      setLoading(true)
+      const response = await apiClient.post(API_CONFIG.AUTH.CHANGE_PASSWORD, {
+        oldPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error((data as any).message || 'Failed to change password')
+      }
+
+      toast.success('Password changed successfully')
+      setFormData(prev => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }))
+      setEditingPassword(false)
+    } catch (error) {
+      toast.error('Failed to change password')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="border-b border-border/50 pb-4">
-          <CardDescription className="max-w-2xl text-sm leading-relaxed">
-            Update your profile details. Email and role are managed by the system.
-            {user?.oauthProvider === 'google' && (
-              <> Complete phone and company to submit inquiries.</>
-            )}
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5" />
+            Profile Information
+          </CardTitle>
+          <CardDescription>
+            Update your personal information and contact details
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                value={formData.fullName}
-                onChange={(e) => setFormData((prev) => ({ ...prev, fullName: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input id="email" type="email" value={formData.email} className="pl-9" disabled />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <PhoneInput
-                id="phone"
-                international
-                defaultCountry="VN"
-                value={formData.phone}
-                onChange={(value) => setFormData((prev) => ({ ...prev, phone: String(value ?? '') }))}
-                className="w-full"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company">Company</Label>
-              <div className="relative">
-                <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="company"
-                  value={formData.company}
-                  className="pl-9"
-                  onChange={(e) => setFormData((prev) => ({ ...prev, company: e.target.value }))}
-                />
-              </div>
-            </div>
+          <div className="flex justify-end mb-4">
+            {!editingProfile ? (
+              <Button variant="outline" size="sm" onClick={() => setEditingProfile(true)}>
+                <Edit3 className="mr-2 h-4 w-4" />
+                Edit profile
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setEditingProfile(false)
+                  if (user) {
+                    setFormData(prev => ({
+                      ...prev,
+                      fullName: user.fullName || '',
+                      email: user.email || '',
+                      company: user.company || '',
+                      phone: user.phone || '',
+                    }))
+                  }
+                }}
+                className="text-muted-foreground"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Cancel
+              </Button>
+            )}
           </div>
 
-          <div className="mt-6 flex justify-end">
-            <Button onClick={handleSave} disabled={isSaving || !user}>
-              {isSaving ? 'Saving…' : 'Save changes'}
-            </Button>
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder="John Doe"
+                  disabled={!editingProfile}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="pl-9"
+                    placeholder="john@example.com"
+                    disabled={!editingProfile}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <PhoneInput
+                  id="phone"
+                  international
+                  defaultCountry="VN"
+                  value={formData.phone}
+                  onChange={(v) => setFormData(prev => ({ ...prev, phone: v || '' }))}
+                  placeholder="(+84) 0123 456 789"
+                  disabled={!editingProfile}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="company">Company</Label>
+                <div className="relative">
+                  <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="company"
+                    name="company"
+                    value={formData.company}
+                    onChange={handleChange}
+                    className="pl-9"
+                    placeholder="Company Name"
+                    disabled={!editingProfile}
+                  />
+                </div>
+              </div>
+            </div>
+            {editingProfile && (
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update
+              </Button>
+            )}
+          </form>
         </CardContent>
       </Card>
+
+      {/* Only show Change Password section for non-OAuth users */}
+      {!user?.oauthProvider && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5" />
+              Change Password
+            </CardTitle>
+            <CardDescription>
+              Update your password to keep your account secure
+            </CardDescription>
+          </CardHeader>
+        <CardContent>
+          <div className="flex justify-end mb-4">
+            {!editingPassword ? (
+              <Button variant="outline" size="sm" onClick={() => setEditingPassword(true)}>
+                <Edit3 className="mr-2 h-4 w-4" />
+                Change password
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setEditingPassword(false)
+                  setFormData(prev => ({
+                    ...prev,
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmPassword: ''
+                  }))
+                }}
+                className="text-muted-foreground"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Cancel
+              </Button>
+            )}
+          </div>
+
+          {editingPassword && (
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <Input
+                  id="currentPassword"
+                  name="currentPassword"
+                  type="password"
+                  value={formData.currentPassword}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input
+                  id="newPassword"
+                  name="newPassword"
+                  type="password"
+                  value={formData.newPassword}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                />
+              </div>
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+      )}
     </div>
   )
 }

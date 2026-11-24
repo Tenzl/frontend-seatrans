@@ -68,7 +68,7 @@ export const documentService = {
       }
 
       const response = await axios.post<ApiResponse<InquiryDocument>>(
-        `${API_BASE_URL}${API_CONFIG.DOCUMENTS.ADMIN_UPLOAD(serviceSlug, inquiryId)}`,
+        `${API_BASE_URL}/inquiries/admin/${serviceSlug}/${inquiryId}/documents`,
         formData,
         {
           headers,
@@ -100,7 +100,7 @@ export const documentService = {
   getDocuments: async (inquiryId: number, serviceSlug: string): Promise<InquiryDocument[]> => {
     try {
       const response = await axios.get<ApiResponse<InquiryDocument[]>>(
-        `${API_BASE_URL}${API_CONFIG.DOCUMENTS.LIST(serviceSlug, inquiryId)}`,
+        `${API_BASE_URL}/inquiries/${serviceSlug}/${inquiryId}/documents`,
         {
           headers: getAuthHeaders(),
         }
@@ -125,7 +125,7 @@ export const documentService = {
   getDocumentsByType: async (inquiryId: number, serviceSlug: string, documentType: DocumentType): Promise<InquiryDocument[]> => {
     try {
       const response = await axios.get<ApiResponse<InquiryDocument[]>>(
-        `${API_BASE_URL}${API_CONFIG.DOCUMENTS.LIST_BY_TYPE(serviceSlug, inquiryId)}`,
+        `${API_BASE_URL}/inquiries/${serviceSlug}/${inquiryId}/documents/by-type`,
         {
           params: { type: documentType },
           headers: getAuthHeaders(),
@@ -149,11 +149,14 @@ export const documentService = {
    * Get direct download URL
    */
   getDownloadUrl: (inquiryId: number, serviceSlug: string, documentId: number): string => {
-    return `${API_BASE_URL}${API_CONFIG.DOCUMENTS.CONTENT(serviceSlug, inquiryId, documentId, 'attachment')}`
+    return `${API_BASE_URL}/inquiries/${serviceSlug}/${inquiryId}/documents/download/${documentId}`
   },
 
+  /**
+   * Get direct preview URL (bypasses IDM)
+   */
   getPreviewUrl: (inquiryId: number, serviceSlug: string, documentId: number): string => {
-    return `${API_BASE_URL}${API_CONFIG.DOCUMENTS.CONTENT(serviceSlug, inquiryId, documentId, 'inline')}`
+    return `${API_BASE_URL}/inquiries/${serviceSlug}/${inquiryId}/documents/view/${documentId}`
   },
 
   /**
@@ -162,7 +165,7 @@ export const documentService = {
   downloadDocument: async (inquiryId: number, serviceSlug: string, documentId: number): Promise<Blob> => {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}${API_CONFIG.DOCUMENTS.CONTENT(serviceSlug, inquiryId, documentId, 'attachment')}`,
+        `${API_BASE_URL}/inquiries/${serviceSlug}/${inquiryId}/documents/download/${documentId}`,
         {
           responseType: 'blob',
           headers: getAuthHeaders(),
@@ -184,7 +187,7 @@ export const documentService = {
   deleteDocument: async (inquiryId: number, serviceSlug: string, documentId: number): Promise<void> => {
     try {
       const response = await axios.delete(
-        `${API_BASE_URL}${API_CONFIG.DOCUMENTS.ADMIN_DELETE(serviceSlug, inquiryId, documentId)}`,
+        `${API_BASE_URL}/inquiries/admin/${serviceSlug}/${inquiryId}/documents/${documentId}`,
         {
           headers: getAuthHeaders(),
         }

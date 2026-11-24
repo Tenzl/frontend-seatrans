@@ -5,11 +5,16 @@ import { API_CONFIG } from '@/shared/config/api.config'
  * Automatically logs out user when receiving 401 Unauthorized.
  */
 
+const TOKEN_KEY = 'auth_token'
+
 export interface ApiClientConfig extends RequestInit {
   skipAuth?: boolean
   /** Override default timeout (ms). Set to 0 to disable timeout for this request. */
   timeout?: number
 }
+
+/** Raw fetch response with the caller's JSON payload type; untyped calls retain Response.json semantics. */
+type ApiFetchResponse<T> = Omit<Response, 'json'> & { json(): Promise<T> }
 
 class ApiClient {
   private static instance: ApiClient
@@ -23,14 +28,18 @@ class ApiClient {
     return ApiClient.instance
   }
 
+  private getToken(): string | null {
+    if (typeof window === 'undefined') return null
+    return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY)
+  }
+
   private clearAuth(): void {
     if (typeof window === 'undefined') return
 
     // Clear both persistent and session storage to cover remember-me/session flows
-    // (legacy keys kept for compatibility with older builds).
-    localStorage.removeItem('auth_token')
+    localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem('auth_user')
-    sessionStorage.removeItem('auth_token')
+    sessionStorage.removeItem(TOKEN_KEY)
     sessionStorage.removeItem('auth_user')
 
     // Avoid redirect loops when already on login page
@@ -75,9 +84,15 @@ class ApiClient {
   async fetch(endpoint: string, config: ApiClientConfig = {}): Promise<Response> {
     const { skipAuth, timeout, headers, signal, ...restConfig } = config
 
+    const token = this.getToken()
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(headers as Record<string, string>),
+    }
+
+    // Add Authorization header if token exists and not explicitly skipped
+    if (token && !skipAuth) {
+      requestHeaders['Authorization'] = `Bearer ${token}`
     }
 
     const url = this.buildUrl(endpoint)
@@ -101,8 +116,13 @@ class ApiClient {
 
       // Handle 401 Unauthorized - token expired or invalid
       if (response.status === 401 && !skipAuth) {
-        console.warn('Received 401 Unauthorized - logging out user')
-        this.clearAuth()
+        // An older request can finish after a successful login. Only revoke
+        // the browser session when the rejected token is still the active one.
+        if (token && token === this.getToken()) {
+          this.clearAuth()
+        } else if (token) {
+          throw new Error('Session changed. Please retry.')
+        }
         throw new Error('Session expired. Please login again.')
       }
 
@@ -118,11 +138,11 @@ class ApiClient {
     }
   }
 
-  async get<T = unknown>(endpoint: string, config?: ApiClientConfig): Promise<Response> {
+  async get<T = any>(endpoint: string, config?: ApiClientConfig): Promise<ApiFetchResponse<T>> {
     return this.fetch(endpoint, { ...config, method: 'GET' })
   }
 
-  async post<T = unknown>(endpoint: string, body?: any, config?: ApiClientConfig): Promise<Response> {
+  async post<T = any>(endpoint: string, body?: any, config?: ApiClientConfig): Promise<ApiFetchResponse<T>> {
     return this.fetch(endpoint, {
       ...config,
       method: 'POST',
@@ -131,7 +151,7 @@ class ApiClient {
     })
   }
 
-  async put<T = unknown>(endpoint: string, body?: any, config?: ApiClientConfig): Promise<Response> {
+  async put<T = any>(endpoint: string, body?: any, config?: ApiClientConfig): Promise<ApiFetchResponse<T>> {
     return this.fetch(endpoint, {
       ...config,
       method: 'PUT',
@@ -139,7 +159,7 @@ class ApiClient {
     })
   }
 
-  async patch<T = unknown>(endpoint: string, body?: any, config?: ApiClientConfig): Promise<Response> {
+  async patch<T = any>(endpoint: string, body?: any, config?: ApiClientConfig): Promise<ApiFetchResponse<T>> {
     return this.fetch(endpoint, {
       ...config,
       method: 'PATCH',
@@ -147,7 +167,7 @@ class ApiClient {
     })
   }
 
-  async delete<T = unknown>(endpoint: string, config?: ApiClientConfig): Promise<Response> {
+  async delete<T = any>(endpoint: string, config?: ApiClientConfig): Promise<ApiFetchResponse<T>> {
     return this.fetch(endpoint, { ...config, method: 'DELETE' })
   }
 }

@@ -37,46 +37,12 @@ import {
   TableRow,
 } from "@/shared/components/ui/table"
 
-/** Sticky header + optional pinned left/right columns inside `.admin-data-table` scroll */
-export function adminStickyColumnClass(
-  columnId: string,
-  type: "header" | "cell",
-  baseClass = "",
-  options?: { pinLeft?: string[]; pinRight?: string[] },
-): string {
-  const isHeader = type === "header"
-  const pinLeft = options?.pinLeft ?? []
-  const pinRight = options?.pinRight ?? ["actions"]
-  const headerTop = isHeader ? "sticky top-0 z-20 bg-muted/95 backdrop-blur-sm" : ""
-  const pinnedHeader = "sticky top-0 z-30 bg-muted/95 backdrop-blur-sm"
-
-  if (pinLeft.includes(columnId)) {
-    return cn(
-      "admin-table-pin-left sticky left-0 min-w-[11rem] shadow-[inset_-1px_0_0_0_hsl(var(--border)/0.55)]",
-      isHeader ? pinnedHeader : "z-10 bg-white hover:!bg-white",
-      baseClass,
-    )
-  }
-
-  if (pinRight.includes(columnId)) {
-    return cn(
-      "admin-table-pin-right sticky right-0 min-w-[4.25rem] w-max max-w-[9rem]",
-      "shadow-[inset_1px_0_0_0_hsl(var(--border)/0.55)]",
-      !isHeader && "!px-0 !pr-1 !pl-2",
-      isHeader ? pinnedHeader : "z-10 bg-white hover:!bg-white",
-      baseClass,
-    )
-  }
-
-  return cn(headerTop, baseClass)
-}
-
 // ---------------------------------------------------------------------------
 // DataTableSortHeader — ghost-style sortable column header button
 // ---------------------------------------------------------------------------
 
 export function DataTableSortHeader({
-   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   column,
   children,
 }: {
@@ -130,17 +96,17 @@ export function DataTableContent<TData>({
   columnCount,
   loading = false,
   emptyMessage = "No results.",
-  maxHeight = "min(52dvh, 520px)",
+  maxHeight = "430px",
   columnClassName,
   containerClassName,
   tableClassName,
 }: DataTableContentProps<TData>) {
   return (
     <div
-      className={cn("admin-data-table", containerClassName)}
+      className={cn("overflow-auto rounded-md border", containerClassName)}
       style={maxHeight ? { maxHeight } : undefined}
     >
-      <table className={cn("w-full caption-bottom text-sm", tableClassName)}>
+      <Table className={tableClassName}>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
@@ -185,7 +151,7 @@ export function DataTableContent<TData>({
             ))
           )}
         </TableBody>
-      </table>
+      </Table>
     </div>
   )
 }
@@ -213,21 +179,14 @@ export function DataTableContent<TData>({
 export function DataTablePagination<TData>({
   table,
   persistKey,
-  totalRowCount,
-  isFetching,
 }: {
   table: TableInstance<TData>
   persistKey?: string
-  /** Server-side total; falls back to client filtered row count */
-  totalRowCount?: number
-  isFetching?: boolean
 }) {
-  const { pageIndex, pageSize } = table.getState().pagination
+  const { pageIndex } = table.getState().pagination
   const pageCount = Math.max(table.getPageCount(), 1)
   const shownRows = table.getRowModel().rows.length
-  const filteredRows = totalRowCount ?? table.getFilteredRowModel().rows.length
-  const rangeStart = filteredRows === 0 ? 0 : pageIndex * pageSize + 1
-  const rangeEnd = filteredRows === 0 ? 0 : Math.min(pageIndex * pageSize + shownRows, filteredRows)
+  const filteredRows = table.getFilteredRowModel().rows.length
 
   const pathname = usePathname()
   const router = useRouter()
@@ -301,31 +260,11 @@ export function DataTablePagination<TData>({
   }
 
   return (
-    <div className="dashboard-pagination-bar">
-      <div className="text-sm text-muted-foreground">
-        {isFetching ? (
-          <span className="inline-flex items-center gap-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-            Updating…
-          </span>
-        ) : filteredRows === 0 ? (
-          "No records"
-        ) : (
-          <>
-            <span className="font-mono-data tabular-nums text-foreground/90">
-              {rangeStart}–{rangeEnd}
-            </span>
-            <span> of </span>
-            <span className="font-mono-data tabular-nums text-foreground/90">{filteredRows}</span>
-            <span className="hidden sm:inline"> records</span>
-            <span className="mx-2 hidden text-border sm:inline">·</span>
-            <span className="hidden sm:inline">
-              Page {pageIndex + 1} of {pageCount}
-            </span>
-          </>
-        )}
+    <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="flex-1 text-sm text-muted-foreground">
+        Page {pageIndex + 1} / {pageCount} — Showing {shownRows} of {filteredRows} row(s)
       </div>
-      <div className="flex gap-2">
+      <div className="space-x-2">
         <Button
           variant="outline"
           size="sm"

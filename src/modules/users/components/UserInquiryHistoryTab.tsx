@@ -1,38 +1,38 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { requireEpdaForm } from '@/modules/inquiries/components/common/epdaForm'
+
+import { useEffect,useState } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
-import { Card, CardContent, CardDescription, CardHeader } from '@/shared/components/ui/card'
+import { Card,CardContent,CardDescription,CardHeader,CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
-import { Alert, AlertDescription } from '@/shared/components/ui/alert'
-import { Loader2, AlertCircle, Clock, Eye, FileText, RefreshCw, MoreHorizontal, ArrowUpDown } from 'lucide-react'
+import { Alert,AlertDescription } from '@/shared/components/ui/alert'
+import { Loader2,AlertCircle,Clock,Eye,FileText,RefreshCw,MoreHorizontal,ArrowUpDown } from 'lucide-react'
 import { authService } from '@/modules/auth/services/authService'
-import { documentService } from '@/modules/inquiries/services/documentService'
 import { Button } from '@/shared/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
+import { Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle } from '@/shared/components/ui/dialog'
 import {
-  type QuoteData as HcmQuoteData,
-  QuoteRow,
-  QuotePreview,
-  renderQuoteHtml as renderQuoteHtmlHcm,
-} from '@/modules/inquiries/components/common/Quote-hcm'
-import { renderQuoteHtml as renderQuoteHtmlQn, type QuoteData as QnQuoteData } from '@/modules/inquiries/components/common/Quote-qn'
-import { formatInvoiceDate, formatCheckMark, formatCargoDescription } from '@/shared/utils/invoiceFormatters'
+type QuoteData as SouthQuoteData,
+QuoteRow,
+QuotePreview,
+renderQuoteHtml as renderQuoteHtmlSouth,
+} from '@/modules/inquiries/components/common/Quote-south'
+import { renderQuoteHtml as renderQuoteHtmlCentral,type QuoteData as CentralQuoteData } from '@/modules/inquiries/components/common/Quote-central'
+import { formatInvoiceDate,formatCheckMark,formatCargoDescription } from '@/shared/utils/invoiceFormatters'
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
 import { InquiryDataTable } from './history/InquiryDataTable'
 import {
-  getSchemaForService,
-  getServiceSlugFromInquiry,
-  getFieldValue,
-  InquiryFieldSchema,
+getSchemaForService,
+getServiceSlugFromInquiry,
+getFieldValue
 } from './history/serviceInquirySchemas'
-import { InquiryStatus, STATUS_QUOTED, STATUS_COMPLETED, STATUS_BADGE_CONFIG } from '@/shared/constants/inquiry-status'
+import { InquiryStatus,STATUS_QUOTED,STATUS_COMPLETED,STATUS_BADGE_CONFIG } from '@/shared/constants/inquiry-status'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+DropdownMenu,
+DropdownMenuContent,
+DropdownMenuItem,
+DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
 
 interface Inquiry {
@@ -42,7 +42,7 @@ interface Inquiry {
   status: InquiryStatus
   submittedAt: string
   details?: string
-  
+
   // Shipping Agency fields
   toName?: string
   mv?: string
@@ -64,24 +64,24 @@ interface Inquiry {
   berthHours?: number
   anchorageHours?: number
   pilotage3rdMiles?: number
-  
+
   // Chartering fields
   loadingPort?: string
   dischargingPort?: string
   laycanFrom?: string
   laycanTo?: string
-  
+
   // Freight/Logistics fields
   deliveryTerm?: string
   container20ft?: number
   container40ft?: number
   shipmentFrom?: string
   shipmentTo?: string
-  
+
   // Special Request fields
   subject?: string
   message?: string
-  
+
   serviceType?: {
     id: number
     name?: string
@@ -97,30 +97,19 @@ interface PageResponse<T> {
   number: number
 }
 
-type InvoiceQuoteData = HcmQuoteData & QnQuoteData
+type InvoiceQuoteData = SouthQuoteData & CentralQuoteData
 
 export function UserInquiryHistoryTab() {
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
   const [detailInquiry, setDetailInquiry] = useState<Inquiry | null>(null)
-  const [downloadingDoc, setDownloadingDoc] = useState<number | null>(null)
   const [quoteInquiry, setQuoteInquiry] = useState<Inquiry | null>(null)
   const [quoteTemplate, setQuoteTemplate] = useState<string | null>(null)
   const [quoteHtml, setQuoteHtml] = useState<string | null>(null)
   const [loadingQuote, setLoadingQuote] = useState(false)
 
   // Helper to get service slug from inquiry
-  const getServiceSlug = (inquiry: Inquiry): string => {
-    const serviceName = inquiry.serviceType?.name?.toLowerCase() || ''
-    // Map service type names to slugs
-    if (serviceName.includes('shipping') || serviceName.includes('agency')) return 'shipping-agency'
-    if (serviceName.includes('charter')) return 'chartering'
-    if (serviceName.includes('freight')) return 'freight-forwarding'
-    if (serviceName.includes('logistic')) return 'total-logistic'
-    if (serviceName.includes('special')) return 'special-request'
-    return 'shipping-agency' // default fallback
-  }
 
   const fetchInquiries = async () => {
     setIsLoading(true)
@@ -189,13 +178,7 @@ export function UserInquiryHistoryTab() {
     return fallback
   }
 
-  const formatYesNo = (value?: unknown) => {
-    if (typeof value === 'boolean') return value ? 'Yes' : 'No'
-    const normalized = typeof value === 'string' ? value.trim().toLowerCase() : ''
-    if (['yes', 'y', 'true', '1'].includes(normalized)) return 'Yes'
-    if (['no', 'n', 'false', '0'].includes(normalized)) return 'No'
-    return value ? String(value) : undefined
-  }
+
 
   const buildRows = (value?: unknown) => {
     if (Array.isArray(value)) {
@@ -207,7 +190,7 @@ export function UserInquiryHistoryTab() {
   const buildQuoteData = (inquiry: Inquiry): InvoiceQuoteData => {
     // Parse details JSON for quote-specific fields (AA_ROWS, BB_ROWS, totals, bank info)
     const map = normalizeDetails(inquiry.details)
-    const isQnForm = (inquiry.quoteForm || '').toUpperCase() === 'QN'
+    const usesSingleRatePilotage = requireEpdaForm(inquiry.quoteForm) !== 'SOUTH'
 
     const data: InvoiceQuoteData = {
       to_shipowner: inquiry.toName || inquiry.fullName,
@@ -240,8 +223,8 @@ export function UserInquiryHistoryTab() {
       // Map hours from database with fallback to defaults
       berth_hours: inquiry.berthHours ?? 96,
       anchorage_hours: inquiry.anchorageHours ?? 24,
-      pilotage_miles: isQnForm ? inquiry.pilotage3rdMiles ?? 1 : undefined,
-      pilotage_third_miles: isQnForm ? undefined : inquiry.pilotage3rdMiles ?? 17,
+      pilotage_miles: usesSingleRatePilotage ? inquiry.pilotage3rdMiles ?? 1 : undefined,
+      pilotage_third_miles: usesSingleRatePilotage ? undefined : inquiry.pilotage3rdMiles ?? 17,
     }
 
     return data
@@ -249,7 +232,7 @@ export function UserInquiryHistoryTab() {
 
   const ensureQuoteTemplate = async () => {
     if (quoteTemplate) return quoteTemplate
-    // Fetch the main template (single template for both QN and HCM)
+    // Fetch the main template (single template for both CENTRAL and SOUTH)
     const res = await fetch('/templates/quote.html')
     if (!res.ok) throw new Error('Template not found')
     const text = await res.text()
@@ -263,7 +246,7 @@ export function UserInquiryHistoryTab() {
     try {
       const template = await ensureQuoteTemplate()
       // Choose the correct renderer based on quoteForm
-      const renderer = (inquiry.quoteForm || '').toUpperCase() === 'QN' ? renderQuoteHtmlQn : renderQuoteHtmlHcm
+      const renderer = requireEpdaForm(inquiry.quoteForm) === 'CENTRAL' ? renderQuoteHtmlCentral : renderQuoteHtmlSouth
       const html = renderer(template, buildQuoteData(inquiry))
       setQuoteHtml(html)
     } catch (err) {
@@ -277,34 +260,7 @@ export function UserInquiryHistoryTab() {
     }
   }
 
-  const handleQuickDownload = async (inquiry: Inquiry) => {
-    try {
-      setDownloadingDoc(inquiry.id)
-      const serviceSlug = getServiceSlug(inquiry)
-      const docs = await documentService.getDocuments(inquiry.id, serviceSlug)
-      const target = docs.find(d => d.documentType === 'INVOICE') || docs[0]
-      if (!target) {
-        setMessage('No documents available to download')
-        setTimeout(() => setMessage(null), 3000)
-        return
-      }
-      const blob = await documentService.downloadDocument(inquiry.id, serviceSlug, target.id)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = target.originalFileName
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    } catch (err) {
-      console.error('Failed to download document:', err)
-      setMessage('Failed to download document')
-      setTimeout(() => setMessage(null), 3000)
-    } finally {
-      setDownloadingDoc(null)
-    }
-  }
+
 
   const getStatusBadge = (status: Inquiry['status']) => {
     const config = STATUS_BADGE_CONFIG[status]
@@ -316,14 +272,14 @@ export function UserInquiryHistoryTab() {
   const handleDeleteInquiries = async (ids: number[]) => {
     try {
       // Call API to delete inquiries
-      const response = await apiClient.delete(API_CONFIG.INQUIRIES.USER_BATCH_DELETE, {
+      const response = await apiClient.delete(`${API_CONFIG.INQUIRIES.BASE}/batch`, {
         body: JSON.stringify({ ids }),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete inquiries')
       }
-      
+
       // Remove deleted inquiries from state
       setInquiries(prev => prev.filter(inq => !ids.includes(inq.id)))
       setMessage('Successfully deleted selected inquiries')
@@ -423,23 +379,23 @@ export function UserInquiryHistoryTab() {
 
     // Build field list from schema
     const fields: Array<[string, string]> = []
-    
+
     for (const fieldDef of schema) {
       const value = getFieldValue(inquiry, fieldDef.key)
-      
+
       // Skip if value is undefined, null, or empty string
       if (value === undefined || value === null || value === '') {
         continue
       }
-      
+
       // Format value using schema formatter
       const formattedValue = fieldDef.format ? fieldDef.format(value) : String(value)
-      
+
       // Skip if formatted value is empty
       if (!formattedValue) {
         continue
       }
-      
+
       fields.push([fieldDef.label, formattedValue])
     }
 
@@ -465,11 +421,12 @@ export function UserInquiryHistoryTab() {
   return (
     <>
     <Card>
-      <CardHeader className="border-b border-border/50 pb-4">
-        <div className="flex items-center justify-between gap-4">
-          <CardDescription className="max-w-2xl text-sm leading-relaxed">
-            View submissions you have sent to Seatrans.
-          </CardDescription>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Your Inquiry History</CardTitle>
+            <CardDescription>View submissions you have sent to Seatrans.</CardDescription>
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -552,13 +509,13 @@ export function UserInquiryHistoryTab() {
             <div className="flex flex-col gap-4 min-h-[70vh]">
               <div className="flex-1 min-h-[70vh] rounded-md border overflow-hidden bg-white">
                 {loadingQuote ? (
-                  <div className="flex items-center justify-center h-full bg-muted">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  <div className="flex items-center justify-center h-full bg-gray-100">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                   </div>
                 ) : quoteHtml ? (
                   <QuotePreview html={quoteHtml} />
                 ) : (
-                  <div className="flex items-center justify-center h-full bg-muted text-muted-foreground">
+                  <div className="flex items-center justify-center h-full bg-gray-100 text-muted-foreground">
                     <FileText className="h-10 w-10 mr-2" />
                     No invoice available
                   </div>
@@ -572,7 +529,7 @@ export function UserInquiryHistoryTab() {
                   variant="outline"
                   onClick={async () => {
                     if (!quoteHtml) return
-                    
+
                     // Create hidden iframe for printing
                     const iframe = document.createElement('iframe')
                     iframe.style.position = 'fixed'
@@ -582,24 +539,24 @@ export function UserInquiryHistoryTab() {
                     iframe.style.height = '0'
                     iframe.style.border = 'none'
                     document.body.appendChild(iframe)
-                    
+
                     const iframeDoc = iframe.contentWindow?.document
                     if (!iframeDoc) {
                       document.body.removeChild(iframe)
                       return
                     }
-                    
+
                     iframeDoc.open()
                     iframeDoc.write(quoteHtml)
                     iframeDoc.close()
-                    
+
                     // Wait for content to load
                     await new Promise(resolve => setTimeout(resolve, 1000))
-                    
+
                     // Print from iframe
                     iframe.contentWindow?.focus()
                     iframe.contentWindow?.print()
-                    
+
                     // Clean up after print dialog closes
                     setTimeout(() => {
                       document.body.removeChild(iframe)

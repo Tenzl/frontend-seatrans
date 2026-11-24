@@ -1,18 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { ArrowRight, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState,useEffect } from 'react'
+import { Calendar,ChevronLeft,ChevronRight } from 'lucide-react'
 import { ImageWithFallback } from '@/shared/components/ImageWithFallback'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
-import { LandingSectionHeader } from './LandingSectionHeader'
-import { Button } from '@/shared/components/ui/button'
-import { cn } from '@/shared/lib/utils'
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  type CarouselApi,
+Carousel,
+CarouselContent,
+CarouselItem,
+type CarouselApi,
 } from '@/shared/components/ui/carousel'
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
@@ -40,22 +36,8 @@ interface ApiResponse<T> {
   data: T
 }
 
-function UpdatesSkeleton() {
-  return (
-    <div className="flex gap-4 overflow-hidden">
-      {[1, 2, 3, 4].map((i) => (
-        <div
-          key={i}
-          className="shrink-0 w-[min(280px,75vw)] aspect-[4/5] rounded-xl bg-muted animate-pulse"
-        />
-      ))}
-    </div>
-  )
-}
-
 export function Updates({ onNavigateToArticle }: UpdatesProps) {
   const [posts, setPosts] = useState<Post[]>([])
-  const [loading, setLoading] = useState(true)
   const [ref, isInView] = useIntersectionObserver()
   const [api, setApi] = useState<CarouselApi>()
   const [canScrollPrev, setCanScrollPrev] = useState(false)
@@ -66,7 +48,9 @@ export function Updates({ onNavigateToArticle }: UpdatesProps) {
   }, [])
 
   useEffect(() => {
-    if (!api) return
+    if (!api) {
+      return
+    }
 
     const updateScrollState = () => {
       setCanScrollPrev(api.canScrollPrev())
@@ -85,10 +69,7 @@ export function Updates({ onNavigateToArticle }: UpdatesProps) {
 
   const fetchRecentPosts = async () => {
     try {
-      const response = await apiClient.get<ApiResponse<Post[]>>(
-        `${API_CONFIG.POSTS.LATEST}?limit=12`,
-        { skipAuth: true }
-      )
+      const response = await apiClient.get<ApiResponse<Post[]>>(`${API_CONFIG.POSTS.LATEST}?limit=12`, { skipAuth: true })
       if (!response.ok) {
         console.error('Failed to fetch posts', response.status)
         return
@@ -99,7 +80,7 @@ export function Updates({ onNavigateToArticle }: UpdatesProps) {
     } catch (error) {
       console.error('Error fetching posts:', error)
     } finally {
-      setLoading(false)
+
     }
   }
 
@@ -109,145 +90,113 @@ export function Updates({ onNavigateToArticle }: UpdatesProps) {
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
+      day: 'numeric'
     })
   }
 
   const scrollPrev = () => {
     if (!api) return
     const current = api.selectedScrollSnap() || 0
-    api.scrollTo(Math.max(0, current - 2))
+    const target = Math.max(0, current - 2)
+    api.scrollTo(target)
   }
 
   const scrollNext = () => {
     if (!api) return
     const snaps = api.scrollSnapList().length
     const current = api.selectedScrollSnap() || 0
-    api.scrollTo(Math.min(snaps - 1, current + 2))
+    const target = Math.min(snaps - 1, current + 2)
+    api.scrollTo(target)
   }
 
   return (
     <div ref={ref}>
-      <section className="landing-section landing-section--alt">
+      <section className="py-20 bg-background">
         <div className="container">
-          <LandingSectionHeader
-            eyebrow="News & insights"
-            title="Latest from the desk"
-            description="Port updates, market notes, and operational briefs from our teams."
-            className={isInView ? 'fade-rise' : 'opacity-0'}
-            action={
-              <Button variant="outline" asChild className="hidden sm:inline-flex">
-                <Link href="/insights">
-                  All articles
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            }
-          />
+          <div className={`section-heading ${isInView ? 'fade-rise' : 'opacity-0'}`}>
+            <h2>Latest Updates</h2>
+          </div>
 
-          {loading && <UpdatesSkeleton />}
+          <Carousel
+            setApi={setApi}
+            opts={{
+              align: 'start',
+              loop: false,
+            }}
+            className="w-full"
+          >
+            <div className="relative px-16">
+              <button
+                onClick={scrollPrev}
+                disabled={!canScrollPrev}
+                className="group absolute -left-10 lg:-left-12 top-1/2 -translate-y-1/2 z-10 rounded-full p-3 shadow-lg border border-primary/30 bg-white text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary hover:text-white"
+                aria-label="Previous"
+              >
+                <ChevronLeft className="h-6 w-6 transition-colors text-primary group-hover:text-white" />
+              </button>
 
-          {!loading && posts.length === 0 && (
-            <p className="text-muted-foreground py-12 text-center border border-dashed rounded-xl">
-              No articles published yet.
-            </p>
-          )}
+              <button
+                onClick={scrollNext}
+                disabled={!canScrollNext}
+                className="group absolute -right-10 lg:-right-12 top-1/2 -translate-y-1/2 z-10 rounded-full p-3 shadow-lg border border-primary/30 bg-white text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary hover:text-white"
+                aria-label="Next"
+              >
+                <ChevronRight className="h-6 w-6 transition-colors text-primary group-hover:text-white" />
+              </button>
 
-          {!loading && posts.length > 0 && (
-            <Carousel
-              setApi={setApi}
-              opts={{ align: 'start', loop: false }}
-              className={cn('w-full', isInView ? 'fade-rise stagger-1' : 'opacity-0')}
-            >
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={scrollPrev}
-                  disabled={!canScrollPrev}
-                  className="absolute -left-3 md:-left-5 top-1/2 z-10 -translate-y-1/2 rounded-full p-2.5 border bg-card shadow-md text-primary transition-[transform,background-color,color,border-color,box-shadow] hover:bg-primary hover:text-primary-foreground disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
-                  aria-label="Previous articles"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={scrollNext}
-                  disabled={!canScrollNext}
-                  className="absolute -right-3 md:-right-5 top-1/2 z-10 -translate-y-1/2 rounded-full p-2.5 border bg-card shadow-md text-primary transition-[transform,background-color,color,border-color,box-shadow] hover:bg-primary hover:text-primary-foreground disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
-                  aria-label="Next articles"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-
-                <CarouselContent className="-ml-4 md:-ml-6">
-                  {posts.map((post, index) => (
-                    <CarouselItem
-                      key={post.id}
-                      className="pl-4 md:pl-6 basis-[82%] sm:basis-[45%] md:basis-[38%] lg:basis-[28%]"
+              <CarouselContent className="-ml-6">
+                {posts.map((post, index) => (
+                  <CarouselItem key={post.id} className="pl-6 md:basis-1/2 lg:basis-1/4">
+                    <div
+                      className={`group relative rounded-md overflow-hidden cursor-pointer ${isInView ? 'fade-rise' : 'opacity-0'}`}
+                      style={{
+                        aspectRatio: '1 / 1.15',
+                        animationDelay: `${index * 60}ms`
+                      }}
+                      onClick={() => onNavigateToArticle(post.id)}
                     >
-                      <article
-                        className="group relative cursor-pointer overflow-hidden rounded-xl landing-card-shadow transition-transform hover:scale-[1.02] active:scale-[0.99] focus-within:ring-2 focus-within:ring-ring"
-                        style={{
-                          aspectRatio: '4 / 5',
-                          animationDelay: `${index * 50}ms`,
-                        }}
-                        onClick={() => onNavigateToArticle(post.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            onNavigateToArticle(post.id)
-                          }
-                        }}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        {post.thumbnailUrl ? (
-                          <ImageWithFallback
-                            src={post.thumbnailUrl}
-                            alt={post.title}
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            fill
-                            sizes="(min-width: 1024px) 28vw, 80vw"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/15 to-muted">
-                            <Calendar className="h-14 w-14 text-primary/25" aria-hidden />
-                          </div>
-                        )}
+                      {post.thumbnailUrl ? (
+                        <ImageWithFallback
+                          src={post.thumbnailUrl}
+                          alt={post.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103"
+                          fill
+                          sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                          <Calendar className="w-16 h-16 text-primary/30" />
+                        </div>
+                      )}
 
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent transition-all duration-300 group-hover:from-black/90 group-hover:via-black/50"></div>
 
-                        <div className="absolute inset-0 flex flex-col justify-between p-5">
-                          <span className="inline-flex w-fit rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
-                            {post.categories?.[0]?.name ?? 'News'}
-                          </span>
-
-                          <div className="space-y-2">
-                            <time className="text-xs text-white/80 tabular-nums">
-                              {formatDate(post.publishedAt || post.createdAt)}
-                            </time>
-                            <h3 className="text-base font-semibold leading-snug text-white line-clamp-3 text-balance">
-                              {post.title}
-                            </h3>
+                      <div className="absolute inset-0 p-6 flex flex-col justify-between">
+                        <div>
+                          <div className="inline-block">
+                            <span className="bg-primary text-white px-4 py-1.5 text-sm font-semibold uppercase tracking-wider inline-block rounded-full">
+                              {post.categories?.[0]?.name || 'News'}
+                            </span>
                           </div>
                         </div>
-                      </article>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-              </div>
-            </Carousel>
-          )}
 
-          <div className="mt-8 sm:hidden">
-            <Button variant="outline" className="w-full" asChild>
-              <Link href="/insights">
-                All articles
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
+                        <div className="space-y-3">
+                          <div className="text-white text-sm opacity-90">
+                            {formatDate(post.publishedAt || post.createdAt)}
+                          </div>
+
+                          <h3 className="text-white text-lg font-semibold leading-tight line-clamp-4">
+                            {post.title}
+                          </h3>
+
+                        </div>
+                      </div>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </div>
+          </Carousel>
         </div>
       </section>
     </div>

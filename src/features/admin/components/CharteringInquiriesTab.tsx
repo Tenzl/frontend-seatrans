@@ -8,6 +8,7 @@ export function CharteringInquiriesTab() {
       serviceType="chartering"
       serviceLabel="Chartering & Ship Broking"
       isAdmin={true}
+      title="Chartering Inquiries"
       description="Manage all chartering and ship broking inquiries"
     />
   )

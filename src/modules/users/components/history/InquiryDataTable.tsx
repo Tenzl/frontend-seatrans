@@ -69,7 +69,7 @@ export function InquiryDataTable<TData extends { id: number }>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
-  
+
   const [dateFrom, setDateFrom] = React.useState<Date>()
   const [dateTo, setDateTo] = React.useState<Date>()
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
@@ -107,17 +107,17 @@ export function InquiryDataTable<TData extends { id: number }>({
   // Filter data by date range
   const filteredData = React.useMemo(() => {
     if (!dateFrom && !dateTo) return data
-    
+
     return data.filter((row: any) => {
       const submittedAt = row.submittedAt ? new Date(row.submittedAt) : null
       if (!submittedAt) return true
-      
+
       const from = dateFrom ? new Date(dateFrom.setHours(0, 0, 0, 0)) : null
       const to = dateTo ? new Date(dateTo.setHours(23, 59, 59, 999)) : null
-      
+
       if (from && submittedAt < from) return false
       if (to && submittedAt > to) return false
-      
+
       return true
     })
   }, [data, dateFrom, dateTo])
@@ -146,7 +146,7 @@ export function InquiryDataTable<TData extends { id: number }>({
 
   const handleDelete = async () => {
     if (!onDelete || selectedCount === 0) return
-    
+
     setIsDeleting(true)
     try {
       const ids = selectedRows.map(row => row.original.id)
@@ -175,7 +175,7 @@ export function InquiryDataTable<TData extends { id: number }>({
               className="max-w-sm"
             />
           )}
-          
+
           {/* Date filters */}
           <Popover>
             <PopoverTrigger asChild>
@@ -193,7 +193,7 @@ export function InquiryDataTable<TData extends { id: number }>({
               />
             </PopoverContent>
           </Popover>
-          
+
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" className="gap-2">
@@ -236,7 +236,7 @@ export function InquiryDataTable<TData extends { id: number }>({
               Delete ({selectedCount})
             </Button>
           )}
-          
+
           {/* Column visibility toggle */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -269,12 +269,12 @@ export function InquiryDataTable<TData extends { id: number }>({
         {/* Table - following table-09 pattern */}
         <div className="rounded-md border">
           <Table>
-            <TableHeader className="sticky top-0 z-20 bg-background">
+            <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     return (
-                      <TableHead key={header.id} className="bg-background">
+                      <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
                           : flexRender(

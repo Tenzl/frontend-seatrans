@@ -1,19 +1,21 @@
+
+import { requireEpdaForm } from '@/modules/inquiries/components/common/epdaForm'
 import { useState, useCallback } from 'react'
 import {
-  renderQuoteHtml as renderQuoteHtmlHcm,
-  type QuoteData as HcmQuoteData,
-  type QuoteRow as HcmQuoteRow,
-} from '@/modules/inquiries/components/common/Quote-hcm'
+  renderQuoteHtml as renderQuoteHtmlSouth,
+  type QuoteData as SouthQuoteData,
+  type QuoteRow as SouthQuoteRow,
+} from '@/modules/inquiries/components/common/Quote-south'
 import {
-  renderQuoteHtml as renderQuoteHtmlQn,
-  type QuoteData as QnQuoteData,
-  type QuoteRow as QnQuoteRow,
-} from '@/modules/inquiries/components/common/Quote-qn'
+  renderQuoteHtml as renderQuoteHtmlCentral,
+  type QuoteData as CentralQuoteData,
+  type QuoteRow as CentralQuoteRow,
+} from '@/modules/inquiries/components/common/Quote-central'
 import { formatInvoiceDate, formatCheckMark, formatCargoDescription } from '@/shared/utils/invoiceFormatters'
 
 // Use a unified type compatible with both quote renderers
-type QuoteRow = HcmQuoteRow & QnQuoteRow
-type QuoteData = HcmQuoteData & QnQuoteData
+type QuoteRow = SouthQuoteRow & CentralQuoteRow
+type QuoteData = SouthQuoteData & CentralQuoteData
 
 export function useInvoicePreview() {
   const [quoteTemplate, setQuoteTemplate] = useState<string | null>(null)
@@ -67,7 +69,7 @@ export function useInvoicePreview() {
 
   const buildQuoteData = (inquiry: any): QuoteData => {
     const map = normalizeDetails(inquiry.details)
-    const isQnForm = (inquiry.quoteForm || '').toUpperCase() === 'QN'
+    const usesSingleRatePilotage = requireEpdaForm(inquiry.quoteForm) !== 'SOUTH'
 
     const data: QuoteData = {
       to_shipowner: inquiry.toName || inquiry.fullName,
@@ -99,8 +101,8 @@ export function useInvoicePreview() {
       BB_ROWS: buildRows(map['bb_rows']),
       berth_hours: inquiry.berthHours ?? 96,
       anchorage_hours: inquiry.anchorageHours ?? 24,
-      pilotage_miles: isQnForm ? inquiry.pilotage3rdMiles ?? 1 : undefined,
-      pilotage_third_miles: isQnForm ? undefined : inquiry.pilotage3rdMiles ?? 17,
+      pilotage_miles: usesSingleRatePilotage ? inquiry.pilotage3rdMiles ?? 1 : undefined,
+      pilotage_third_miles: usesSingleRatePilotage ? undefined : inquiry.pilotage3rdMiles ?? 17,
     }
 
     return data
@@ -108,7 +110,7 @@ export function useInvoicePreview() {
 
   const ensureQuoteTemplate = async () => {
     if (quoteTemplate) return quoteTemplate
-    
+
     const res = await fetch('/templates/quote.html')
     if (!res.ok) throw new Error('Template not found')
     const text = await res.text()
@@ -119,18 +121,18 @@ export function useInvoicePreview() {
   const generateInvoicePreview = useCallback(async (inquiry: any) => {
     setIsLoading(true)
     setError(null)
-    
+
     try {
       const template = await ensureQuoteTemplate()
-      
+
       // Choose renderer based on quoteForm
-      const renderer = (inquiry.quoteForm || '').toUpperCase() === 'QN' 
-        ? renderQuoteHtmlQn 
-        : renderQuoteHtmlHcm
-      
+      const renderer = requireEpdaForm(inquiry.quoteForm) === 'CENTRAL'
+        ? renderQuoteHtmlCentral
+        : renderQuoteHtmlSouth
+
       const html = renderer(template, buildQuoteData(inquiry))
       setQuoteHtml(html)
-      
+
       return html
     } catch (err) {
       console.error('Failed to generate invoice preview:', err)

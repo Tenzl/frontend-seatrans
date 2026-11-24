@@ -8,6 +8,7 @@ export function SpecialRequestInquiriesTab() {
       serviceType="special-request"
       serviceLabel="Special Request"
       isAdmin={true}
+      title="Special Request Inquiries"
       description="Manage all special request inquiries"
     />
   )

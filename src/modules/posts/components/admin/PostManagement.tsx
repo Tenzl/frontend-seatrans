@@ -1,27 +1,27 @@
-import { useState, useEffect } from 'react'
+import { useState,useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+DropdownMenu,
+DropdownMenuContent,
+DropdownMenuItem,
+DropdownMenuSeparator,
+DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+AlertDialog,
+AlertDialogAction,
+AlertDialogCancel,
+AlertDialogContent,
+AlertDialogDescription,
+AlertDialogFooter,
+AlertDialogHeader,
+AlertDialogTitle,
 } from '@/shared/components/ui/alert-dialog'
-import { postService, Post } from '@/modules/posts/services/postService'
+import { postService,Post } from '@/modules/posts/services/postService'
 import { toast } from '@/shared/utils/toast'
-import { Pencil, Trash2, Eye, EyeOff, Plus, BookOpen, MoreVertical } from 'lucide-react'
+import { Pencil,Trash2,Eye,Plus,BookOpen,MoreVertical } from 'lucide-react'
 
 export function ManagePosts() {
   const router = useRouter()
@@ -60,7 +60,7 @@ export function ManagePosts() {
 
   const handleOpenEditor = (post?: Post) => {
     // Navigate in same tab
-    const url = post 
+    const url = post
       ? `/admin/posts/${post.id}/edit`
       : '/admin/posts/new'
     router.push(url)
@@ -75,7 +75,7 @@ export function ManagePosts() {
         await postService.publishPost(post.id)
         toast.success("Post published successfully")
       }
-      
+
       loadPosts()
     } catch (error) {
       console.error('Error toggling publish status:', error)
@@ -119,7 +119,11 @@ export function ManagePosts() {
 
   return (
     <div className="bg-card border rounded-lg p-6">
-      <div className="mb-6 flex items-center justify-end border-b border-border/50 pb-4">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="flex items-center gap-2">
+          <BookOpen className="h-5 w-5 text-primary" />
+          Posts Management
+        </h2>
         <Button onClick={() => handleOpenEditor()} className="cursor-pointer">
           <Plus className="mr-2 h-4 w-4" />
           Create Post
@@ -171,7 +175,7 @@ export function ManagePosts() {
                     {formatDate(post.updatedAt)}
                   </td>
                   <td className="py-3 px-4">
-                    <Badge 
+                    <Badge
                       variant={post.isPublished ? "default" : "secondary"}
                       className="cursor-pointer hover-primary-effect"
                       onClick={() => handleTogglePublish(post)}
@@ -230,7 +234,7 @@ export function ManagePosts() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete post "<strong>{deleteDialog.post?.title}</strong>"? 
+              Are you sure you want to delete post "<strong>{deleteDialog.post?.title}</strong>"?
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

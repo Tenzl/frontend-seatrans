@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/modules/auth/context/AuthContext'
 import { authService } from '@/modules/auth/services/authService'
@@ -9,7 +9,6 @@ import { toast } from 'sonner'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
-import { DoubleBezel } from '@/shared/components/service/DoubleBezel'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
@@ -23,20 +22,9 @@ import {
   CommandItem,
   CommandList,
 } from '@/shared/components/ui/command'
-import { inquiryService } from '@/modules/inquiries/services/inquiryService'
-import {
-  buildCargoNameSelectOptions,
-  buildCargoTypeSelectOptions,
-  CARGO_NAME_OTHER,
-  isTallyFeeEligibleCargoType,
-  type CargoSelectOption,
-} from '@/modules/gallery/shippingAgencyCargoCatalog'
-import {
-  commodityService,
-  type Commodity,
-} from '@/modules/gallery/services/commodityService'
-import { portService, type Port } from '@/modules/logistics/services/portService'
-import { buildPortOfCallSelectOptions } from '@/modules/logistics/shippingAgencyPortCatalog'
+import { API_CONFIG } from '@/shared/config/api.config'
+
+const API_BASE_URL = API_CONFIG.API_URL
 
 export interface FormField {
   id: string
@@ -45,7 +33,6 @@ export interface FormField {
   placeholder?: string
   required?: boolean
   options?: string[]
-  selectOptions?: CargoSelectOption[]
   gridSpan?: 1 | 2
   identity?: boolean
   helperText?: string
@@ -63,43 +50,26 @@ export interface InquiryPayload {
   notes: string
 }
 
-const PORT_AREA_BY_PORT_FIELD: Record<string, string> = {
-  portOfCall: 'portArea',
-  loadingPort: 'loadingArea',
-  dischargingPort: 'dischargingArea',
-}
-
-function getPortAreaFieldId(portFieldId: string, fields: FormField[]): string | null {
-  const areaId = PORT_AREA_BY_PORT_FIELD[portFieldId]
-  if (!areaId) return null
-  if (!fields.some((f) => f.id === areaId && f.type === 'select')) return null
-  return areaId
-}
-
 function ComboboxSelect({
   id,
   value,
   onChange,
   options,
-  selectOptions,
   placeholder,
   disabled,
-  enableSearch = true,
+
 }: {
   id: string
   value: string
   onChange: (v: string) => void
   options?: string[]
-  selectOptions?: CargoSelectOption[]
   placeholder?: string
   disabled?: boolean
   enableSearch?: boolean
 }) {
   const [open, setOpen] = useState(false)
-  const normalizedOptions: CargoSelectOption[] =
-    selectOptions ??
-    (options || []).map((opt) => ({ label: opt, value: opt }))
-  const selected = normalizedOptions.find((opt) => opt.value === (value || ''))
+  const normalizedOptions = (options || []).map(opt => ({ label: opt, value: opt.toLowerCase() }))
+  const selected = normalizedOptions.find(opt => opt.value === (value || '').toLowerCase())
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -161,18 +131,13 @@ export function FormSection({
   }
 }) {
   const [formData, setFormData] = useState<Record<string, string>>({})
-  const [shippingCargoCatalog, setShippingCargoCatalog] = useState<Commodity[]>([])
-  const [isLoadingShippingCargo, setIsLoadingShippingCargo] = useState(false)
-  const [portsByField, setPortsByField] = useState<Record<string, Port[]>>({})
-  const [isLoadingPortsByField, setIsLoadingPortsByField] = useState<Record<string, boolean>>({})
-  const portsByAreaCacheRef = useRef<Map<string, Port[]>>(new Map())
   const [submitting, setSubmitting] = useState(false)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const { user, isAuthenticated, profileComplete } = useAuth()
   // User fields we may want to preserve on reset
   const userFieldIds = ['fullName', 'company', 'email', 'phone']
-  
+
   // Port fields now free-text; no province/port loading needed
 
   // Flatten sections into fields if sections are provided (no identity fields injected)
@@ -184,200 +149,6 @@ export function FormSection({
   }, [form.sections, form.fields])
 
   const otherFields = allFields
-  const isShippingAgencyForm = form.serviceTypeSlug === 'shipping-agency'
-
-  useEffect(() => {
-    if (!isShippingAgencyForm || !form.serviceTypeId) {
-      setShippingCargoCatalog([])
-      return
-    }
-    let cancelled = false
-    setIsLoadingShippingCargo(true)
-    commodityService
-      .getCommoditiesByServiceType(form.serviceTypeId)
-      .then((rows) => {
-        if (!cancelled) setShippingCargoCatalog(rows)
-      })
-      .catch(() => {
-        if (!cancelled) setShippingCargoCatalog([])
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoadingShippingCargo(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [isShippingAgencyForm, form.serviceTypeId])
-
-  const portAreaBindings = useMemo(() => {
-    const portAreaPairs: Array<{ portId: string; areaId: string }> = [
-      { portId: 'portOfCall', areaId: 'portArea' },
-      { portId: 'loadingPort', areaId: 'loadingArea' },
-      { portId: 'dischargingPort', areaId: 'dischargingArea' },
-    ]
-
-    return portAreaPairs
-      .filter(({ portId, areaId }) => {
-        const hasPort = allFields.some((f) => f.id === portId && f.type === 'port')
-        const hasArea = allFields.some((f) => f.id === areaId && f.type === 'select')
-        return hasPort && hasArea
-      })
-      .map(({ portId, areaId }) => ({
-        portId,
-        area: (formData[areaId] || '').trim(),
-      }))
-  }, [allFields, formData.portArea, formData.loadingArea, formData.dischargingArea])
-
-  useEffect(() => {
-    if (portAreaBindings.length === 0) return
-
-    let cancelled = false
-
-    portAreaBindings.forEach(({ portId, area }) => {
-      if (!area) {
-        setPortsByField((prev) => ({ ...prev, [portId]: [] }))
-        setIsLoadingPortsByField((prev) => ({ ...prev, [portId]: false }))
-      }
-    })
-
-    const uniqueAreas = [...new Set(portAreaBindings.map((binding) => binding.area).filter(Boolean))]
-
-    uniqueAreas.forEach((area) => {
-      const portIdsForArea = portAreaBindings
-        .filter((binding) => binding.area === area)
-        .map((binding) => binding.portId)
-
-      const cached = portsByAreaCacheRef.current.get(area)
-      if (cached) {
-        setPortsByField((prev) => {
-          const next = { ...prev }
-          portIdsForArea.forEach((portId) => {
-            next[portId] = cached
-          })
-          return next
-        })
-        setIsLoadingPortsByField((prev) => {
-          const next = { ...prev }
-          portIdsForArea.forEach((portId) => {
-            next[portId] = false
-          })
-          return next
-        })
-        return
-      }
-
-      portIdsForArea.forEach((portId) => {
-        setIsLoadingPortsByField((prev) => ({ ...prev, [portId]: true }))
-      })
-
-      portService
-        .getPortsByArea(area)
-        .then((rows) => {
-          if (cancelled) return
-          portsByAreaCacheRef.current.set(area, rows)
-          setPortsByField((prev) => {
-            const next = { ...prev }
-            portIdsForArea.forEach((portId) => {
-              next[portId] = rows
-            })
-            return next
-          })
-        })
-        .catch(() => {
-          if (!cancelled) {
-            setPortsByField((prev) => {
-              const next = { ...prev }
-              portIdsForArea.forEach((portId) => {
-                next[portId] = []
-              })
-              return next
-            })
-          }
-        })
-        .finally(() => {
-          if (!cancelled) {
-            setIsLoadingPortsByField((prev) => {
-              const next = { ...prev }
-              portIdsForArea.forEach((portId) => {
-                next[portId] = false
-              })
-              return next
-            })
-          }
-        })
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [portAreaBindings])
-
-  const resolvedFields = useMemo(() => {
-    const portOptionsByField: Record<string, CargoSelectOption[] | undefined> = {}
-    Object.entries(portsByField).forEach(([fieldId, ports]) => {
-      if (ports?.length) portOptionsByField[fieldId] = buildPortOfCallSelectOptions(ports)
-    })
-
-    if (!isShippingAgencyForm) {
-      return allFields.map((field) => {
-        if (field.type === 'port' && getPortAreaFieldId(field.id, allFields)) {
-          return {
-            ...field,
-            selectOptions: portOptionsByField[field.id] ?? [],
-            options: undefined,
-          }
-        }
-        if (field.type === 'port' && portOptionsByField[field.id]?.length) {
-          return { ...field, selectOptions: portOptionsByField[field.id], options: undefined }
-        }
-        return field
-      })
-    }
-
-    const cargoTypeOptions = buildCargoTypeSelectOptions(shippingCargoCatalog)
-    const cargoNameOptions = formData.cargoType
-      ? [
-          ...buildCargoNameSelectOptions(shippingCargoCatalog, formData.cargoType),
-          { value: CARGO_NAME_OTHER, label: 'Other (specify)' },
-        ]
-      : []
-
-    return allFields.map((field) => {
-      if (field.id === 'cargoType' && cargoTypeOptions.length > 0) {
-        return { ...field, selectOptions: cargoTypeOptions, options: undefined }
-      }
-      if (field.id === 'cargoName' && cargoNameOptions.length > 0) {
-        return { ...field, selectOptions: cargoNameOptions, options: undefined }
-      }
-      if (field.type === 'port' && getPortAreaFieldId(field.id, allFields)) {
-        return {
-          ...field,
-          selectOptions: portOptionsByField[field.id] ?? [],
-          options: undefined,
-        }
-      }
-      if (field.type === 'port' && portOptionsByField[field.id]?.length) {
-        return { ...field, selectOptions: portOptionsByField[field.id], options: undefined }
-      }
-      return field
-    })
-  }, [allFields, isShippingAgencyForm, shippingCargoCatalog, portsByField, formData.cargoType])
-
-  const resolvedFieldById = useMemo(() => {
-    const map = new Map<string, FormField>()
-    for (const field of resolvedFields) {
-      map.set(field.id, field)
-    }
-    return map
-  }, [resolvedFields])
-
-  const resolvedSections = useMemo(() => {
-    if (!form.sections?.length) return null
-    return form.sections.map((section) => ({
-      ...section,
-      fields: section.fields.map((field) => resolvedFieldById.get(field.id) ?? field),
-    }))
-  }, [form.sections, resolvedFieldById])
 
   useEffect(() => {
     const initial: Record<string, string> = {}
@@ -398,20 +169,7 @@ export function FormSection({
   // Port fields are free-text; no province/port loading needed
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => {
-      const next = { ...prev, [field]: value }
-      if (field === 'portArea' && prev.portArea !== value) next.portOfCall = ''
-      if (field === 'loadingArea' && prev.loadingArea !== value) next.loadingPort = ''
-      if (field === 'dischargingArea' && prev.dischargingArea !== value) next.dischargingPort = ''
-      if (field === 'cargoType' && isShippingAgencyForm && prev.cargoType !== value) {
-        next.cargoName = ''
-        next.cargoNameOther = ''
-      }
-      if (field === 'cargoName' && value !== CARGO_NAME_OTHER) {
-        next.cargoNameOther = ''
-      }
-      return next
-    })
+    setFormData(prev => ({ ...prev, [field]: value }))
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -467,6 +225,17 @@ export function FormSection({
     const isFreight = serviceTypeSlug === 'freight-forwarding'
     const isLogistics = serviceTypeSlug === 'total-logistics'
 
+    const normalizeCargoTypeCode = (value?: string) =>
+      (value || '')
+        .trim()
+        .toUpperCase()
+        .replace(/[\s-]+/g, '_')
+
+    const isTallyFeeEligibleCargo = (value?: string) => {
+      const normalized = normalizeCargoTypeCode(value)
+      return normalized.includes('IN_BAGS') || normalized.includes('EQUIPMENT')
+    }
+
     // Map to backend DTO shape for shipping agency
     const shippingAgencyPayload = isShippingAgency
       ? {
@@ -492,9 +261,7 @@ export function FormSection({
           portOfCall: formData.portOfCall,
           dischargeLoadingLocation: formData.dischargeLoadingLocation,
           boatHireAmount: formData.dischargeLoadingLocation === 'Anchorage' ? toDecimal(formData.boatHireAmount) : null,
-          tallyFeeAmount: isTallyFeeEligibleCargoType(formData.cargoType)
-            ? toDecimal(formData.tallyFeeAmount)
-            : null,
+          tallyFeeAmount: isTallyFeeEligibleCargo(formData.cargoType) ? toDecimal(formData.tallyFeeAmount) : null,
           transportLs: toDecimal(formData.transportLs),
           transportQuarantine: toDecimal(formData.transportQuarantine),
         }
@@ -565,14 +332,22 @@ export function FormSection({
       setSubmitError(null)
       setSubmitMessage(null)
       try {
-        const body = shippingAgencyPayload || charteringPayload || freightPayload || logisticsPayload
+            const body = shippingAgencyPayload || charteringPayload || freightPayload || logisticsPayload
 
         if (!body) {
           setSubmitError('Invalid service type configuration.')
           return
         }
 
-        const response = await inquiryService.submitJson(body)
+        const response = await fetch(`${API_BASE_URL}${form.submitPath || '/inquiries'}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...authService.getAuthHeader(),
+          },
+          body: JSON.stringify(body),
+        })
+
         const result = await response.json().catch(() => ({}))
 
         if (!response.ok) {
@@ -634,7 +409,7 @@ export function FormSection({
         />
       )
     }
-    
+
     if (field.type === 'select') {
       return (
         <ComboboxSelect
@@ -642,25 +417,13 @@ export function FormSection({
           value={value}
           onChange={v => onChange(field.id, v)}
           options={field.options}
-          selectOptions={field.selectOptions}
-          placeholder={
-            field.id === 'cargoType' || field.id === 'cargoName'
-              ? isLoadingShippingCargo
-                ? 'Loading catalog…'
-                : field.placeholder
-              : field.placeholder
-          }
-          disabled={
-            disabled ||
-            (isShippingAgencyForm &&
-              (field.id === 'cargoType' || field.id === 'cargoName') &&
-              (isLoadingShippingCargo || shippingCargoCatalog.length === 0))
-          }
+          placeholder={field.placeholder}
+          disabled={disabled}
           enableSearch={field.enableSearch}
         />
       )
     }
-    
+
     if (field.type === 'date') {
       return (
         <DatePicker
@@ -673,12 +436,12 @@ export function FormSection({
         />
       )
     }
-    
+
     if (field.type === 'mv-prefix') {
       // Special handling for MV prefix that cannot be deleted
       const mvPrefix = 'MV '
       const displayValue = value.startsWith(mvPrefix) ? value : mvPrefix + value
-      
+
       return (
         <Input
           id={field.id}
@@ -707,46 +470,21 @@ export function FormSection({
         />
       )
     }
-    
-    if (field.type === 'port') {
-      const areaFieldId = getPortAreaFieldId(field.id, allFields)
-      const areaValue = areaFieldId ? (formData[areaFieldId] || '').trim() : ''
-      const isAreaDriven = Boolean(areaFieldId)
-      const isLoadingPorts = Boolean(isLoadingPortsByField[field.id])
-      const areaNotSelected = isAreaDriven && areaValue === ''
 
-      if (field.selectOptions !== undefined) {
-        return (
-          <ComboboxSelect
-            id={field.id}
-            value={value}
-            onChange={(v) => onChange(field.id, v)}
-            selectOptions={field.selectOptions}
-            placeholder={
-              areaNotSelected
-                ? 'Select area first'
-                : isLoadingPorts
-                  ? 'Loading ports…'
-                  : field.placeholder || 'Select port'
-            }
-            disabled={disabled || areaNotSelected || isLoadingPorts}
-            enableSearch
-          />
-        )
-      }
+    if (field.type === 'port') {
       return (
         <Input
           id={field.id}
           value={value}
           onChange={e => onChange(field.id, e.target.value)}
           required={field.required}
-          placeholder={areaNotSelected ? 'Select area first' : (field.placeholder || 'Enter port')}
-          disabled={disabled || areaNotSelected}
+          placeholder={field.placeholder || 'Enter port'}
+          disabled={disabled}
           className="bg-white"
         />
       )
     }
-    
+
     const isNumber = field.type === 'number'
     const numberRegex = /^\d*(\.\d{0,2})?$/
 
@@ -806,30 +544,19 @@ export function FormSection({
   }, [formData, allFields])
 
   return (
-    <section id="quote-form" className="py-16 md:py-24 scroll-mt-24">
-      <div className="container max-w-7xl">
+    <section id="quote-form" className="py-16 md:py-24">
+      <div className="container">
         <div className="max-w-3xl mx-auto">
-          {/* Section header — consistent asymmetric style */}
-          <div className="mb-10 grid gap-5 md:grid-cols-[1fr_1.5fr] md:items-end">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary mb-3">
-                Inquiry
-              </p>
-              <h2 className="landing-section-title">
-                {form.sectionTitle}
-              </h2>
-              {form.badgeText && (
-                <Badge className="mt-3 rounded-full px-3 py-1">{form.badgeText}</Badge>
-              )}
-            </div>
-            <p className="landing-section-lead max-w-[52ch]">
+          <div className="text-center mb-12">
+            {form.badgeText && <Badge className="mb-4">{form.badgeText}</Badge>}
+            <h2 className="fade-rise text-3xl md:text-4xl font-bold">{form.sectionTitle}</h2>
+            <p className="text-muted-foreground mt-4 fade-rise" style={{ animationDelay: '90ms' }}>
               {form.sectionDescription}
             </p>
           </div>
 
-          <DoubleBezel>
-            <Card className="border-0 shadow-none bg-transparent">
-            <CardContent className="p-8 md:p-10">
+          <Card>
+            <CardContent className="p-8">
               {form.fieldsError && (
                 <Alert variant="destructive" className="mb-6">
                   <AlertTitle>Unable to load form</AlertTitle>
@@ -882,12 +609,12 @@ export function FormSection({
                     Loading form fields...
                   </div>
                 )}
-                
+
                 {/* Render sections if provided */}
-                {resolvedSections && resolvedSections.length > 0 ? (
+                {form.sections && form.sections.length > 0 ? (
                   <>
                     {/* Render each section */}
-                    {resolvedSections.map((section, sectionIdx) => {
+                    {form.sections.map((section, sectionIdx) => {
                       const sectionFields = section.fields
                       if (sectionFields.length === 0) return null
 
@@ -906,10 +633,10 @@ export function FormSection({
                               // Check if field should be shown based on showWhen condition
                               if (field.showWhen) {
                                 const conditionValue = formData[field.showWhen.field]
-                                const expectedValues = Array.isArray(field.showWhen.value) 
-                                  ? field.showWhen.value 
+                                const expectedValues = Array.isArray(field.showWhen.value)
+                                  ? field.showWhen.value
                                   : [field.showWhen.value]
-                                const shouldShow = expectedValues.some(v => 
+                                const shouldShow = expectedValues.some(v =>
                                   conditionValue?.toLowerCase() === v.toLowerCase()
                                 )
                                 if (!shouldShow) return null
@@ -977,7 +704,6 @@ export function FormSection({
               </form>
             </CardContent>
           </Card>
-          </DoubleBezel>
         </div>
       </div>
     </section>

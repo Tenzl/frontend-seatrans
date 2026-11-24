@@ -4,8 +4,8 @@
 export function calculateCentroid(geometry: any): [number, number] {
   if (!geometry) return [0, 0];
 
-  const coordinates = geometry.coordinates;
-  const type = geometry.type;
+  let coordinates = geometry.coordinates;
+  let type = geometry.type;
 
   if (type === 'Polygon') {
     return getCoastalPoint(coordinates);
@@ -13,7 +13,7 @@ export function calculateCentroid(geometry: any): [number, number] {
     // Find the largest polygon (main landmass)
     let maxPoints = 0;
     let mainPolygon = coordinates[0];
-    
+
     for (const poly of coordinates) {
         if (poly[0].length > maxPoints) {
             maxPoints = poly[0].length;
@@ -29,14 +29,14 @@ export function calculateCentroid(geometry: any): [number, number] {
 function getCoastalPoint(coordinates: any[]): [number, number] {
   // coordinates[0] is the outer ring (coastline)
   const ring = coordinates[0];
-  
+
   // For coastal provinces, we want a point on the eastern or southern edge
   // Find the point with maximum longitude (eastmost) or minimum latitude (southmost)
   // This approximates a coastal location for Vietnam's geography
-  
+
   let eastmostPoint = ring[0];
   let maxLon = ring[0][0];
-  
+
   for (let i = 1; i < ring.length; i++) {
     const lon = ring[i][0];
     if (lon > maxLon) {

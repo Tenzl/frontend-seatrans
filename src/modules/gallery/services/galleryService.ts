@@ -1,28 +1,53 @@
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
 import type { ApiResponse, PageResponse } from '@/shared/types/api.types'
-import { commodityService, type Commodity } from '@/modules/gallery/services/commodityService'
 
-/** Gallery image shape returned by backend2.0 (flat DTO). */
-export interface GalleryImageApiDto {
+interface Province {
   id: number
-  imageUrl: string
-  cloudinaryPublicId?: string | null
-  uploadedAt?: string
-  uploadedById?: number
-  serviceTypeId: number
-  commodityId: number
-  commodityName: string
-  provinceId?: number | null
-  provinceName?: string | null
-  portId?: number | null
-  portName?: string | null
-  provinceCode?: string | null
-  createdAt?: string
-  updatedAt?: string
+  name: string
 }
 
-export interface GalleryImage {
+interface Port {
+  id: number
+  name: string
+}
+
+interface ServiceType {
+  id: number
+  name: string
+  displayName?: string
+}
+
+interface ImageType {
+  id: number
+  displayName: string
+  requiredImageCount: number
+}
+
+interface GalleryImageRaw {
+  id: number
+  imageUrl: string
+  province: Province
+  port: Port
+  serviceType: ServiceType
+  imageType: ImageType
+  uploadedBy?: number
+  uploadedAt: string
+}
+
+interface PublicGalleryImageRaw {
+  id: number
+  imageUrl: string
+  portName: string
+  provinceName: string
+  imageTypeName: string
+  serviceTypeId: number
+  serviceTypeKey?: string
+  serviceTypeDisplayName?: string
+  serviceTypeName?: string
+}
+
+interface GalleryImage {
   id: number
   fileName: string
   url: string
@@ -32,59 +57,76 @@ export interface GalleryImage {
   portName: string
   serviceTypeId?: number
   serviceTypeName: string
-  commodityId?: number
-  commodityName: string
+  imageTypeId?: number
+  imageTypeName: string
   uploadedBy?: number
   uploadedAt?: string
 }
 
-export interface UpdateImageRequest {
+interface UpdateImageRequest {
   provinceId?: number
   portId?: number
   serviceTypeId?: number
-  commodityId?: number
+  imageTypeId?: number
 }
 
-const toGalleryImage = (raw: GalleryImageApiDto): GalleryImage => ({
+// Transform raw backend response to flat structure
+const transformGalleryImage = (raw: GalleryImageRaw): GalleryImage => ({
   id: raw.id,
   fileName: raw.imageUrl.split('/').pop() || '',
   url: raw.imageUrl,
-  provinceId: raw.provinceId ?? undefined,
-  provinceName: raw.provinceName ?? '',
-  portId: raw.portId ?? undefined,
-  portName: raw.portName ?? '',
-  serviceTypeId: raw.serviceTypeId,
-  serviceTypeName: '',
-  commodityId: raw.commodityId,
-  commodityName: raw.commodityName,
-  uploadedBy: raw.uploadedById,
+  provinceId: raw.province.id,
+  provinceName: raw.province.name,
+  portId: raw.port.id,
+  portName: raw.port.name,
+  serviceTypeId: raw.serviceType.id,
+  serviceTypeName: raw.serviceType.displayName || raw.serviceType.name,
+  imageTypeId: raw.imageType.id,
+  imageTypeName: raw.imageType.displayName,
+  uploadedBy: raw.uploadedBy,
   uploadedAt: raw.uploadedAt,
 })
 
+const transformPublicGalleryImage = (raw: PublicGalleryImageRaw): GalleryImage => ({
+  id: raw.id,
+  fileName: raw.imageUrl.split('/').pop() || '',
+  url: raw.imageUrl,
+  provinceName: raw.provinceName,
+  portName: raw.portName,
+  serviceTypeId: raw.serviceTypeId,
+  serviceTypeName: raw.serviceTypeDisplayName || raw.serviceTypeName || raw.serviceTypeKey || '',
+  imageTypeName: raw.imageTypeName,
+})
+
 export const galleryService = {
-  getCommoditiesByServiceType: async (
-    serviceTypeId: number,
-    _signal?: AbortSignal,
-  ): Promise<Commodity[]> => {
-    return commodityService.getCommoditiesByServiceType(serviceTypeId)
+  // Get image types by service type
+  getImageTypesByServiceType: async (serviceTypeId: number, signal?: AbortSignal): Promise<ImageType[]> => {
+    const response = await apiClient.get<ApiResponse<ImageType[]>>(
+      API_CONFIG.IMAGE_TYPES.BY_SERVICE_TYPE(serviceTypeId),
+      { signal }
+    )
+
+    const result = await response.json()
+    return result.data
   },
 
+  // Public endpoint - no authentication required
   getPublicImages: async (
     serviceTypeId?: number,
-    commodityId?: number,
+    imageTypeId?: number,
     page: number = 0,
     size: number = 100,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<GalleryImage[]> => {
     const params = new URLSearchParams()
     if (serviceTypeId) params.append('serviceTypeId', serviceTypeId.toString())
-    if (commodityId) params.append('commodityId', commodityId.toString())
+    if (imageTypeId) params.append('imageTypeId', imageTypeId.toString())
     params.append('page', page.toString())
     params.append('size', size.toString())
 
-    const response = await apiClient.get<ApiResponse<PageResponse<GalleryImageApiDto>>>(
+    const response = await apiClient.get<ApiResponse<PageResponse<PublicGalleryImageRaw>>>(
       `${API_CONFIG.GALLERY.PUBLIC_IMAGES}?${params.toString()}`,
-      { signal, skipAuth: true },
+      { signal, skipAuth: true }
     )
 
     if (!response.ok) {
@@ -101,34 +143,35 @@ export const galleryService = {
       return []
     }
 
-    return content.map(toGalleryImage)
+    return content.map(transformPublicGalleryImage)
   },
 
+  // Admin endpoint - requires auth
   getAllImages: async (
     provinceId?: number,
     portId?: number,
     serviceTypeId?: number,
-    commodityId?: number,
+    imageTypeId?: number,
     page: number = 0,
-    size: number = 20,
+    size: number = 20
   ): Promise<PageResponse<GalleryImage>> => {
     const params = new URLSearchParams()
     if (provinceId) params.append('provinceId', provinceId.toString())
     if (portId) params.append('portId', portId.toString())
     if (serviceTypeId) params.append('serviceTypeId', serviceTypeId.toString())
-    if (commodityId) params.append('commodityId', commodityId.toString())
+    if (imageTypeId) params.append('imageTypeId', imageTypeId.toString())
     params.append('page', page.toString())
     params.append('size', size.toString())
 
-    const response = await apiClient.get<ApiResponse<PageResponse<GalleryImageApiDto>>>(
-      `${API_CONFIG.GALLERY.ADMIN_BASE}?${params.toString()}`,
+    const response = await apiClient.get<ApiResponse<PageResponse<GalleryImageRaw>>>(
+      `${API_CONFIG.GALLERY.ADMIN_IMAGES}?${params.toString()}`
     )
 
     const result = await response.json()
 
     return {
       ...result.data,
-      content: result.data.content.map(toGalleryImage),
+      content: result.data.content.map(transformGalleryImage),
     }
   },
 
@@ -137,60 +180,33 @@ export const galleryService = {
     provinceId: number,
     portId: number,
     serviceTypeId: number,
-    commodityId: number,
+    imageTypeId: number
   ): Promise<GalleryImage> => {
+    // Upload via backend CloudinaryService endpoint
     const formData = new FormData()
     formData.append('file', file)
     formData.append('province_id', provinceId.toString())
     formData.append('port_id', portId.toString())
     formData.append('service_type_id', serviceTypeId.toString())
-    formData.append('commodity_id', commodityId.toString())
+    formData.append('image_type_id', imageTypeId.toString())
 
-    const response = await apiClient.post<ApiResponse<GalleryImageApiDto>>(
-      API_CONFIG.GALLERY.ADMIN_BASE,
-      formData,
+    const response = await apiClient.post<ApiResponse<GalleryImageRaw>>(
+      `${API_CONFIG.GALLERY.ADMIN_IMAGES}`,
+      formData
     )
 
     const result = await response.json()
-    return toGalleryImage(result.data)
-  },
-
-  uploadMultiple: async (
-    files: File[],
-    provinceId: number,
-    portId: number,
-    serviceTypeId: number,
-    commodityId: number,
-  ): Promise<GalleryImage[]> => {
-    const formData = new FormData()
-    files.forEach((file) => formData.append('files', file))
-    formData.append('province_id', provinceId.toString())
-    formData.append('port_id', portId.toString())
-    formData.append('service_type_id', serviceTypeId.toString())
-    formData.append('commodity_id', commodityId.toString())
-
-    const response = await apiClient.post<ApiResponse<GalleryImageApiDto[]>>(
-      API_CONFIG.GALLERY.ADMIN_BATCH,
-      formData,
-    )
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      throw new Error((error as { message?: string }).message || 'Upload failed')
-    }
-
-    const result = await response.json()
-    return Array.isArray(result.data) ? result.data.map(toGalleryImage) : []
+    return transformGalleryImage(result.data)
   },
 
   updateImage: async (id: number, data: UpdateImageRequest): Promise<GalleryImage> => {
-    const response = await apiClient.put<ApiResponse<GalleryImageApiDto>>(
+    const response = await apiClient.put<ApiResponse<GalleryImageRaw>>(
       API_CONFIG.GALLERY.ADMIN_BY_ID(id),
-      data,
+      data
     )
 
     const result = await response.json()
-    return toGalleryImage(result.data)
+    return transformGalleryImage(result.data)
   },
 
   deleteImage: async (id: number): Promise<void> => {
@@ -202,4 +218,4 @@ export const galleryService = {
   },
 }
 
-export type { PageResponse }
+export type { GalleryImage, UpdateImageRequest, PageResponse }

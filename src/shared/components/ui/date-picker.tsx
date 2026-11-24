@@ -23,7 +23,7 @@ interface DatePickerProps {
   className?: string
 }
 
-export const DatePicker = React.memo(function DatePicker({
+export function DatePicker({
   id,
   value,
   onChange,
@@ -71,6 +71,7 @@ export const DatePicker = React.memo(function DatePicker({
       <PopoverTrigger asChild>
         <Button
           id={id}
+          aria-required={required}
           type="button"
           variant="outline"
           className={cn(
@@ -106,12 +107,4 @@ export const DatePicker = React.memo(function DatePicker({
       </PopoverContent>
     </Popover>
   )
-},
-(prev, next) =>
-  prev.value === next.value &&
-  prev.disabled === next.disabled &&
-  prev.id === next.id &&
-  prev.placeholder === next.placeholder &&
-  prev.className === next.className &&
-  prev.required === next.required
-)
+}

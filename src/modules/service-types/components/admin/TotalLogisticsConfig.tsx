@@ -5,130 +5,119 @@ interface TotalLogisticsProps {
   onNavigateHome?: () => void
 }
 
+// Configuration for Freight Forwarding & Logistics Service
 export function TotalLogistics({ onNavigateHome }: TotalLogisticsProps) {
   const config: ServiceTemplateProps = {
-    serviceName: 'Total Logistics',
+    serviceName: 'Freight Forwarding & Logistics',
     serviceIcon: Package,
     onNavigateHome,
-    serviceTypeId: 4,
+    serviceTypeId: 4, // Logistics ID
 
     hero: {
-      subtitle: 'Total Logistics',
-      title: 'Door-to-Door Supply Chain — Sea, Air, Road & Warehouse',
-      description:
-        "Seatrans handles the complete journey: booking, customs, inland transport, warehousing, and final delivery. One contract, one contact, zero hand-off gaps.",
-      image: 'https://picsum.photos/seed/seatrans-page-logistics/1600/900',
+      title: 'Freight Forwarding & Logistics',
+      description: "",
+      // description: 'SEATRANS\' professional team with their knowledge & experience are able to perform the full range of services: Accepting and Delivering consignments from Door to Door by Sea, Air, Land (FCL/LCL), Multimodal transportation and other total logistics services.',
+      image: 'https://images.unsplash.com/photo-1759826350352-c5b0b77729bd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsb2dpc3RpY3MlMjB3YXJlaG91c2UlMjBmcmVpZ2h0JTIwZm9yd2FyZGluZ3xlbnwxfHx8fDE3NjUwNzQzMjV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
     },
 
     contacts: {
       showEmergencyBadge: false,
-      sectionTitle: 'Total Logistics Team',
-      sectionDescription:
-        'Our logistics coordinators manage your shipment from origin booking to delivered receipt. Reach them directly for quotes, status updates, or shipment exceptions.',
+      sectionTitle: 'Contact our Logistics Team',
+      sectionDescription: 'Our freight forwarding experts are ready to provide you with the best rates and solutions',
       teams: [
         {
           title: 'Freight Forwarding',
           subtitle: 'Door-to-Door Solutions',
           icon: Package,
           contacts: [
-            { name: 'Ta Thi Thao Ly', mobile: '+84.905.812.679' },
+            { name: 'TA THI THAO LY', mobile: '+84.905.812.679' }
           ],
-          email: 'ly.tathithao@seatrans.com.vn',
+          email: 'ly.tathithao@seatrans.com.vn'
         },
         {
           title: 'Total Logistics',
-          subtitle: 'Supply Chain & Warehousing',
+          subtitle: 'Complete Supply Chain',
           icon: Warehouse,
           contacts: [
-            { name: 'Do Duy An', mobile: '+84.935.015.679' },
+            { name: 'DO DUY AN', mobile: '+84.935015679' }
           ],
-          email: 'total.logistics@seatrans.com.vn',
-        },
+          email: 'total.logistics@seatrans.com.vn'
+        }
       ],
       stats: [
-        { icon: Globe, value: '53', label: 'Countries' },
-        { icon: Ship, value: '9.8K+', label: 'TEUs / year' },
-        { icon: Clock, value: '24/7', label: 'Shipment support' },
-        { icon: Truck, value: '98.4%', label: 'On-time delivery' },
-      ],
+        { icon: Globe, value: '50+', label: 'Countries' },
+        { icon: Ship, value: '10K+', label: 'TEUs/Year' },
+        { icon: Clock, value: '24/7', label: 'Support' },
+        { icon: Truck, value: '99%', label: 'On-Time' }
+      ]
     },
 
     services: {
-      sectionTitle: 'End-to-End Logistics Services',
-      sectionDescription:
-        "From factory floor to final warehouse — we manage every link in your supply chain so you can focus on your business.",
+      sectionTitle: 'Comprehensive Logistics Services',
+      sectionDescription: 'Full range of freight forwarding and logistics solutions tailored to your needs',
       items: [
         {
-          name: 'Global Ocean Freight (FCL / LCL)',
-          description:
-            'Full Container Load and Less-than-Container Load bookings at competitive rates, covering major Asia-Europe and trans-Pacific trade lanes.',
-          icon: Ship,
+          name: 'Global Freight Forwarding (FCL/LCL)',
+          description: 'Full Container Load and Less than Container Load services worldwide',
+          icon: Ship
         },
         {
-          name: 'Port-to-Port & Door-to-Door',
-          description:
-            'Flexible origin and destination scope by sea and air — with accepted bookings and carrier confirmation in hand.',
-          icon: Globe,
+          name: 'Port to Port & Door-to-Door',
+          description: 'Flexible delivery options by Air & Sea with accepted bookings',
+          icon: Globe
         },
         {
-          name: 'Inland Trucking & Ex-Works Pickup',
-          description:
-            'Factory pickup and last-mile delivery across Vietnam and neighbouring countries, including refrigerated transport.',
-          icon: Truck,
+          name: 'Inland Trucking',
+          description: 'Ex Work pick-up & delivery services across the region',
+          icon: Truck
         },
         {
           name: 'Warehousing & Packing',
-          description:
-            'Bonded and commercial storage facilities with pick-and-pack, labelling, repackaging, and palletisation services.',
-          icon: Warehouse,
+          description: 'Secure storage facilities and professional packing services',
+          icon: Warehouse
         },
         {
-          name: 'Full Customs Formality',
-          description:
-            'Licensed brokerage for import and export: HS classification, duty calculation, permit applications, and post-clearance audit support.',
-          icon: FileCheck,
+          name: 'Full Customs Formality Services',
+          description: 'Complete customs clearance and documentation support',
+          icon: FileCheck
         },
         {
-          name: 'Multimodal & Air Freight',
-          description:
-            'Integrated sea-air, air-truck, and rail solutions for time-sensitive or high-value cargo that requires multiple transport modes.',
-          icon: Plane,
-        },
-      ],
+          name: 'Multimodal Transportation',
+          description: 'Integrated sea, air, and land transport solutions',
+          icon: Plane
+        }
+      ]
     },
 
     form: {
       badgeText: 'Get Best Rates',
-      sectionTitle: 'Logistics Rate Request',
-      sectionDescription:
-        "Describe your shipment below and our team will come back with a competitive door-to-door rate within one business day.",
-      submitButtonText: 'Request Quote',
+      sectionTitle: 'Request a quote',
+      sectionDescription: 'Hello Seatrans Logistics, please offer us the best rates for our following shipment details:',
+      submitButtonText: 'Get Quote',
       submitPath: '/inquiries',
       serviceTypeSlug: 'total-logistics',
       fields: [
-        { id: 'loadingArea', label: 'Loading area', type: 'select', required: true, options: ['NORTHERN', 'MIDDLE', 'SOUTHERN'], gridSpan: 1, enableSearch: false },
-        { id: 'loadingPort', label: 'Port of loading', type: 'port', required: true, gridSpan: 1, placeholder: 'Select port of loading' },
-        { id: 'dischargingArea', label: 'Discharging area', type: 'select', required: true, options: ['NORTHERN', 'MIDDLE', 'SOUTHERN'], gridSpan: 1, enableSearch: false },
-        { id: 'dischargingPort', label: 'Port of discharge', type: 'port', required: true, gridSpan: 1, placeholder: 'Select port of discharge' },
-        { id: 'cargoName', label: 'Cargo description', type: 'text', required: true, placeholder: 'e.g. Garment, machinery parts, consumer goods', gridSpan: 2 },
-        { id: 'deliveryTerm', label: 'Delivery term (Incoterms)', type: 'select', required: true, placeholder: 'Select Incoterms', gridSpan: 1, options: ['CY/CY', 'CY/Door', 'Door/CY', 'Door/Door', 'Port/Port'] },
-        { id: 'container20', label: "20' containers (qty)", type: 'number', placeholder: '0', gridSpan: 1 },
-        { id: 'container40', label: "40' containers (qty)", type: 'number', placeholder: '0', gridSpan: 1 },
-        { id: 'shipmentFrom', label: 'Shipment window — earliest', type: 'date', required: true, gridSpan: 1 },
-        { id: 'shipmentTo', label: 'Shipment window — latest', type: 'date', required: true, gridSpan: 1 },
-        { id: 'additionalInfo', label: 'Additional requirements', type: 'textarea', placeholder: 'Temperature control, insurance needs, special handling, etc.', gridSpan: 2 },
+        { id: 'cargoName', label: 'Cargo name', type: 'text', required: true, placeholder: 'Type of cargo', gridSpan: 2 },
+        { id: 'deliveryTerm', label: 'Delivery term', type: 'select', required: true, placeholder: 'Select delivery term', gridSpan: 1, options: ['CY/CY', 'CY/Door', 'Door/CY', 'Door/Door', 'Port/Port'] },
+        { id: 'container20', label: "Container 20' feet", type: 'number', placeholder: '0 cont', gridSpan: 1 },
+        { id: 'container40', label: "Container 40' feet", type: 'number', placeholder: '0 cont', gridSpan: 1 },
+        { id: 'loadingPort', label: 'Loading port', type: 'port', required: true, gridSpan: 1 },
+        { id: 'dischargingPort', label: 'Discharging port', type: 'port', required: true, gridSpan: 1 },
+        { id: 'shipmentFrom', label: 'SHIPMENT TIME - From date', type: 'date', required: true, gridSpan: 1 },
+        { id: 'shipmentTo', label: 'SHIPMENT TIME - To date', type: 'date', required: true, gridSpan: 1 },
+        { id: 'additionalInfo', label: 'Additional Information', type: 'textarea', placeholder: 'Special requirements, timeline, etc...', gridSpan: 2 }
       ],
       onSubmit: (data) => {
-        console.log('Logistics quote request submitted:', data)
-      },
+        console.log('Freight quote request submitted:', data)
+        // Handle form submission - send to ly.tathithao@seatrans.com.vn or total.logistics@seatrans.com.vn
+      }
     },
 
     gallery: {
       enabled: true,
-      sectionTitle: 'Total Logistics Operations',
-      sectionDescription:
-        'Warehousing, container loading, customs clearance, and delivery runs — our logistics network in action.',
-    },
+      sectionTitle: 'Our Logistics Operations',
+      sectionDescription: 'Door-to-door freight forwarding services across multiple transport modes'
+    }
   }
 
   return <ServiceTemplate {...config} />

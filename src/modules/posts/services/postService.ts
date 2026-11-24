@@ -38,6 +38,18 @@ export interface PostRequest {
   isPublished?: boolean
 }
 
+export interface CloudinaryUploadResponse {
+  secureUrl: string
+  publicId: string
+  url: string
+  format: string
+  bytes: number
+  width: number
+  height: number
+  resourceType: string
+  originalFilename: string
+}
+
 const mapPost = (raw: any): Post => {
   const words = typeof raw?.content === 'string' ? raw.content.split(/\s+/).length : 0
   const readingTime = raw?.readingTime ?? Math.max(1, Math.round(words / 200))
@@ -51,29 +63,10 @@ const mapPost = (raw: any): Post => {
   }
 }
 
-const viewRecordInflight = new Map<number, Promise<number>>()
-
-async function requestRecordPostView(id: number): Promise<number> {
-  const response = await apiClient.post<ApiResponse<{ viewCount: number }>>(
-    API_CONFIG.POSTS.PUBLIC_RECORD_VIEW(id),
-    {},
-    { skipAuth: true },
-  )
-
-  if (!response.ok) {
-    throw new Error('Failed to record post view')
-  }
-
-  const result: ApiResponse<{ viewCount: number }> = await response.json()
-  return result.data?.viewCount ?? 0
-}
-
 export const postService = {
   // Admin endpoints
   getAllPosts: async (): Promise<Post[]> => {
-    const response = await apiClient.get<ApiResponse<Post[]>>(
-      `${API_CONFIG.POSTS.ADMIN_BASE}?limit=100`,
-    )
+    const response = await apiClient.get<ApiResponse<Post[]>>(API_CONFIG.POSTS.ADMIN_BASE)
     const result = await response.json()
     return Array.isArray(result.data) ? result.data.map(mapPost) : []
   },
@@ -117,40 +110,34 @@ export const postService = {
   },
 
   publishPost: async (id: number): Promise<Post> => {
-    const existing = await postService.getPostById(id)
-    return postService.updatePost(id, {
-      title: existing.title,
-      content: existing.content,
-      categoryIds: existing.categories.map((c) => c.id),
-      thumbnailUrl: existing.thumbnailUrl,
-      thumbnailPublicId: existing.thumbnailPublicId,
-      isPublished: true,
-    })
+    const response = await apiClient.post<ApiResponse<Post>>(API_CONFIG.POSTS.PUBLISH(id))
+
+    if (!response.ok) {
+      throw new Error('Failed to publish post')
+    }
+
+    const result: ApiResponse<Post> = await response.json()
+    return mapPost(result.data)
   },
 
   unpublishPost: async (id: number): Promise<Post> => {
-    const existing = await postService.getPostById(id)
-    return postService.updatePost(id, {
-      title: existing.title,
-      content: existing.content,
-      categoryIds: existing.categories.map((c) => c.id),
-      thumbnailUrl: existing.thumbnailUrl,
-      thumbnailPublicId: existing.thumbnailPublicId,
-      isPublished: false,
-    })
+    const response = await apiClient.post<ApiResponse<Post>>(API_CONFIG.POSTS.UNPUBLISH(id))
+
+    if (!response.ok) {
+      throw new Error('Failed to unpublish post')
+    }
+
+    const result: ApiResponse<Post> = await response.json()
+    return mapPost(result.data)
   },
 
   getPublishedPosts: async (category?: string, search?: string): Promise<Post[]> => {
     const params = new URLSearchParams()
-    params.set('page', '0')
-    params.set('size', '100')
     if (category) params.append('category', category)
-    if (search) params.append('q', search)
+    if (search) params.append('search', search)
 
-    const url = `${API_CONFIG.POSTS.PUBLIC_BASE}?${params.toString()}`
-    const response = await apiClient.get<
-      ApiResponse<{ content?: Post[]; items?: Post[] }>
-    >(url, { skipAuth: true })
+    const url = `${API_CONFIG.POSTS.PUBLIC_BASE}${params.toString() ? `?${params.toString()}` : ''}`
+    const response = await apiClient.get<ApiResponse<Post[]>>(url, { skipAuth: true })
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -158,14 +145,13 @@ export const postService = {
       throw new Error(`Failed to fetch published posts: ${response.status} ${response.statusText}`)
     }
 
-    const result = await response.json()
+    const result: ApiResponse<Post[]> = await response.json()
 
     if (!result.success || !result.data) {
       throw new Error(result.message || 'Invalid response from server')
     }
 
-    const rows = result.data.content ?? []
-    return Array.isArray(rows) ? rows.map(mapPost) : []
+    return Array.isArray(result.data) ? result.data.map(mapPost) : []
   },
 
   getPublicPostById: async (id: number): Promise<Post> => {
@@ -177,20 +163,6 @@ export const postService = {
 
     const result: ApiResponse<Post> = await response.json()
     return mapPost(result.data)
-  },
-
-  recordPostView: requestRecordPostView,
-
-  recordPostViewOnce(id: number): Promise<number> {
-    const existing = viewRecordInflight.get(id)
-    if (existing) return existing
-
-    const request = requestRecordPostView(id).finally(() => {
-      viewRecordInflight.delete(id)
-    })
-
-    viewRecordInflight.set(id, request)
-    return request
   },
 
   // alias for clarity with ArticleDetailPage
@@ -212,13 +184,42 @@ export const postService = {
     return Array.isArray(result.data) ? result.data.map(mapPost) : []
   },
 
-  /** Inline base64 for TinyMCE when no post upload API exists on backend2.0 */
-  uploadImage: async (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = () => reject(new Error('Failed to read image file'))
-      reader.readAsDataURL(file)
-    })
+  uploadImage: async (file: File, postId?: number): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    if (postId) {
+      formData.append('postId', postId.toString())
+    }
+
+    const response = await apiClient.post<ApiResponse<string>>(
+      API_CONFIG.POSTS.UPLOAD_IMAGE,
+      formData
+    )
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to upload image')
+    }
+
+    const result: ApiResponse<string> = await response.json()
+    return result.data
+  },
+
+  uploadThumbnail: async (file: File): Promise<CloudinaryUploadResponse> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await apiClient.post<ApiResponse<CloudinaryUploadResponse>>(
+      API_CONFIG.POSTS.UPLOAD_THUMBNAIL,
+      formData
+    )
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to upload thumbnail')
+    }
+
+    const result: ApiResponse<CloudinaryUploadResponse> = await response.json()
+    return result.data
   },
 }

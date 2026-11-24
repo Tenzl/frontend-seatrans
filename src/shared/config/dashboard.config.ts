@@ -1,18 +1,16 @@
 import {
-  LayoutDashboard,
-  FileText,
-  Ship,
-  Package,
-  Users,
-  FolderOpen,
-  BarChart3,
-  Settings,
-  ClipboardList,
-  MessageSquare,
-  Bell,
-  User,
-  PlusCircle,
-  History,
+LayoutDashboard,
+FileText,
+Ship,
+Package,
+Users,
+FolderOpen,
+BarChart3,
+Settings,
+ClipboardList,
+MessageSquare,User,
+PlusCircle,
+History
 } from "lucide-react"
 import { DashboardConfig } from "@/shared/types/dashboard"
 

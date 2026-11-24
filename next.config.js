@@ -1,24 +1,22 @@
 /** @type {import('next').NextConfig} */
-const path = require('path')
-
 const isProd = process.env.NODE_ENV === 'production'
 
-// Backend origin the /api/* proxy forwards to. Server-only (no NEXT_PUBLIC_
-// prefix). In prod set API_PROXY_TARGET to the backend URL (e.g. the Render
-// origin); in dev it defaults to localhost.
+// '/' makes browser requests same-origin; the server proxy still needs a backend.
+const publicApiBase = (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim()
 const explicitProxyTarget =
-  process.env.API_PROXY_TARGET || process.env.NEXT_PUBLIC_API_BASE_URL || ''
-const API_PROXY_TARGET = (explicitProxyTarget || 'http://localhost:8080')
+  (process.env.API_PROXY_TARGET || '').trim() ||
+  (/^https?:\/\//.test(publicApiBase) ? publicApiBase : '')
+
+if (isProd && !explicitProxyTarget) {
+  throw new Error('API_PROXY_TARGET is required in production (backend HTTPS origin).')
+}
+
+const apiProxyTarget = (explicitProxyTarget || 'http://127.0.0.1:8080')
   .replace(/\/+$/, '')
   .replace(/\/api(?:\/v\d+)?$/, '')
 
 const nextConfig = {
-  // Repo root also has package-lock.json (shadcn); app + deps live in frontend/.
-  outputFileTracingRoot: path.join(__dirname),
   reactStrictMode: true,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   transpilePackages: [
     'zod',
     '@tanstack/react-query',
@@ -30,7 +28,7 @@ const nextConfig = {
   ],
   images: {
     formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 2592000,
+    minimumCacheTTL: 60,
     remotePatterns: [
       {
         protocol: 'https',
@@ -45,31 +43,17 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
       },
-      {
-        protocol: 'https',
-        hostname: 'picsum.photos',
-      },
-      {
-        protocol: 'https',
-        hostname: 'fastly.picsum.photos',
-      },
     ],
   },
   async rewrites() {
-    // Proxy /api/* to the backend so the session cookie stays same-origin
-    // (first-party) — this is what makes login work on mobile, where cross-site
-    // cookies are blocked. Enabled in prod too (BFF pattern), but only when a
-    // backend target is explicitly configured.
-    if (isProd && !explicitProxyTarget) return []
     return [
       {
         source: '/api/:path*',
-        destination: `${API_PROXY_TARGET}/api/:path*`,
+        destination: `${apiProxyTarget}/api/:path*`,
       },
     ]
   },
   async headers() {
-    // CSP with per-request nonces is set in middleware.ts (not here — static headers cannot carry nonces).
     return [
       {
         source: '/api/:path*',
@@ -107,25 +91,9 @@ const nextConfig = {
         ],
       },
       {
-        source: '/geo/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' },
-        ],
-      },
-      {
         source: '/tinymce/:path*',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' },
-        ],
-      },
-      {
-        source: '/:path*',
-        headers: [
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-          ...(isProd ? [{ key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' }] : []),
         ],
       },
     ]

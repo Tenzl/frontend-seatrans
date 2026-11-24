@@ -1,112 +1,73 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, memo } from 'react'
+import { memo, useState, useEffect, useRef } from 'react'
 import { Card } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import {
   Clock,
   Shield,
   Headphones,
-  X,
   Anchor,
-  Plus
+  Plus,
+  X
 } from 'lucide-react'
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
-import { getProvinceCoordinates } from '@/shared/utils/provinceCoordinates'
-import { apiClient } from '@/shared/utils/apiClient'
-import { API_CONFIG } from '@/shared/config/api.config'
 import { MorphingPopover, MorphingPopoverContent } from '@/shared/components/ui/morphing-popover'
+import {
+  loadCoverage,
+  type MappedCoverageProvince,
+  type UnmappedCoverageProvince
+} from '@/modules/landing/services/coverageService'
 
-// Module-level cache — avoids re-downloading/re-parsing the geo JSON on each mount
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let geoDataCache: any = null
-
-interface ProvinceApiResponse {
-  id: number
-  name: string
-  displayName?: string
-  ports?: string[]
-}
-
-interface MapProvince {
-  id: number
-  name: string
-  coordinates: [number, number]
-  ports: string[]
-  renderRight: boolean
-}
-
-// Pure helper — compute once at map time, not on every render
-function computeRenderRight(name: string): boolean {
-  const normalized = name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-  return (
-    normalized.includes('ho chi minh') ||
-    normalized.includes('tp hcm') ||
-    normalized.includes('dong nai') ||
-    normalized.includes('quang ninh') ||
-    normalized.includes('quang ngai')
-  )
-}
-
-// Geography layer never changes after geoData loads — memo prevents re-render on hover
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const MapGeographies = memo(function MapGeographies({ geoData }: { geoData: any }) {
+const MapGeographies = memo(function MapGeographies({ geoData }: { geoData: object }) {
   return (
     <Geographies geography={geoData}>
-      {({ geographies }) =>
-        geographies.map((geo) => (
-          <Geography
-            key={geo.rsmKey}
-            geography={geo}
-            fill="hsl(var(--primary) / 0.12)"
-            stroke="hsl(var(--primary))"
-            strokeWidth={0.5}
-            style={{
-              default: { outline: 'none' },
-              hover: { outline: 'none', fill: 'hsl(var(--primary) / 0.22)' },
-              pressed: { outline: 'none' },
-            }}
-          />
-        ))
-      }
+      {({ geographies }) => geographies.map((geo) => (
+        <Geography
+          key={geo.rsmKey}
+          geography={geo}
+          fill="#e0f2fe"
+          stroke="#1a54b4"
+          strokeWidth={0.5}
+          style={{
+            default: { outline: 'none' },
+            hover: { outline: 'none', fill: '#bae6fd' },
+            pressed: { outline: 'none' }
+          }}
+        />
+      ))}
     </Geographies>
   )
 })
 
-function PopupBody({
+function PortPopup({
   province,
-  onPortSelect,
+  onPortSelect
 }: {
-  province: MapProvince
-  onPortSelect: (provinceName: string, portName: string) => void
+  province: MappedCoverageProvince
+  onPortSelect: (portName: string) => void
 }) {
   return (
-    <div className="bg-card rounded-xl shadow-xl border p-4 min-w-[220px]">
-      <div className="text-base font-bold text-foreground uppercase tracking-wide border-b pb-2 mb-2">
+    <div className="min-w-[220px] max-w-[280px] rounded-xl border bg-card p-4 shadow-xl">
+      <div className="mb-2 border-b pb-2 text-base font-bold uppercase tracking-wide text-foreground">
         {province.name}
       </div>
-      <div className="space-y-2">
-        {province.ports.map((port, idx) => (
-          <div key={idx} className="flex items-center justify-between gap-3">
-            <Anchor className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-            <span className="text-[15px] font-medium text-muted-foreground leading-tight text-left flex-1">
-              {port}
+      <div className="max-h-[180px] space-y-2 overflow-y-auto">
+        {province.ports.map((port) => (
+          <div key={port.id} className="flex items-start justify-between gap-3">
+            <Anchor className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+            <span className="flex-1 text-left text-[15px] font-medium leading-tight text-muted-foreground">
+              {port.name}
             </span>
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                onPortSelect(province.name, port)
+              onClick={(event) => {
+                event.stopPropagation()
+                onPortSelect(port.name)
               }}
-              className="inline-flex h-6 w-6 items-center justify-center rounded border border-primary/30 text-primary hover:bg-primary/10"
-              aria-label={`View details for ${port}`}
+              className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border border-primary/30 text-primary hover:bg-primary/10"
+              aria-label={`View details for ${port.name}`}
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -117,244 +78,121 @@ function PopupBody({
   )
 }
 
-interface ProvinceMarkerProps {
-  province: MapProvince
-  isActive: boolean
-  onEnter: (id: number) => void
-  onLeave: (id: number) => void
-  onClick: (id: number) => void
-  onPopupEnter: (id: number) => void
-  onPopupLeave: (id: number) => void
-  onPortSelect: (provinceName: string, portName: string) => void
-}
-
-// Each marker only re-renders when its own isActive changes (not on other markers' hover)
-const ProvinceMarker = memo(function ProvinceMarker({
-  province,
-  isActive,
-  onEnter,
-  onLeave,
-  onClick,
-  onPopupEnter,
-  onPopupLeave,
-  onPortSelect,
-}: ProvinceMarkerProps) {
-  const handleEnter = useCallback(() => onEnter(province.id), [province.id, onEnter])
-  const handleLeave = useCallback(() => onLeave(province.id), [province.id, onLeave])
-  const handleClick = useCallback(() => onClick(province.id), [province.id, onClick])
-  const handlePopupEnter = useCallback(() => onPopupEnter(province.id), [province.id, onPopupEnter])
-  const handlePopupLeave = useCallback(() => onPopupLeave(province.id), [province.id, onPopupLeave])
-
-  return (
-    <Marker coordinates={province.coordinates}>
-      <g
-        onMouseEnter={handleEnter}
-        onMouseLeave={handleLeave}
-        onClick={handleClick}
-        className="cursor-pointer"
-      >
-        {/* Main Marker Circle */}
-        <circle
-          r={8}
-          fill="hsl(var(--success))"
-          stroke="hsl(var(--background))"
-          strokeWidth={2}
-          className="transition-transform hover:scale-110"
-        />
-
-        {isActive && (
-          <foreignObject
-            x={province.renderRight ? 20 : -300}
-            y={-95}
-            width={280}
-            height={190}
-            className="overflow-visible"
-          >
-            <div
-              className="flex flex-row items-center justify-end h-full animate-in fade-in zoom-in-95 duration-200"
-              onMouseEnter={handlePopupEnter}
-              onMouseLeave={handlePopupLeave}
-            >
-              {province.renderRight ? (
-                <>
-                  <div className="w-4 h-4 bg-card rotate-45 transform translate-x-2 shadow-sm border-l border-b z-10" />
-                  <PopupBody province={province} onPortSelect={onPortSelect} />
-                </>
-              ) : (
-                <>
-                  <PopupBody province={province} onPortSelect={onPortSelect} />
-                  <div className="w-4 h-4 bg-card rotate-45 transform -translate-x-2 shadow-sm border-t border-r z-10" />
-                </>
-              )}
-            </div>
-          </foreignObject>
-        )}
-      </g>
-    </Marker>
-  )
-})
-
 export function Coverage() {
-  const [provinces, setProvinces] = useState<MapProvince[]>([])
-  const [activeProvince, setActiveProvince] = useState<number | null>(null)
+  const [provinces, setProvinces] = useState<MappedCoverageProvince[]>([])
+  const [unmappedProvinces, setUnmappedProvinces] = useState<UnmappedCoverageProvince[]>([])
+  const [selectedProvince, setSelectedProvince] = useState<number | null>(null)
+  const [hoveredProvince, setHoveredProvince] = useState<number | null>(null)
+  const [popupHoveredProvince, setPopupHoveredProvince] = useState<number | null>(null)
   const [selectedPort, setSelectedPort] = useState<{ provinceName: string; portName: string } | null>(null)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [geoData, setGeoData] = useState<any | null>(null)
+  const [geoData, setGeoData] = useState<object | null>(null)
+  const [geoError, setGeoError] = useState(false)
+  const [coverageError, setCoverageError] = useState(false)
+  const [coverageLoading, setCoverageLoading] = useState(true)
+  const [geoRetryKey, setGeoRetryKey] = useState(0)
+  const [coverageRetryKey, setCoverageRetryKey] = useState(0)
   const [ref, isInView] = useIntersectionObserver()
-
   const hoverHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Ref (not state) — only used to guard the hide timer, no render needed
-  const popupHoveredRef = useRef<number | null>(null)
 
-  const clearHoverHideTimeout = useCallback(() => {
+  const clearHoverHideTimeout = () => {
     if (hoverHideTimeoutRef.current) {
       clearTimeout(hoverHideTimeoutRef.current)
       hoverHideTimeoutRef.current = null
     }
-  }, [])
+  }
 
-  const scheduleHide = useCallback((id: number, delay = 120) => {
+  const scheduleHideProvincePopup = (provinceId: number, delay = 120) => {
     clearHoverHideTimeout()
     hoverHideTimeoutRef.current = setTimeout(() => {
-      setActiveProvince((current) => (current === id ? null : current))
+      setHoveredProvince((current) => (current === provinceId ? null : current))
+      setSelectedProvince((current) => (current === provinceId ? null : current))
     }, delay)
-  }, [clearHoverHideTimeout])
+  }
 
-  const handleEnter = useCallback((id: number) => {
-    clearHoverHideTimeout()
-    setActiveProvince(id)
-  }, [clearHoverHideTimeout])
+  const shouldPopupRenderRight = (provinceName: string) => {
+    const normalized = provinceName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
 
-  const handleLeave = useCallback((id: number) => {
-    if (popupHoveredRef.current === id) return
-    scheduleHide(id)
-  }, [scheduleHide])
-
-  const handleClick = useCallback((id: number) => {
-    clearHoverHideTimeout()
-    setActiveProvince(id)
-  }, [clearHoverHideTimeout])
-
-  const handlePopupEnter = useCallback((id: number) => {
-    popupHoveredRef.current = id
-    clearHoverHideTimeout()
-  }, [clearHoverHideTimeout])
-
-  const handlePopupLeave = useCallback((id: number) => {
-    popupHoveredRef.current = null
-    scheduleHide(id, 80)
-  }, [scheduleHide])
-
-  const handlePortSelect = useCallback((provinceName: string, portName: string) => {
-    setSelectedPort({ provinceName, portName })
-  }, [])
+    return (
+      normalized.includes('ho chi minh') ||
+      normalized.includes('tp hcm') ||
+      normalized.includes('dong nai') ||
+      normalized.includes('quang ninh') ||
+      normalized.includes('quang ngai')
+    )
+  }
 
   useEffect(() => {
     return () => clearHoverHideTimeout()
-  }, [clearHoverHideTimeout])
+  }, [])
 
   useEffect(() => {
-    let ignore = false
+    const controller = new AbortController()
+    setGeoError(false)
+    setGeoData(null)
 
     const loadGeoData = async () => {
-      if (geoDataCache) {
-        if (!ignore) setGeoData(geoDataCache)
-        return
-      }
       try {
-        const response = await fetch('/geo/newvn.json')
-        if (ignore) return
-        if (!response.ok) {
-          console.error('Failed to load map data', response.status)
-          return
-        }
+        const response = await fetch('/geo/newvn.json', { signal: controller.signal })
+        if (!response.ok) throw new Error(`Map geometry returned ${response.status}`)
         const data = await response.json()
-        if (ignore) return
-        geoDataCache = data
-        setGeoData(data)
+        if (!controller.signal.aborted) setGeoData(data)
       } catch (error) {
-        if (!ignore) console.error('Failed to load map data', error)
+        if (!controller.signal.aborted) {
+          console.error('Failed to load map data', error)
+          setGeoError(true)
+        }
       }
     }
 
-    loadGeoData()
-    return () => { ignore = true }
-  }, [])
+    void loadGeoData()
+    return () => controller.abort()
+  }, [geoRetryKey])
 
   useEffect(() => {
-    let ignore = false
+    const controller = new AbortController()
+    setCoverageError(false)
+    setCoverageLoading(true)
+    setProvinces([])
+    setUnmappedProvinces([])
 
-    const fetchProvinces = async () => {
-      try {
-        const response = await apiClient.get(API_CONFIG.PROVINCES.BASE, { skipAuth: true })
-        if (ignore) return
+    loadCoverage(controller.signal)
+      .then(({ mapped, unmapped }) => {
+        if (controller.signal.aborted) return
+        setProvinces(mapped)
+        setUnmappedProvinces(unmapped)
+        setCoverageLoading(false)
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return
+        console.error('Failed to load coverage', error)
+        setCoverageError(true)
+        setCoverageLoading(false)
+      })
 
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error('Failed to fetch provinces', response.status, errorText)
-          return
-        }
-
-        const data = await response.json()
-        if (ignore) return
-
-        const resolveCoordinates = (province: ProvinceApiResponse): [number, number] => {
-          const candidates = [province.displayName, province.name]
-            .filter((v): v is string => Boolean(v?.trim()))
-          for (const name of candidates) {
-            const coords = getProvinceCoordinates(name)
-            if (coords[0] !== 0 || coords[1] !== 0) return coords
-          }
-          return [0, 0]
-        }
-
-        if (data?.success) {
-          const mapped: MapProvince[] = data.data
-            .filter((p: ProvinceApiResponse) => Array.isArray(p.ports) && p.ports.length > 0)
-            .map((p: ProvinceApiResponse) => {
-              const name = (p.displayName || p.name || '').trim()
-              const coordinates = resolveCoordinates(p)
-              if (coordinates[0] === 0 && coordinates[1] === 0) {
-                console.warn(`No coordinates for province: ${name} (ID: ${p.id})`)
-              }
-              return {
-                id: p.id,
-                name,
-                coordinates,
-                ports: p.ports ?? [],
-                renderRight: computeRenderRight(name),
-              }
-            })
-            .filter((p: MapProvince) => p.coordinates[0] !== 0)
-
-          setProvinces(mapped)
-        } else {
-          console.error('Invalid provinces response', data)
-        }
-      } catch (error) {
-        if (!ignore) console.error('Failed to fetch provinces', error)
-      }
-    }
-
-    fetchProvinces()
-    return () => { ignore = true }
-  }, [])
+    return () => controller.abort()
+  }, [coverageRetryKey])
 
   return (
     <div ref={ref}>
-      <section className="landing-section landing-section--alt">
+      <section className="py-20">
         <div className="container">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
             {/* Left Content */}
             <div className={`space-y-8 ${isInView ? 'fade-rise' : 'opacity-0'}`}>
-              <div className="space-y-4 max-w-xl">
-                <p className="landing-eyebrow">Network coverage</p>
-                <h2 className="landing-display text-balance">
-                  Vietnam ports,{' '}
-                  <span className="text-primary">mapped to your cargo lane</span>
+              <div className="space-y-4">
+                <h2 className="text-4xl font-bold">
+                  {/* Full Coverage Across */}
+                  {/* <br /> */}
+                  <span className="text-primary">South East Asia Transport and Logistics (SEATRANS)</span>
                 </h2>
-                <p className="text-lg text-muted-foreground leading-relaxed text-pretty">
-                  Hover provinces on the operations map to see where we berth, clear, and coordinate — from Quy Nhon to Hai Phong.
+                <p className="text-xl text-muted-foreground">
+                  Comprehensive network spanning Vietnam's key ports and beyond, ensuring seamless connectivity for your cargo.
                 </p>
               </div>
 
@@ -394,11 +232,11 @@ export function Coverage() {
 
             {/* Right - Interactive Map */}
             <div className={`relative ${isInView ? 'scale-in stagger-1' : 'opacity-0'}`}>
-              <Card className="p-6 landing-card-shadow border-primary/10">
+              <Card className="p-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <h3 className="text-lg font-semibold tracking-tight">Operations map</h3>
-                    <Badge variant="secondary" className="font-medium">Live ports</Badge>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-semibold">SEATRANS - OPERATION MAP</h3>
+                    <Badge variant="secondary">Operational Coverage</Badge>
                   </div>
 
                   {/* Map Container */}
@@ -406,7 +244,6 @@ export function Coverage() {
                     {selectedPort && (
                       <div className="absolute inset-0 z-30 bg-black/25 backdrop-blur-sm" />
                     )}
-
                     {geoData ? (
                       <ComposableMap
                         projection="geoMercator"
@@ -417,26 +254,102 @@ export function Coverage() {
                       >
                         <MapGeographies geoData={geoData} />
 
+                        {/* Province Markers */}
                         {provinces.map((province) => (
-                          <ProvinceMarker
-                            key={province.id}
-                            province={province}
-                            isActive={activeProvince === province.id}
-                            onEnter={handleEnter}
-                            onLeave={handleLeave}
-                            onClick={handleClick}
-                            onPopupEnter={handlePopupEnter}
-                            onPopupLeave={handlePopupLeave}
-                            onPortSelect={handlePortSelect}
-                          />
+                          <Marker key={province.id} coordinates={province.coordinates}>
+                            <g
+                              onMouseEnter={() => {
+                                clearHoverHideTimeout()
+                                setHoveredProvince(province.id)
+                              }}
+                              onMouseLeave={() => {
+                                if (popupHoveredProvince === province.id) return
+                                scheduleHideProvincePopup(province.id)
+                              }}
+                              onClick={() => {
+                                clearHoverHideTimeout()
+                                setSelectedProvince(province.id)
+                                setHoveredProvince(province.id)
+                              }}
+                              className="cursor-pointer"
+                            >
+                              {/* Pulsating Rings */}
+                              <circle
+                                r={13}
+                                fill="none"
+                                stroke="#2ECC71"
+                                strokeWidth={2}
+                                opacity={0.6}
+                                className="animate-ping"
+                              />
+
+                              {/* Main Marker Circle */}
+                              <circle
+                                r={8}
+                                fill="#2ECC71"
+                                stroke="#fff"
+                                strokeWidth={2}
+                                className="transition-all hover:scale-110"
+                              />
+
+                              {/* HOVER MESSAGE BUBBLE */}
+                              {(selectedProvince === province.id || hoveredProvince === province.id || popupHoveredProvince === province.id) && (
+                                <foreignObject
+                                  x={shouldPopupRenderRight(province.name) ? 20 : -320}
+                                  y={-140}
+                                  width={320}
+                                  height={280}
+                                  className="overflow-visible"
+                                >
+                                  <div
+                                    className="flex flex-row items-center justify-end h-full animate-in fade-in zoom-in-95 duration-200"
+                                    onMouseEnter={() => {
+                                      clearHoverHideTimeout()
+                                      setPopupHoveredProvince(province.id)
+                                    }}
+                                    onMouseLeave={() => {
+                                      setPopupHoveredProvince((current) => (current === province.id ? null : current))
+                                      scheduleHideProvincePopup(province.id, 80)
+                                    }}
+                                  >
+                                    {shouldPopupRenderRight(province.name) ? (
+                                      <>
+                                        {/* Triangle Tail (pointing left) */}
+                                        <div className="w-4 h-4 bg-card rotate-45 transform translate-x-2 shadow-sm border-l border-b z-10"></div>
+
+                                        <PortPopup
+                                          province={province}
+                                          onPortSelect={(portName) => setSelectedPort({ provinceName: province.name, portName })}
+                                        />
+                                      </>
+                                    ) : (
+                                      <>
+                                        <PortPopup
+                                          province={province}
+                                          onPortSelect={(portName) => setSelectedPort({ provinceName: province.name, portName })}
+                                        />
+
+                                        {/* Triangle Tail (pointing right) */}
+                                        <div className="w-4 h-4 bg-card rotate-45 transform -translate-x-2 shadow-sm border-t border-r z-10"></div>
+                                      </>
+                                    )}
+                                  </div>
+                                </foreignObject>
+                              )}
+                            </g>
+                          </Marker>
                         ))}
                       </ComposableMap>
                     ) : (
-                      <div className="flex items-center justify-center h-[520px] text-sm text-muted-foreground">
-                        Loading map...
+                      <div className="flex h-[520px] flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+                        <p>{geoError ? 'Map could not be loaded.' : 'Loading map...'}</p>
+                        {geoError && (
+                          <button type="button" className="text-primary underline" onClick={() => setGeoRetryKey((key) => key + 1)}>
+                            Try again
+                          </button>
+                        )}
                       </div>
                     )}
-
                     <MorphingPopover
                       open={!!selectedPort}
                       onOpenChange={(open) => {
@@ -472,6 +385,29 @@ export function Coverage() {
                       </MorphingPopoverContent>
                     </MorphingPopover>
                   </div>
+                  {coverageLoading && <p className="text-sm text-muted-foreground">Loading coverage...</p>}
+                  {coverageError && (
+                    <div role="alert" className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+                      <span>Coverage could not be loaded.</span>
+                      <button type="button" className="text-primary underline" onClick={() => setCoverageRetryKey((key) => key + 1)}>
+                        Try again
+                      </button>
+                    </div>
+                  )}
+                  {!coverageLoading && !coverageError && provinces.length === 0 && unmappedProvinces.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No operational ports are currently available.</p>
+                  )}
+                  {unmappedProvinces.length > 0 && (
+                    <div className="space-y-2 text-sm">
+                      <p className="font-medium">Other operational locations</p>
+                      {unmappedProvinces.map((province) => (
+                        <p key={province.id} className="text-muted-foreground">
+                          <span className="font-medium text-foreground">{province.name}:</span>{' '}
+                          {province.ports.map((port) => port.name).join(', ')}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </Card>
             </div>

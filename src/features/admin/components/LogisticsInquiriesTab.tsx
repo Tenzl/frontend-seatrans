@@ -8,6 +8,7 @@ export function LogisticsInquiriesTab() {
       serviceType="total-logistic"
       serviceLabel="Total Logistics"
       isAdmin={true}
+      title="Total Logistics Inquiries"
       description="Manage all total logistics service inquiries"
     />
   )

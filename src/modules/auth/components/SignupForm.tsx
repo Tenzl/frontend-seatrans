@@ -4,9 +4,9 @@ import { Input } from '@/shared/components/ui/input'
 import { PhoneInput } from '@/shared/components/ui/phone-input'
 import { Label } from '@/shared/components/ui/label'
 import { Pending } from '@/shared/components/pending'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Card,CardContent,CardDescription,CardFooter,CardHeader,CardTitle } from '@/shared/components/ui/card'
 import { Checkbox } from '@/shared/components/ui/checkbox'
-import { Ship, Eye, EyeOff, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react'
+import { Eye,EyeOff,CheckCircle2,Loader2 } from 'lucide-react'
 import { useAuth } from '@/modules/auth/context/AuthContext'
 
 interface SignupProps {
@@ -15,7 +15,7 @@ interface SignupProps {
   onSignupSuccess?: () => void
 }
 
-export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: SignupProps) {
+export function Signup({ onNavigateLogin }: SignupProps) {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -172,9 +172,9 @@ export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: Sig
                   {passwordRequirements.map((req, index) => (
                     <div key={index} className="flex items-center space-x-2 text-xs">
                       <CheckCircle2
-                        className={`w-3 h-3 ${req.met ? 'text-success' : 'text-muted-foreground'}`}
+                        className={`w-3 h-3 ${req.met ? 'text-green-600 dark:text-green-500' : 'text-muted-foreground'}`}
                       />
-                      <span className={req.met ? 'text-success' : 'text-muted-foreground'}>
+                      <span className={req.met ? 'text-green-700 dark:text-green-600' : 'text-muted-foreground'}>
                         {req.label}
                       </span>
                     </div>

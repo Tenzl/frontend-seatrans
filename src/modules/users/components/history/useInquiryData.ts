@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react'
 import { authService } from '@/modules/auth/services/authService'
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
-import { isInternalStaff } from '@/shared/utils/auth'
 
 interface PageResponse<T> {
   content: T[]
@@ -33,26 +32,24 @@ function toServiceTypeName(input?: string): string | undefined {
   return SERVICE_TYPE_NAME_MAP[trimmed] ?? trimmed
 }
 
-function shouldUseAdminInquiryApi(isAdmin: boolean): boolean {
-  return isAdmin && isInternalStaff(authService.getUser())
-}
-
 export function useInquiryData(options: UseInquiryDataOptions = {}) {
   const { serviceType, isAdmin = false } = options
 
   const [inquiries, setInquiries] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [formUpdatingId, setFormUpdatingId] = useState<number | null>(null)
+
   const updateStatus = useCallback(async (id: number, status: string, serviceSlug?: string) => {
-    if (!shouldUseAdminInquiryApi(isAdmin)) return { success: false }
+    if (!isAdmin) return { success: false }
     const serviceName = toServiceTypeName(serviceSlug || serviceType)
     if (!serviceName) {
       throw new Error('serviceType is required to update status')
     }
 
     const response = await apiClient.patch(
-      API_CONFIG.INQUIRIES.ADMIN_STATUS(serviceName, id),
-      { status },
+      `${API_CONFIG.INQUIRIES.ADMIN_BASE}/${encodeURIComponent(serviceName)}/${id}/status`,
+      { status }
     )
 
     if (!response.ok) {
@@ -67,13 +64,40 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
     return { success: true }
   }, [isAdmin, serviceType])
 
+  const updateForm = useCallback(async (id: number, form: string, serviceSlug?: string) => {
+    if (!isAdmin) return { success: false }
+    const serviceName = toServiceTypeName(serviceSlug || serviceType)
+    if (!serviceName) {
+      throw new Error('serviceType is required to update form')
+    }
+
+    setFormUpdatingId(id)
+    try {
+      const response = await apiClient.patch(
+        `${API_CONFIG.INQUIRIES.ADMIN_BASE}/${encodeURIComponent(serviceName)}/${id}/form`,
+        { form }
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to update form')
+      }
+
+      setInquiries(prev =>
+        prev.map(inq => (inq.id === id ? { ...inq, quoteForm: form } : inq))
+      )
+
+      return { success: true }
+    } finally {
+      setFormUpdatingId(null)
+    }
+  }, [isAdmin, serviceType])
+
   const fetchInquiries = useCallback(async () => {
     setIsLoading(true)
     setError(null)
-    const useAdminApi = shouldUseAdminInquiryApi(isAdmin)
-    
+
     try {
-      if (!useAdminApi) {
+      if (!isAdmin) {
         // User endpoint - always filtered by JWT userId
         const user = authService.getUser()
         if (!user?.id) {
@@ -83,8 +107,9 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
         }
 
         const params = new URLSearchParams({ page: '0', size: '100' })
-        if (serviceType?.trim()) {
-          params.append('serviceSlug', serviceType.trim())
+        const serviceName = toServiceTypeName(serviceType)
+        if (serviceName) {
+          params.append('serviceType', serviceName)
         }
 
         const response = await apiClient.get<PageResponse<any>>(
@@ -107,8 +132,9 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
       } else {
         // Admin endpoint - can see all inquiries
         const params = new URLSearchParams({ page: '0', size: '100' })
-        if (serviceType?.trim()) {
-          params.append('serviceSlug', serviceType.trim())
+        const serviceName = toServiceTypeName(serviceType)
+        if (serviceName) {
+          params.append('serviceType', serviceName)
         }
 
         const response = await apiClient.get<PageResponse<any>>(
@@ -134,22 +160,21 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
 
   const deleteInquiries = useCallback(async (ids: number[]) => {
     try {
-      const useAdminApi = shouldUseAdminInquiryApi(isAdmin)
-      const endpoint = useAdminApi
-        ? API_CONFIG.INQUIRIES.ADMIN_BATCH_DELETE
-        : API_CONFIG.INQUIRIES.USER_BATCH_DELETE
-      
+      const endpoint = isAdmin
+        ? `${API_CONFIG.INQUIRIES.ADMIN_BASE}/batch`
+        : `${API_CONFIG.INQUIRIES.BASE}/batch` // Will be protected by JWT on backend
+
       const response = await apiClient.delete(endpoint, {
         body: JSON.stringify({ ids }),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete inquiries')
       }
-      
+
       // Remove deleted inquiries from local state
       setInquiries(prev => prev.filter(inq => !ids.includes(inq.id)))
-      
+
       return { success: true }
     } catch (err) {
       console.error('Error deleting inquiries:', err)
@@ -168,6 +193,8 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
     fetchInquiries,
     deleteInquiries,
     updateStatus,
+    updateForm,
+    formUpdatingId,
     refreshInquiries,
   }
 }

@@ -1,23 +1,23 @@
 "use client"
 
 import * as React from "react"
-import { Eye, X, Paperclip, FileText as FileTextIcon, Download, Loader2 } from "lucide-react"
+import { Eye,Paperclip,FileText as FileTextIcon,Download,Loader2 } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
+Sheet,
+SheetContent,
+SheetDescription,
+SheetHeader,
+SheetTitle,
 } from "@/shared/components/ui/sheet"
 import { Badge } from "@/shared/components/ui/badge"
 import { Separator } from "@/shared/components/ui/separator"
 import {
-  InquiryFieldSchema,
-  getFieldValue,
+InquiryFieldSchema,
+getFieldValue,
 } from "./serviceInquirySchemas"
-import { documentService, type InquiryDocument } from "@/modules/inquiries/services/documentService"
-import { STATUS_QUOTED, STATUS_COMPLETED, STATUS_BADGE_CONFIG, InquiryStatus } from '@/shared/constants/inquiry-status'
+import { documentService,type InquiryDocument } from "@/modules/inquiries/services/documentService"
+import { STATUS_QUOTED,STATUS_COMPLETED,STATUS_BADGE_CONFIG,InquiryStatus } from '@/shared/constants/inquiry-status'
 
 interface InquiryDetailDrawerProps {
   inquiry: any | null
@@ -58,7 +58,7 @@ export function InquiryDetailDrawer({
   const loadDocuments = async () => {
     const slug = serviceSlug || inquiry?.serviceType?.name
     if (!inquiry?.id || !slug) return
-    
+
     setLoadingDocuments(true)
     try {
       const docs = await documentService.getDocuments(inquiry.id, slug)
@@ -74,7 +74,7 @@ export function InquiryDetailDrawer({
   const handleDownloadDocument = async (doc: InquiryDocument) => {
     const slug = serviceSlug || inquiry?.serviceType?.name
     if (!inquiry?.id || !slug) return
-    
+
     try {
       const blob = await documentService.downloadDocument(
         inquiry.id,
@@ -98,7 +98,7 @@ export function InquiryDetailDrawer({
   const handlePreviewDocument = (doc: InquiryDocument) => {
     const slug = serviceSlug || inquiry?.serviceType?.name
     if (!inquiry?.id || !slug) return
-    
+
     const url = documentService.getPreviewUrl(
       inquiry.id,
       slug,
@@ -111,23 +111,23 @@ export function InquiryDetailDrawer({
 
   // Build field list from schema
   const fields: Array<[string, string]> = []
-  
+
   for (const fieldDef of schema) {
     const value = getFieldValue(inquiry, fieldDef.key)
-    
+
     // Skip if value is undefined, null, or empty string
     if (value === undefined || value === null || value === '') {
       continue
     }
-    
+
     // Format value using schema formatter
     const formattedValue = fieldDef.format ? fieldDef.format(value) : String(value)
-    
+
     // Skip if formatted value is empty
     if (!formattedValue) {
       continue
     }
-    
+
     fields.push([fieldDef.label, formattedValue])
   }
 
@@ -161,12 +161,12 @@ export function InquiryDetailDrawer({
                 <p className="font-medium">{serviceLabel}</p>
               </div>
             )}
-            
+
             <div>
               <p className="text-sm text-muted-foreground">Status</p>
               <div className="mt-1">{getStatusBadge(inquiry.status)}</div>
             </div>
-            
+
             <div>
               <p className="text-sm text-muted-foreground">Submitted At</p>
               <p className="text-sm">{formatDate(inquiry.submittedAt)}</p>
@@ -211,7 +211,7 @@ export function InquiryDetailDrawer({
           {/* Schema-driven Fields Section */}
           <div>
             <h4 className="text-sm font-semibold mb-3">Provided Details</h4>
-            
+
             {fields.length === 0 ? (
               <p className="text-sm text-muted-foreground">No additional details provided</p>
             ) : (
@@ -234,7 +234,7 @@ export function InquiryDetailDrawer({
               <Paperclip className="h-4 w-4" />
               Attachments ({documents.length})
             </h4>
-            
+
             {loadingDocuments ? (
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />

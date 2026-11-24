@@ -4,36 +4,21 @@ interface UseIntersectionObserverOptions {
   threshold?: number | number[]
   root?: Element | null
   rootMargin?: string
-  /** Keep isIntersecting true after the first reveal (default) so scroll-reveal animations don't restart. */
-  once?: boolean
 }
 
 export function useIntersectionObserver(
   options: UseIntersectionObserverOptions = {}
 ): [React.RefObject<HTMLDivElement>, boolean] {
   const elementRef = useRef<HTMLDivElement>(null)
-  // Default to visible to avoid "blank page" when IntersectionObserver
-  // is unavailable or fails to fire (e.g. browser quirks / extensions).
-  const [isIntersecting, setIsIntersecting] = useState(true)
+  const [isIntersecting, setIsIntersecting] = useState(false)
 
   useEffect(() => {
     const element = elementRef.current
     if (!element) return
-    if (typeof IntersectionObserver === 'undefined') {
-      setIsIntersecting(true)
-      return
-    }
-
-    const once = options.once ?? true
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsIntersecting(true)
-          if (once) observer.disconnect()
-        } else if (!once) {
-          setIsIntersecting(false)
-        }
+        setIsIntersecting(entry.isIntersecting)
       },
       {
         threshold: options.threshold || 0.1,
@@ -47,7 +32,7 @@ export function useIntersectionObserver(
     return () => {
       observer.disconnect()
     }
-  }, [options.threshold, options.root, options.rootMargin, options.once])
+  }, [options.threshold, options.root, options.rootMargin])
 
   return [elementRef, isIntersecting]
 }
