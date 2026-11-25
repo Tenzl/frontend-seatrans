@@ -1,5 +1,5 @@
 "use client";
-import { Eye } from "lucide-react";
+import { Eye, MapPin } from "lucide-react";
 import { ImageWithFallback } from "@/shared/components/ImageWithFallback";
 import {
   Dialog,
@@ -14,14 +14,16 @@ import {
 } from "../../services/publicGalleryService";
 export function PublicGalleryGrid({
   images,
+  captionOverlay = false,
 }: {
   images: PublicGalleryImage[];
+  captionOverlay?: boolean;
 }) {
   return (
     <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
       {images.map((image) => (
         <Dialog key={image.id}>
-          <article className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
+          <article className={captionOverlay ? 'relative min-w-0 overflow-hidden rounded-xl bg-muted' : 'min-w-0 overflow-hidden rounded-xl border border-border bg-card'}>
             <DialogTrigger asChild>
               <button
                 type="button"
@@ -38,28 +40,29 @@ export function PublicGalleryGrid({
                   sizes="(min-width:1024px) 30vw, (min-width:768px) 45vw, 100vw"
                   className="h-full w-full object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
                 />
-                <span className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-md bg-background px-2.5 py-1.5 text-xs font-semibold text-foreground">
+                <span className={`absolute right-3 flex items-center gap-1.5 rounded-md bg-background px-2.5 py-1.5 text-xs font-semibold text-foreground ${captionOverlay ? 'top-3' : 'bottom-3'}`}>
                   <Eye className="h-3.5 w-3.5" aria-hidden />
                   View
                 </span>
               </button>
             </DialogTrigger>
-            <div className="space-y-1 p-4">
+            <div className={captionOverlay ? 'pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-gradient-to-t from-black/85 via-black/60 to-transparent px-4 pb-4 pt-12 text-white' : 'space-y-1 p-4'}>
               <h3
-                className="truncate text-base font-semibold"
+                className={captionOverlay ? 'truncate text-sm font-bold text-white' : 'truncate text-base font-semibold'}
                 title={image.commodityName}
               >
                 {image.commodityName}
               </h3>
               <p
-                className="truncate text-sm text-muted-foreground"
+                className={captionOverlay ? 'flex min-w-0 items-center gap-1.5 text-xs text-white' : 'truncate text-sm text-muted-foreground'}
                 title={[image.portName, image.provinceName]
                   .filter(Boolean)
                   .join(", ")}
               >
-                {[image.portName, image.provinceName]
+                {captionOverlay && <MapPin className="size-3 shrink-0" aria-hidden="true" />}
+                <span className="truncate">{[image.portName, image.provinceName]
                   .filter(Boolean)
-                  .join(", ")}
+                  .join(", ")}</span>
               </p>
             </div>
           </article>

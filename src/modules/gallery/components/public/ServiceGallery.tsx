@@ -9,6 +9,7 @@ import {
 import { PublicGalleryGrid } from "./PublicGalleryGrid";
 import { usePublicGallery } from "./usePublicGallery";
 export interface ServiceGalleryProps {
+  presentation?: 'default' | 'service';
   serviceTypeId: number;
   gallery: {
     sectionTitle: string;
@@ -20,6 +21,7 @@ export interface ServiceGalleryProps {
 export function ServiceGallery({
   serviceTypeId,
   gallery,
+  presentation = 'default',
 }: ServiceGalleryProps) {
   const [selection, setSelection] = useState<{
     service: number;
@@ -56,8 +58,8 @@ export function ServiceGallery({
       className="scroll-mt-24 bg-background py-8 md:py-12"
       aria-label={gallery.sectionTitle}
     >
-      <header className="mx-auto mb-6 max-w-2xl space-y-3 text-center md:mb-8">
-        <h2 className="text-2xl font-bold md:text-4xl">
+      <header className={presentation === 'service' ? 'mb-6 flex flex-col gap-2' : 'mx-auto mb-6 max-w-2xl space-y-3 text-center md:mb-8'}>
+        <h2 className={presentation === 'service' ? 'text-2xl font-extrabold tracking-tight md:text-[2rem]' : 'text-2xl font-bold md:text-4xl'}>
           {gallery.sectionTitle}
         </h2>
         <p className="text-muted-foreground">{gallery.sectionDescription}</p>
@@ -133,7 +135,7 @@ export function ServiceGallery({
           No photos available for this selection.
         </p>
       ) : (
-        <PublicGalleryGrid images={images.images} />
+        <PublicGalleryGrid images={images.images} captionOverlay={presentation === 'service'} />
       )}
       {!images.loading && !images.error && images.pages > 1 && (
         <nav

@@ -87,16 +87,37 @@ export function FreightForwarding({ onNavigateHome }: FreightForwardingProps) {
       submitButtonText: 'Get Quote',
       submitPath: '/inquiries',
       serviceTypeSlug: 'freight-forwarding',
-      fields: [
-        { id: 'cargoName', label: 'Cargo name', type: 'text', required: true, placeholder: 'Type of cargo', gridSpan: 2 },
-        { id: 'deliveryTerm', label: 'Delivery term', type: 'select', required: true, placeholder: 'Select delivery term', gridSpan: 1, options: ['CY/CY', 'CY/Door', 'Door/CY', 'Door/Door', 'Port/Port'] },
-        { id: 'container20', label: 'Container 20\' feet', type: 'number', placeholder: '0 cont', gridSpan: 1 },
-        { id: 'container40', label: 'Container 40\' feet', type: 'number', placeholder: '0 cont', gridSpan: 1 },
-        { id: 'loadingPort', label: 'Loading port', type: 'port', required: true, gridSpan: 1 },
-        { id: 'dischargingPort', label: 'Discharging port', type: 'port', required: true, gridSpan: 1 },
-        { id: 'shipmentFrom', label: 'Shipment time - From date', type: 'date', required: true, gridSpan: 1 },
-        { id: 'shipmentTo', label: 'Shipment time - To date', type: 'date', required: true, gridSpan: 1 },
-        { id: 'additionalInfo', label: 'Additional Information', type: 'textarea', placeholder: 'Special requirements, timeline, etc...', gridSpan: 2 }
+      fields: [],
+      sections: [
+        {
+          title: 'Cargo',
+          fields: [
+            { id: 'cargoName', label: 'Cargo name', type: 'text', required: true, placeholder: 'Type of cargo', gridSpan: 2 },
+            { id: 'deliveryTerm', label: 'Delivery term', type: 'select', required: true, placeholder: 'Select delivery term', gridSpan: 1, options: ['CY/CY', 'CY/Door', 'Door/CY', 'Door/Door', 'Port/Port'] },
+            { id: 'container20', label: 'Container 20\' feet', type: 'number', placeholder: '0 cont', gridSpan: 1 },
+            { id: 'container40', label: 'Container 40\' feet', type: 'number', placeholder: '0 cont', gridSpan: 1 },
+          ],
+        },
+        {
+          title: 'Route',
+          fields: [
+            { id: 'loadingPort', label: 'Loading port', type: 'port', required: true, gridSpan: 1 },
+            { id: 'dischargingPort', label: 'Discharging port', type: 'port', required: true, gridSpan: 1 },
+          ],
+        },
+        {
+          title: 'Shipment dates',
+          fields: [
+            { id: 'shipmentFrom', label: 'Shipment time - From date', type: 'date', required: true, gridSpan: 1 },
+            { id: 'shipmentTo', label: 'Shipment time - To date', type: 'date', required: true, gridSpan: 1 },
+          ],
+        },
+        {
+          title: 'Additional details',
+          fields: [
+            { id: 'additionalInfo', label: 'Additional Information', type: 'textarea', placeholder: 'Special requirements, timeline, etc...', gridSpan: 2 }
+          ],
+        },
       ],
       onSubmit: (data: any) => {
         console.log('Freight inquiry submitted:', data)

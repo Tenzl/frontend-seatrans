@@ -8,7 +8,7 @@ import {
   Shield,
   Headphones,
   Anchor,
-  Plus,
+  ArrowRight,
   X
 } from 'lucide-react'
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
@@ -55,23 +55,22 @@ function PortPopup({
       </div>
       <div className="max-h-[180px] space-y-2 overflow-y-auto">
         {province.ports.map((port) => (
-          <div key={port.id} className="flex items-start justify-between gap-3">
-            <Anchor className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
-            <span className="flex-1 text-left text-[15px] font-medium leading-tight text-muted-foreground">
+          <button
+            key={port.id}
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              onPortSelect(port.name)
+            }}
+            className="group flex min-h-11 w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            aria-label={`View details for ${port.name}`}
+          >
+            <Anchor className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            <span className="min-w-0 flex-1 text-[15px] font-medium leading-tight text-muted-foreground">
               {port.name}
             </span>
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation()
-                onPortSelect(port.name)
-              }}
-              className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border border-primary/30 text-primary hover:bg-primary/10"
-              aria-label={`View details for ${port.name}`}
-            >
-              <Plus className="h-4 w-4" />
-            </button>
-          </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-primary transition-transform group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5" aria-hidden="true" />
+          </button>
         ))}
       </div>
     </div>
@@ -180,19 +179,17 @@ export function Coverage() {
 
   return (
     <div ref={ref}>
-      <section className="py-20">
+      <section className="landing-section landing-section--alt">
         <div className="container">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
             {/* Left Content */}
             <div className={`space-y-8 ${isInView ? 'fade-rise' : 'opacity-0'}`}>
-              <div className="space-y-4">
-                <h2 className="text-4xl font-bold">
-                  {/* Full Coverage Across */}
-                  {/* <br /> */}
-                  <span className="text-primary">South East Asia Transport and Logistics (SEATRANS)</span>
+              <div className="max-w-xl space-y-4">
+                <h2 className="landing-display text-balance">
+                  Vietnam ports, <span className="text-primary">mapped to your cargo lane</span>
                 </h2>
-                <p className="text-xl text-muted-foreground">
-                  Comprehensive network spanning Vietnam&apos;s key ports and beyond, ensuring seamless connectivity for your cargo.
+                <p className="text-lg leading-relaxed text-muted-foreground">
+                  Select a port on the operations map to see our coverage across Vietnam.
                 </p>
               </div>
 
@@ -357,25 +354,25 @@ export function Coverage() {
                       }}
                       className="absolute inset-0 z-40 pointer-events-none"
                     >
-                      <MorphingPopoverContent className="pointer-events-auto left-1/2 top-1/2 z-50 h-[70%] w-[70%] -translate-x-1/2 -translate-y-1/2 p-0">
-                        <div className="flex h-full flex-col bg-background">
+                      <MorphingPopoverContent className="pointer-events-auto !relative z-50 w-[calc(100%-2rem)] max-w-md max-h-[calc(100%-2rem)] p-0">
+                        <div className="flex max-h-full flex-col bg-background">
                           <div className="flex items-center justify-between border-b px-4 py-3">
-                            <div>
+                            <div className="min-w-0">
                               <p className="text-xs uppercase tracking-wide text-muted-foreground">Port information</p>
-                              <h4 className="text-base font-semibold">{selectedPort?.portName}</h4>
+                              <h4 className="break-words text-base font-semibold">{selectedPort?.portName}</h4>
                               <p className="text-sm text-muted-foreground">{selectedPort?.provinceName}</p>
                             </div>
                             <button
                               type="button"
                               onClick={() => setSelectedPort(null)}
-                              className="rounded-md p-1 text-muted-foreground hover:bg-muted"
+                              className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted"
                               aria-label="Close port details"
                             >
                               <X className="h-4 w-4" />
                             </button>
                           </div>
 
-                          <div className="flex-1 overflow-y-auto p-4 text-sm text-muted-foreground">
+                          <div className="min-h-0 flex-1 overflow-y-auto p-4 text-sm text-muted-foreground">
                             <p>
                               Operational details for this port can be shown here, such as available services,
                               contact points, and handling notes.

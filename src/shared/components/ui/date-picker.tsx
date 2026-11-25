@@ -21,6 +21,8 @@ interface DatePickerProps {
   disabled?: boolean
   required?: boolean
   className?: string
+  'aria-invalid'?: boolean
+  'aria-describedby'?: string
 }
 
 export function DatePicker({
@@ -31,6 +33,8 @@ export function DatePicker({
   disabled = false,
   required = false,
   className,
+  'aria-invalid': invalid,
+  'aria-describedby': describedBy,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
   const [date, setDate] = React.useState<Date | undefined>(
@@ -72,6 +76,8 @@ export function DatePicker({
         <Button
           id={id}
           aria-required={required}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
           type="button"
           variant="outline"
           className={cn(

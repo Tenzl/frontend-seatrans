@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { User, LayoutDashboard, LogOut, ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { cn } from '@/shared/lib/utils'
 
 interface UserNavProps {
   user: {
@@ -15,9 +16,10 @@ interface UserNavProps {
     roleGroup?: string
   }
   onLogout: () => void
+  light?: boolean
 }
 
-export function UserNav({ user, onLogout }: UserNavProps) {
+export function UserNav({ user, onLogout, light = false }: UserNavProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const router = useRouter()
 
@@ -56,12 +58,12 @@ export function UserNav({ user, onLogout }: UserNavProps) {
       onMouseEnter={() => setShowDropdown(true)}
       onMouseLeave={() => setShowDropdown(false)}
     >
-      <button className="flex items-center space-x-2 px-3 py-2 rounded-full hover:bg-accent transition-colors">
+      <button className={cn('flex items-center space-x-2 px-3 py-2 rounded-full hover:bg-accent transition-colors', light && 'text-white hover:bg-white/10')}>
         <div className="flex items-center justify-center w-7 h-7 bg-primary/10 rounded-full">
           <User className="w-4 h-4 text-primary" />
         </div>
         <span className="hidden sm:inline text-sm font-medium">{user.fullName || user.email}</span>
-        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        <ChevronDown className={cn('w-4 h-4 text-muted-foreground', light && 'text-white/80')} />
       </button>
 
       {showDropdown && (

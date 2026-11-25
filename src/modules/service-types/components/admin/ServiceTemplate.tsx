@@ -1,11 +1,12 @@
 import { ReactNode } from 'react'
 import { LucideIcon } from 'lucide-react'
 
-import { HeroBannerSection } from './sections/HeroBannerSection'
+import { ServiceHeroImage } from './sections/ServiceHeroImage'
 import { ContactSection, ContactTeam, StatItem } from './sections/ContactSection'
 import { ServicesSection, ServiceItem } from './sections/ServicesSection'
 import { FormSection, FormField, InquiryPayload } from './sections/FormSection'
 import { GallerySection } from './sections/GallerySection'
+import styles from './ServicePage.module.css'
 
 export interface ContactPerson {
   name: string
@@ -21,7 +22,6 @@ export interface ServiceTemplateProps {
   hero: {
     title: string
     description: string
-    image?: string
     subtitle?: string
   }
 
@@ -62,9 +62,6 @@ export interface ServiceTemplateProps {
 }
 
 export function ServiceTemplate({
-  serviceName,
-  serviceIcon: ServiceIcon,
-  onNavigateHome,
   serviceTypeId,
   hero,
   contacts,
@@ -87,26 +84,26 @@ export function ServiceTemplate({
     : undefined
 
   return (
-    <div>
-      <HeroBannerSection
-        title={hero.title}
-        subtitle={hero.subtitle || 'Services'}
-        description={hero.description}
-        image={hero.image || ''}
-        serviceName={serviceName}
-        serviceIcon={ServiceIcon}
-        onNavigateHome={onNavigateHome}
-      />
-
-      <div className="container pb-10">
-        {contacts && <ContactSection contacts={contacts} />}
-
+    <div className={styles.page}>
+      <section className={styles.hero} aria-labelledby="service-title">
+        <ServiceHeroImage />
+        <div className={`container ${styles.heroContent}`}>
+          <div className={styles.intro}>
+            <h1 id="service-title">{hero.title}</h1>
+            {(hero.description || services?.sectionDescription) && (
+              <p>{hero.description || services?.sectionDescription}</p>
+            )}
+          </div>
+          <div className={styles.inquiryLayout}>
+            {mergedForm && <FormSection form={mergedForm} />}
+            {contacts && <ContactSection contacts={contacts} />}
+          </div>
+        </div>
+      </section>
+      <div className="container">
         {services && <ServicesSection services={services} />}
-
-        {form && mergedForm && <FormSection form={mergedForm} />}
-
         {gallery?.enabled && serviceTypeId && (
-          <GallerySection serviceTypeId={serviceTypeId} gallery={gallery} />
+          <GallerySection serviceTypeId={serviceTypeId} gallery={gallery} presentation="service" />
         )}
 
         {customSections?.map((node, i) => (

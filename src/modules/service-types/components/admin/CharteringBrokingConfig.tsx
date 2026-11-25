@@ -17,8 +17,6 @@ export function CharteringBroking({ onNavigateHome }: CharteringBrokingProps) {
       title: 'Chartering & Broking Services',
       description:"",
       // description: "Thanks to the support of shipowners community, Seatrans is always recommended to have suitable tonnage with competitive rates to fix our charterer's shipments on time.",
-      image:
-        'https://images.unsplash.com/photo-1645255315921-09c386465750?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvY2VhbiUyMGZyZWlnaHQlMjBzaGlwJTIwY2hhcnRlcmluZ3xlbnwxfHx8fDE3NjUwNzQzMTJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
     },
 
     contacts: {
@@ -94,13 +92,29 @@ export function CharteringBroking({ onNavigateHome }: CharteringBrokingProps) {
       submitButtonText: 'Submit Order',
       submitPath: '/inquiries',
       serviceTypeSlug: 'chartering-ship-broking',
-      fields: [
-        { id: 'cargoQuantity', label: 'Cargo/Quantity', type: 'number', required: true, placeholder: 'e.g., Tapioca chip 15,000 tons', gridSpan: 2 },
-        { id: 'loadingPort', label: 'Loading port', type: 'port', required: true, gridSpan: 1 },
-        { id: 'dischargingPort', label: 'Discharging port', type: 'port', required: true, gridSpan: 1 },
-        { id: 'laycanFrom', label: 'Laycan - From date', type: 'date', required: true, gridSpan: 1 },
-        { id: 'laycanTo', label: 'Laycan - To date', type: 'date', required: true, gridSpan: 1 },
-        { id: 'otherInfo', label: 'Other information (optional)', type: 'textarea', placeholder: 'Any additional details...', gridSpan: 2 },
+      fields: [],
+      sections: [
+        {
+          title: 'Cargo & Route',
+          fields: [
+            { id: 'cargoQuantity', label: 'Cargo/Quantity', type: 'number', required: true, placeholder: 'e.g., Tapioca chip 15,000 tons', gridSpan: 2 },
+            { id: 'loadingPort', label: 'Loading port', type: 'port', required: true, gridSpan: 1 },
+            { id: 'dischargingPort', label: 'Discharging port', type: 'port', required: true, gridSpan: 1 },
+          ],
+        },
+        {
+          title: 'Laycan',
+          fields: [
+            { id: 'laycanFrom', label: 'Laycan - From date', type: 'date', required: true, gridSpan: 1 },
+            { id: 'laycanTo', label: 'Laycan - To date', type: 'date', required: true, gridSpan: 1 },
+          ],
+        },
+        {
+          title: 'Additional details',
+          fields: [
+            { id: 'otherInfo', label: 'Other information (optional)', type: 'textarea', placeholder: 'Any additional details...', gridSpan: 2 },
+          ],
+        },
       ],
       onSubmit: (data: any) => {
         console.log('Tonnage order submitted:', data)

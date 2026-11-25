@@ -1,248 +1,256 @@
-import { useState,useEffect } from 'react'
+'use client'
+
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import NProgress from 'nprogress'
 import { Button } from '@/shared/components/ui/button'
-import { Card,CardContent } from '@/shared/components/ui/card'
-import { Tabs,TabsList,TabsTrigger } from '@/shared/components/ui/tabs'
 import { ImageWithFallback } from '@/shared/components/ImageWithFallback'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
+import { LandingSectionHeader } from './LandingSectionHeader'
+import { cn } from '@/shared/lib/utils'
 import {
-Ship,Package,
-Building,TrendingUp
+  Ship,
+  Package,
+  Building,
+  TrendingUp,
+  ArrowRight,
+  Check,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
-interface SolutionsProps {
-  onNavigate?: (page: 'shipping-agency' | 'chartering-broking' | 'freight-forwarding' | 'total-logistics') => void
+type SolutionKey = 'shipping-agency' | 'chartering' | 'freight-forwarding' | 'total-logistics'
+
+interface SolutionItem {
+  key: SolutionKey
+  title: string
+  icon: LucideIcon
+  tagline: string
+  description: string
+  metrics: { label: string; value: string }[]
+  details: string[]
+  image: string
+  path: string
 }
 
-const solutionsData = {
-  'shipping-agency': {
+const solutionsList: SolutionItem[] = [
+  {
+    key: 'shipping-agency',
     title: 'Shipping Agency',
     icon: Ship,
-    tagline: 'Comprehensive Port Services',
+    tagline: 'Port clearance & husbandry',
     description: 'Full-service port agency and vessel operations across Asia-Pacific ports.',
     metrics: [
-      { label: 'Ports Covered', value: '150+' },
-      { label: 'Vessels Handled', value: '2,500+' },
-      { label: 'Avg Response Time', value: '< 2hrs' }
+      { label: 'Ports covered', value: '150+' },
+      { label: 'Vessels handled', value: '2,500+' },
+      { label: 'Avg response', value: '< 2 hrs' },
     ],
     details: [
       'Port clearance and customs coordination',
       'Vessel husbandry and crew assistance',
-      '24/7 operational support'
+      '24/7 operational support',
     ],
-    image: 'https://images.unsplash.com/photo-1673714697436-da13c8087c32?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb250YWluZXIlMjBwb3J0JTIwY3JhbmV8ZW58MXx8fHwxNzU4MjQ5MTg4fDA&ixlib=rb-4.1.0&q=80&w=1080'
+    image:
+      'https://images.unsplash.com/photo-1673714697436-da13c8087c32?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1200',
+    path: '/services/shipping-agency',
   },
-  'chartering': {
+  {
+    key: 'chartering',
     title: 'Chartering & Broking',
     icon: TrendingUp,
-    tagline: 'Maritime Brokerage Excellence',
-    description: 'Expert vessel chartering and maritime brokerage services for optimal shipping solutions.',
+    tagline: 'Cargo & tonnage placement',
+    description: 'Vessel chartering and brokerage for bulk, project, and specialized cargo.',
     metrics: [
-      { label: 'Charter Deals', value: '500+' },
-      { label: 'Market Coverage', value: '98%' },
-      { label: 'Cost Savings', value: '15%' }
+      { label: 'Charter fixtures', value: '500+' },
+      { label: 'Trade lanes', value: '15+' },
+      { label: 'Cargo moved', value: '480K t' },
     ],
     details: [
       'Spot and time charter arrangements',
       'Market intelligence and analysis',
-      'Contract negotiation and management'
+      'Contract negotiation and management',
     ],
-    image: 'https://images.unsplash.com/photo-1756966552603-6418ccbad7b9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvY2VhbiUyMGZyZWlnaHQlMjB2ZXNzZWx8ZW58MXx8fHwxNzU4MjQ5MTg5fDA&ixlib=rb-4.1.0&q=80&w=1080'
+    image:
+      'https://images.unsplash.com/photo-1756966552603-6418ccbad7b9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1200',
+    path: '/services/chartering-broking',
   },
-  'freight-forwarding': {
+  {
+    key: 'freight-forwarding',
     title: 'Freight Forwarding',
     icon: Package,
-    tagline: 'Multimodal Transport Solutions',
-    description: 'Comprehensive freight solutions for land, sea, and air transport across the region.',
+    tagline: 'Sea, air & inland legs',
+    description: 'Multimodal freight across the region with documentation and tracking.',
     metrics: [
-      { label: 'TEU Handled', value: '100K+' },
-      { label: 'Transit Reliability', value: '99.2%' },
-      { label: 'Countries Served', value: '25+' }
+      { label: 'TEU handled', value: '100K+' },
+      { label: 'On-time rate', value: '99.2%' },
+      { label: 'Countries', value: '25+' },
     ],
     details: [
       'Door-to-door delivery services',
       'Customs clearance and documentation',
-      'Real-time tracking and monitoring'
+      'Real-time tracking and monitoring',
     ],
-    image: 'https://images.unsplash.com/photo-1726776230751-183496c51f00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVpZ2h0JTIwd2FyZWhvdXNlJTIwbG9naXN0aWNzfGVufDF8fHx8MTc1ODI0OTE4OHww&ixlib=rb-4.1.0&q=80&w=1080'
+    image:
+      'https://images.unsplash.com/photo-1726776230751-183496c51f00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1200',
+    path: '/services/freight-forwarding',
   },
-  'total-logistics': {
+  {
+    key: 'total-logistics',
     title: 'Total Logistics',
     icon: Building,
-    tagline: 'End-to-End Supply Chain',
-    description: 'Complete supply chain management and logistics solutions tailored to your needs.',
+    tagline: 'End-to-end supply chain',
+    description: 'Warehousing, distribution, and integrated planning for complex flows.',
     metrics: [
       { label: 'Warehouses', value: '50+' },
-      { label: 'Supply Chains', value: '1,000+' },
-      { label: 'Efficiency Gain', value: '25%' }
+      { label: 'Active lanes', value: '1,000+' },
+      { label: 'Efficiency lift', value: '23%' },
     ],
     details: [
       'Warehouse management and distribution',
       'Inventory optimization and planning',
-      'Integrated technology platforms'
+      'Integrated technology platforms',
     ],
-    image: 'https://images.unsplash.com/photo-1614571272828-2d8289ff8fc0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzaGlwcGluZyUyMGNvbnRhaW5lcnMlMjB5YXJkfGVufDF8fHx8MTc1ODE4ODQxOHww&ixlib=rb-4.1.0&q=80&w=1080'
-  }
-}
+    image:
+      'https://images.unsplash.com/photo-1614571272828-2d8289ff8fc0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1200',
+    path: '/services/total-logistics',
+  },
+]
 
-export function Solutions({}: SolutionsProps) {
+export function Solutions() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState('shipping-agency')
-  const [animatedMetrics, setAnimatedMetrics] = useState<Record<string, boolean>>({})
+  const [activeKey, setActiveKey] = useState<SolutionKey>('shipping-agency')
   const [ref, isInView] = useIntersectionObserver()
 
-  // Animate metrics when they come into view
-  useEffect(() => {
-    if (isInView && !animatedMetrics[activeTab]) {
-      setAnimatedMetrics(prev => ({ ...prev, [activeTab]: true }))
-    }
-  }, [isInView, activeTab, animatedMetrics])
+  const activeSolution = solutionsList.find((s) => s.key === activeKey) ?? solutionsList[0]
+  const ActiveIcon = activeSolution.icon
 
-  const handleExploreService = () => {
-    let path = ''
-    switch (activeTab) {
-      case 'shipping-agency':
-        path = '/services/shipping-agency'
-        break
-      case 'chartering':
-        path = '/services/chartering-broking'
-        break
-      case 'freight-forwarding':
-        path = '/services/freight-forwarding'
-        break
-      case 'total-logistics':
-        path = '/services/total-logistics'
-        break
-      default:
-        return
-    }
+  const goTo = (path: string, hash?: string) => {
     NProgress.start()
-    router.push(path)
+    router.push(hash ? `${path}${hash}` : path)
   }
-
-  const handleRequestQuote = () => {
-    let path = ''
-    switch (activeTab) {
-      case 'shipping-agency':
-        path = '/services/shipping-agency'
-        break
-      case 'chartering':
-        path = '/services/chartering-broking'
-        break
-      case 'freight-forwarding':
-        path = '/services/freight-forwarding'
-        break
-      case 'total-logistics':
-        path = '/services/total-logistics'
-        break
-      default:
-        return
-    }
-    NProgress.start()
-    router.push(`${path}#quote`)
-  }
-
-  const activeSolution = solutionsData[activeTab as keyof typeof solutionsData]
 
   return (
-    <div ref={ref}>
-      <section className="py-20 bg-background">
+    <div ref={ref} id="solutions">
+      <section className="landing-section">
         <div className="container">
-          <div className={`section-heading ${isInView ? 'fade-rise' : 'opacity-0'}`}>
-            <h2>Our Solutions</h2>
-            <p>
-              Comprehensive shipping and logistics services designed to optimize your supply chain operations.
-            </p>
-          </div>
+          <LandingSectionHeader
+            eyebrow="What we do"
+            title="Four disciplines, one operations desk"
+            description="Agency, chartering, forwarding, and integrated logistics — pick a line of business to see scope and metrics."
+            className={isInView ? 'fade-rise' : 'opacity-0'}
+          />
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            {/* Ribbon Tabs */}
-            <TabsList className={`grid w-full grid-cols-2 lg:grid-cols-4 gap-2 h-auto p-1 bg-background rounded-b-none border border-border ${isInView ? 'fade-rise stagger-1' : 'opacity-0'
-              }`}>
-              {Object.entries(solutionsData).map(([key, solution]) => (
-                <TabsTrigger
-                  key={key}
-                  value={key}
-                  className="flex flex-col items-center p-4 space-y-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-200"
-                >
-                  <span className="text-sm font-medium">{solution.title}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            {/* Live Preview Card */}
-            <div className={`${isInView ? 'fade-rise stagger-2' : 'opacity-0'}`}>
-              <Card className="overflow-hidden rounded-t-none border-t-0 pb-0 py-0 lg:flex">
-                <div className="grid lg:grid-cols-2">
-                  {/* Content */}
-                  <CardContent className="p-8 space-y-6">
-                    <div className="space-y-3">
-                      <p className="text-sm text-primary">
-                        {activeSolution.tagline}
-                      </p>
-                      <h3 className="text-4xl text-foreground">{activeSolution.title}</h3>
-                      <p className="text-muted-foreground">
-                        {activeSolution.description}
-                      </p>
-                    </div>
-
-                    {/* Metrics */}
-                    <div className="grid grid-cols-3 gap-8 py-6">
-                      {activeSolution.metrics.map((metric, index) => (
-                        <div
-                          key={index}
-                          className={`text-center ${animatedMetrics[activeTab] ? `fade-rise stagger-${index + 1}` : 'opacity-0'
-                            }`}
-                        >
-                          <div className="text-3xl text-primary mb-1">{metric.value}</div>
-                          <div className="text-xs text-muted-foreground">{metric.label}</div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Service Details */}
-                    <div>
-                      <ul className="space-y-3">
-                        {activeSolution.details.map((detail, index) => (
-                          <li key={index} className="flex items-center">
-                            <div className="w-1.5 h-1.5 bg-primary rounded-full mr-3 flex-shrink-0"></div>
-                            <span className="text-muted-foreground">{detail}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* CTAs */}
-                    <div className="flex gap-4 pt-4">
-                      <Button
-                        size="lg"
-                        onClick={handleExploreService}
+          <div
+            className={cn(
+              'grid gap-8 lg:grid-cols-12 lg:gap-10 items-start',
+              isInView ? 'fade-rise stagger-1' : 'opacity-0'
+            )}
+          >
+            {/* Service picker — vertical on desktop */}
+            <nav
+              className="lg:col-span-4 flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 lg:sticky lg:top-24 snap-x snap-mandatory"
+              aria-label="Service categories"
+            >
+              {solutionsList.map((solution) => {
+                const Icon = solution.icon
+                const isActive = solution.key === activeKey
+                return (
+                  <button
+                    key={solution.key}
+                    type="button"
+                    onClick={() => setActiveKey(solution.key)}
+                    className={cn(
+                      'snap-start shrink-0 lg:shrink text-left rounded-xl border px-4 py-4 transition-[transform,background-color,border-color,box-shadow] duration-200 min-w-[200px] lg:min-w-0 lg:w-full',
+                      'hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      isActive
+                        ? 'border-primary bg-primary/8 shadow-sm landing-card-shadow'
+                        : 'border-border bg-card/60 hover:bg-muted/50'
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={cn(
+                          'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors',
+                          isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                        )}
                       >
-                        Explore Service
-                      </Button>
-                      <Button variant="outline" size="lg" onClick={handleRequestQuote}>
-                        Request a Quote
-                      </Button>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm leading-tight">{solution.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{solution.tagline}</p>
+                      </div>
                     </div>
-                  </CardContent>
+                  </button>
+                )
+              })}
+            </nav>
 
-                  {/* Image - Hidden on mobile, shown on large screens */}
-                  <div className="hidden lg:block relative" style={{ maxHeight: '550px' }}>
-                    <ImageWithFallback
-                      src={activeSolution.image}
-                      alt={`${activeSolution.title} - ${activeSolution.description}`}
-                      width={800}
-                      height={550}
-                      sizes="(min-width: 1024px) 50vw, 0px"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+            {/* Featured panel */}
+            <div className="lg:col-span-8 rounded-2xl border border-border/80 bg-card overflow-hidden landing-card-shadow">
+              <div className="grid md:grid-cols-5">
+                <div className="md:col-span-3 p-8 md:p-10 flex flex-col min-h-[420px]">
+                  <p className="text-sm font-medium text-primary mb-2">{activeSolution.tagline}</p>
+                  <div className="flex items-center gap-2 mb-3">
+                    <ActiveIcon className="h-6 w-6 text-primary" aria-hidden />
+                    <h3 className="text-2xl md:text-3xl font-bold tracking-tight">{activeSolution.title}</h3>
+                  </div>
+                  <p className="text-muted-foreground leading-relaxed mb-8 max-w-md">
+                    {activeSolution.description}
+                  </p>
+
+                  <div className="grid grid-cols-3 gap-4 mb-8 py-6 border-y border-border/60">
+                    {activeSolution.metrics.map((metric) => (
+                      <div key={metric.label}>
+                        <div className="landing-stat-value text-2xl">{metric.value}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{metric.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <ul className="space-y-2.5 mb-8 flex-1">
+                    {activeSolution.details.map((detail) => (
+                      <li key={detail} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                        <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" aria-hidden />
+                        <span>{detail}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="flex flex-wrap gap-3 mt-auto">
+                    <Button
+                      size="lg"
+                      onClick={() => goTo(activeSolution.path)}
+                      className="transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Explore service
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => goTo(activeSolution.path, '#quote')}
+                      className="transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Request a quote
+                    </Button>
                   </div>
                 </div>
-              </Card>
+
+                <div className="md:col-span-2 relative min-h-[240px] md:min-h-full">
+                  <ImageWithFallback
+                    src={activeSolution.image}
+                    alt={`${activeSolution.title} operations`}
+                    width={640}
+                    height={800}
+                    sizes="(min-width: 768px) 40vw, 100vw"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-card via-transparent to-transparent md:block hidden" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent md:hidden" />
+                </div>
+              </div>
             </div>
-          </Tabs>
+          </div>
         </div>
       </section>
     </div>

@@ -4,11 +4,9 @@ import { useEffect, useMemo, useState, type ClipboardEvent, type KeyboardEvent }
 import Link from 'next/link'
 import { useAuth } from '@/modules/auth/context/AuthContext'
 import { authService } from '@/modules/auth/services/authService'
-import { ChevronsUpDown, AlertCircle, Loader2 } from 'lucide-react'
+import { ChevronsUpDown, AlertCircle, Loader2, ArrowRight, ArrowLeft, Info, Check } from 'lucide-react'
 import { toast } from 'sonner'
-import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
@@ -23,6 +21,8 @@ import {
   CommandList,
 } from '@/shared/components/ui/command'
 import { API_CONFIG } from '@/shared/config/api.config'
+import { isFieldVisible, validateInquiryFields } from './inquiryForm'
+import styles from '../ServicePage.module.css'
 
 const API_BASE_URL = API_CONFIG.API_URL
 
@@ -57,7 +57,8 @@ function ComboboxSelect({
   options,
   placeholder,
   disabled,
-
+  invalid,
+  describedBy,
 }: {
   id: string
   value: string
@@ -66,6 +67,8 @@ function ComboboxSelect({
   placeholder?: string
   disabled?: boolean
   enableSearch?: boolean
+  invalid?: boolean
+  describedBy?: string
 }) {
   const [open, setOpen] = useState(false)
   const normalizedOptions = (options || []).map(opt => ({ label: opt, value: opt.toLowerCase() }))
@@ -79,6 +82,8 @@ function ComboboxSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
           className="w-full justify-between bg-white"
           disabled={disabled}
           id={id}
@@ -131,6 +136,8 @@ export function FormSection({
   }
 }) {
   const [formData, setFormData] = useState<Record<string, string>>({})
+  const [activeStep, setActiveStep] = useState(0)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -148,7 +155,32 @@ export function FormSection({
     return form.fields
   }, [form.sections, form.fields])
 
-  const otherFields = allFields
+  const steps = useMemo(() => {
+    const sections = form.sections?.filter(section => section.fields.length > 0)
+    return sections?.length ? sections : [{ title: 'Shipment details', fields: form.fields }]
+  }, [form.sections, form.fields])
+  const lastStep = activeStep === steps.length - 1
+
+  const showFieldErrors = (errors: Record<string, string>, step: number) => {
+    setActiveStep(step)
+    setFieldErrors(errors)
+    requestAnimationFrame(() => document.getElementById(Object.keys(errors)[0])?.focus())
+  }
+
+  const moveToStep = (next: number) => {
+    if (submitting) return
+    if (next > activeStep) {
+      for (let index = activeStep; index < next; index++) {
+        const errors = validateInquiryFields(steps[index].fields, formData)
+        if (Object.keys(errors).length) {
+          showFieldErrors(errors, index)
+          return
+        }
+      }
+    }
+    setFieldErrors({})
+    setActiveStep(next)
+  }
 
   useEffect(() => {
     const initial: Record<string, string> = {}
@@ -164,16 +196,35 @@ export function FormSection({
       }
     })
     setFormData(initial)
+    setActiveStep(0)
+    setFieldErrors({})
   }, [allFields])
 
   // Port fields are free-text; no province/port loading needed
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+    setFieldErrors(prev => {
+      if (!prev[field]) return prev
+      const next = { ...prev }
+      delete next[field]
+      return next
+    })
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!lastStep) {
+      moveToStep(activeStep + 1)
+      return
+    }
+    for (let index = 0; index < steps.length; index++) {
+      const errors = validateInquiryFields(steps[index].fields, formData)
+      if (Object.keys(errors).length) {
+        showFieldErrors(errors, index)
+        return
+      }
+    }
     if (!isAuthenticated) {
       const errorMsg = 'Please log in to submit an inquiry.'
       toast.error('Authentication Required', {
@@ -260,7 +311,7 @@ export function FormSection({
           purposeOfCalling: formData.purposeOfCalling,
           portOfCall: formData.portOfCall,
           dischargeLoadingLocation: formData.dischargeLoadingLocation,
-          boatHireAmount: formData.dischargeLoadingLocation === 'Anchorage' ? toDecimal(formData.boatHireAmount) : null,
+          boatHireAmount: formData.dischargeLoadingLocation?.toLowerCase() === 'anchorage' ? toDecimal(formData.boatHireAmount) : null,
           tallyFeeAmount: isTallyFeeEligibleCargo(formData.cargoType) ? toDecimal(formData.tallyFeeAmount) : null,
           transportLs: toDecimal(formData.transportLs),
           transportQuarantine: toDecimal(formData.transportQuarantine),
@@ -362,6 +413,8 @@ export function FormSection({
         toast.success('Request Sent Successfully', {
           description: 'Your request was sent successfully. We will contact you shortly.'
         })
+        setSubmitMessage('Your inquiry has been sent. Our team will contact you shortly.')
+        setActiveStep(0)
         if (form.onSubmit) {
           form.onSubmit(body)
         }
@@ -395,10 +448,15 @@ export function FormSection({
     onChange: (id: string, value: string) => void,
     disabled: boolean
   ) => {
+    const accessibility = {
+      'aria-invalid': Boolean(fieldErrors[field.id]) || undefined,
+      'aria-describedby': fieldErrors[field.id] ? `${field.id}-error` : field.helperText ? `${field.id}-help` : undefined,
+    }
     if (field.type === 'textarea') {
       return (
         <Textarea
           id={field.id}
+          {...accessibility}
           value={value}
           onChange={e => onChange(field.id, e.target.value)}
           required={field.required}
@@ -414,7 +472,10 @@ export function FormSection({
       return (
         <ComboboxSelect
           id={field.id}
+          {...accessibility}
           value={value}
+          invalid={Boolean(fieldErrors[field.id])}
+          describedBy={fieldErrors[field.id] ? `${field.id}-error` : field.helperText ? `${field.id}-help` : undefined}
           onChange={v => onChange(field.id, v)}
           options={field.options}
           placeholder={field.placeholder}
@@ -428,6 +489,7 @@ export function FormSection({
       return (
         <DatePicker
           id={field.id}
+          {...accessibility}
           value={value}
           onChange={v => onChange(field.id, v)}
           placeholder={field.placeholder || 'dd/mm/yyyy'}
@@ -445,6 +507,7 @@ export function FormSection({
       return (
         <Input
           id={field.id}
+          {...accessibility}
           value={displayValue}
           onChange={e => {
             const newValue = e.target.value
@@ -475,6 +538,7 @@ export function FormSection({
       return (
         <Input
           id={field.id}
+          {...accessibility}
           value={value}
           onChange={e => onChange(field.id, e.target.value)}
           required={field.required}
@@ -521,6 +585,7 @@ export function FormSection({
     return (
       <Input
         id={field.id}
+        {...accessibility}
         type={isNumber ? 'text' : field.type}
         inputMode={isNumber ? 'decimal' : undefined}
         value={value}
@@ -544,168 +609,72 @@ export function FormSection({
   }, [formData, allFields])
 
   return (
-    <section id="quote-form" className="py-16 md:py-24">
-      <div className="container">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            {form.badgeText && <Badge className="mb-4">{form.badgeText}</Badge>}
-            <h2 className="fade-rise text-3xl md:text-4xl font-bold">{form.sectionTitle}</h2>
-            <p className="text-muted-foreground mt-4 fade-rise" style={{ animationDelay: '90ms' }}>
-              {form.sectionDescription}
-            </p>
+    <section id="quote-form" className={styles.formPanel} aria-labelledby="inquiry-title">
+      <h2 id="inquiry-title">{form.sectionTitle}</h2>
+      {steps.length > 1 && (
+        <nav aria-label="Inquiry steps">
+          <ol className={styles.steps}>
+            {steps.map((step, index) => (
+              <li key={step.title || index} className={styles.stepItem} aria-current={index === activeStep ? 'step' : undefined}>
+                <button type="button" className={styles.stepButton} onClick={() => moveToStep(index)} disabled={submitting} aria-controls="inquiry-step">
+                  <span className={`${styles.stepNumber} ${index < activeStep ? styles.stepComplete : ''}`}>
+                    {index < activeStep ? <Check size={15} aria-hidden="true" /> : index + 1}
+                  </span>
+                  <span>{step.title}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
+      {form.fieldsError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTitle>Unable to load form</AlertTitle>
+          <AlertDescription>{form.fieldsError}</AlertDescription>
+        </Alert>
+      )}
+      {submitMessage && <Alert className="mb-4" role="status"><AlertTitle>Inquiry sent</AlertTitle><AlertDescription>{submitMessage}</AlertDescription></Alert>}
+      {submitError && <Alert variant="destructive" className="mb-4"><AlertTitle>Unable to send inquiry</AlertTitle><AlertDescription>{submitError}</AlertDescription></Alert>}
+      <form onSubmit={handleSubmit} noValidate>
+        <fieldset id="inquiry-step" disabled={submitting} aria-busy={submitting}>
+          <legend className="sr-only" aria-live="polite">Step {activeStep + 1} of {steps.length}: {steps[activeStep].title}</legend>
+          {form.loadingFields && <p role="status">Loading form fields...</p>}
+          <div className={styles.fields}>
+            {steps[activeStep].fields.filter(field => isFieldVisible(field, formData)).map(field => (
+              <div key={field.id} className={`${styles.field} ${field.gridSpan === 2 ? styles.fieldWide : ''}`} data-invalid={Boolean(fieldErrors[field.id])}>
+                <Label htmlFor={field.id}>{field.label}{field.required && <span className={styles.required}> *</span>}</Label>
+                {renderField(field, formData[field.id] || '', handleInputChange, submitting)}
+                {fieldErrors[field.id] ? (
+                  <p id={`${field.id}-error`} className={styles.fieldError} role="alert">{fieldErrors[field.id]}</p>
+                ) : field.helperText ? (
+                  <p id={`${field.id}-help`} className={styles.fieldHelp}>{field.helperText}</p>
+                ) : null}
+              </div>
+            ))}
           </div>
-
-          <Card>
-            <CardContent className="p-8">
-              {form.fieldsError && (
-                <Alert variant="destructive" className="mb-6">
-                  <AlertTitle>Unable to load form</AlertTitle>
-                  <AlertDescription>{form.fieldsError}</AlertDescription>
-                </Alert>
-              )}
-              {!isAuthenticated && (
-                <Alert variant="destructive" className="mb-6">
-                  <AlertTitle>Login required</AlertTitle>
-                  <AlertDescription>
-                    Please sign in before submitting your inquiry.
-                    <Link href="/auth/login" className="ml-2 underline font-semibold">
-                      Go to login
-                    </Link>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {isAuthenticated && !profileComplete && (
-                <Alert variant="destructive" className="mb-6">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="h-4 w-4 mt-0.5" />
-                    <AlertDescription className="flex-1">
-                      Please complete your profile before submitting an inquiry.
-                      <Link href="/dashboard" className="ml-1 underline font-semibold">
-                        Complete Profile
-                      </Link>
-                    </AlertDescription>
-                  </div>
-                </Alert>
-              )}
-
-              {submitMessage && (
-                <Alert className="mb-4">
-                  <AlertTitle>Success</AlertTitle>
-                  <AlertDescription>{submitMessage}</AlertDescription>
-                </Alert>
-              )}
-
-              {submitError && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{submitError}</AlertDescription>
-                </Alert>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {form.loadingFields && (
-                  <div className="text-sm text-muted-foreground">
-                    Loading form fields...
-                  </div>
-                )}
-
-                {/* Render sections if provided */}
-                {form.sections && form.sections.length > 0 ? (
-                  <>
-                    {/* Render each section */}
-                    {form.sections.map((section, sectionIdx) => {
-                      const sectionFields = section.fields
-                      if (sectionFields.length === 0) return null
-
-                      return (
-                        <div key={sectionIdx} className="space-y-4">
-                          {section.title && (
-                            <div className="border-b pb-2">
-                              <h3 className="text-lg font-semibold">{section.title}</h3>
-                              {section.description && (
-                                <p className="text-sm text-muted-foreground">{section.description}</p>
-                              )}
-                            </div>
-                          )}
-                          <div className="grid md:grid-cols-2 gap-6">
-                            {sectionFields.map(field => {
-                              // Check if field should be shown based on showWhen condition
-                              if (field.showWhen) {
-                                const conditionValue = formData[field.showWhen.field]
-                                const expectedValues = Array.isArray(field.showWhen.value)
-                                  ? field.showWhen.value
-                                  : [field.showWhen.value]
-                                const shouldShow = expectedValues.some(v =>
-                                  conditionValue?.toLowerCase() === v.toLowerCase()
-                                )
-                                if (!shouldShow) return null
-                              }
-
-                              const colSpan = field.gridSpan === 2 ? 'md:col-span-2' : 'md:col-span-1'
-                              const disabledByToggle = false
-                              return (
-                                <div key={field.id} className={`space-y-2 ${colSpan}`}>
-                                  <Label htmlFor={field.id}>
-                                    {field.label} {field.required && '*'}
-                                  </Label>
-                                  {renderField(field, formData[field.id] || '', handleInputChange, disabledByToggle)}
-                                  {field.helperText && (
-                                    <p className="text-xs text-muted-foreground">{field.helperText}</p>
-                                  )}
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </>
-                ) : (
-                  /* Fallback: render fields without sections */
-                  <>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {otherFields.map(field => {
-                        const colSpan = field.gridSpan === 2 ? 'md:col-span-2' : 'md:col-span-1'
-                        const disabledByToggle =
-                          (field.id === 'boatHireAmount' && (formData.boatHireEnabled || '').toLowerCase() !== 'yes') ||
-                          (field.id === 'tallyFeeAmount' && (formData.tallyFeeEnabled || '').toLowerCase() !== 'yes')
-                        return (
-                          <div key={field.id} className={`space-y-2 ${colSpan}`}>
-                            <Label htmlFor={field.id}>
-                              {field.label} {field.required && '*'}
-                            </Label>
-                            {renderField(field, formData[field.id] || '', handleInputChange, disabledByToggle)}
-                            {field.helperText && (
-                              <p className="text-xs text-muted-foreground">{field.helperText}</p>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </>
-                )}
-
-                <Button
-                  type="submit"
-                  className="w-full hover-lift"
-                  size="lg"
-                  disabled={submitting || !isAuthenticated || !profileComplete || !form.serviceTypeId || hasNegativeNumbers}
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Đang gửi...
-                    </>
-                  ) : (
-                    (!profileComplete && isAuthenticated) ? 'Complete Profile First' : form.submitButtonText
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+        </fieldset>
+        <div className={styles.formActions}>
+          <div className={styles.authNote}>
+            {!isAuthenticated ? (
+              <><Info size={16} aria-hidden="true" /><span>Sign in before submitting your inquiry. <Link href="/login">Sign in</Link></span></>
+            ) : !profileComplete ? (
+              <><AlertCircle size={16} aria-hidden="true" /><span>Please complete your profile before submitting. <Link href="/dashboard">Complete profile</Link></span></>
+            ) : (
+              <><Info size={16} aria-hidden="true" /><span>{lastStep ? 'Review your details before submitting.' : 'Fields marked * are required.'}</span></>
+            )}
+          </div>
+          <div className={styles.actionButtons}>
+            {activeStep > 0 && <Button type="button" variant="outline" onClick={() => moveToStep(activeStep - 1)} disabled={submitting}><ArrowLeft size={15} aria-hidden="true" />Back</Button>}
+            {lastStep ? (
+              <Button type="submit" disabled={submitting || !isAuthenticated || !profileComplete || !form.serviceTypeId || hasNegativeNumbers}>
+                {submitting ? <><Loader2 size={16} className="animate-spin" />Sending...</> : <>{form.submitButtonText}<ArrowRight size={16} aria-hidden="true" /></>}
+              </Button>
+            ) : (
+              <Button type="submit" disabled={submitting || form.loadingFields}>Continue<ArrowRight size={16} aria-hidden="true" /></Button>
+            )}
+          </div>
         </div>
-      </div>
+      </form>
     </section>
   )
 }

@@ -1,7 +1,5 @@
-import { LucideIcon, Phone, Mail } from 'lucide-react'
-import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent } from '@/shared/components/ui/card'
+import { LucideIcon, Phone, Mail, Headset } from 'lucide-react'
+import styles from '../ServicePage.module.css'
 
 export interface ContactPerson {
   name: string
@@ -34,100 +32,40 @@ export function ContactSection({
   }
 }) {
   return (
-    <section className="py-8 md:py-12">
-      <div className="container">
-        <div className="text-center mb-12">
-          {contacts.showEmergencyBadge && (
-            <Badge variant="destructive" className="mb-4">
-              24/7 Emergency Support
-            </Badge>
-          )}
-          <h2 className="fade-rise text-3xl md:text-4xl font-bold">{contacts.sectionTitle}</h2>
-          <p
-            className="text-muted-foreground mt-4 fade-rise max-w-2xl mx-auto"
-            style={{ animationDelay: '90ms' }}
-          >
-            {contacts.sectionDescription}
-          </p>
+    <aside className={styles.contacts} aria-labelledby="service-contacts-title">
+      <header className={styles.contactHeader}>
+        <h2 id="service-contacts-title">{contacts.sectionTitle}</h2>
+        <Headset size={24} strokeWidth={1.7} aria-hidden="true" />
+      </header>
+      {contacts.showEmergencyBadge && (
+        <div className={styles.emergency}>
+          <span className={styles.supportDot} aria-hidden="true" />
+          24/7 Emergency Support
         </div>
-
-        <div
-          className={`grid gap-6 max-w-4xl mx-auto ${
-            contacts.teams.length === 1 ? 'md:grid-cols-1' : 'md:grid-cols-2'
-          }`}
-        >
-          {contacts.teams.map((team, index) => (
-            <Card key={index} className="overflow-hidden hover-lift border-2 border-primary/20">
-              <CardContent className="p-6 space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <team.icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-primary">{team.title}</h3>
-                    <p className="text-sm text-muted-foreground">{team.subtitle}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {team.contacts.map((contact, contactIndex) => (
-                    <div
-                      key={contactIndex}
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Phone className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{contact.name}</p>
-                          <p className="text-sm text-muted-foreground">{contact.mobile}</p>
-                        </div>
-                      </div>
-
-                      <Button size="sm" variant="outline" asChild>
-                        <a href={`tel:${contact.mobile.replace(/\./g, '')}`}>
-                          <Phone className="h-4 w-4 mr-2" />
-                          Call
-                        </a>
-                      </Button>
-                    </div>
-                  ))}
-
-                  <div className="pt-4 border-t">
-                    <Button className="w-full" variant="default" asChild>
-                      <a href={`mailto:${team.email}`}>
-                        <Mail className="h-4 w-4 mr-2" />
-                        {team.email}
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {contacts.stats && contacts.stats.length > 0 && (
-          <div
-            className={`grid gap-4 mt-8 max-w-4xl mx-auto ${
-              contacts.stats.length === 2
-                ? 'grid-cols-2'
-                : contacts.stats.length === 3
-                ? 'grid-cols-3'
-                : 'grid-cols-2 md:grid-cols-4'
-            }`}
-          >
-            {contacts.stats.map((stat, index) => (
-              <div key={index} className="text-center p-4 rounded-lg bg-muted/20">
-                <stat.icon className="h-6 w-6 text-primary mx-auto mb-2" />
-                <p className="font-bold text-2xl">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-              </div>
+      )}
+      {contacts.teams.map(team => (
+        <section key={team.title} className={styles.team} aria-label={team.title}>
+          <h3>{team.title}</h3>
+          <p className={styles.teamSubtitle}>{team.subtitle}</p>
+          <ul className={styles.people}>
+            {team.contacts.map(contact => (
+              <li key={contact.name}>
+                <a className={styles.person} href={`tel:${contact.mobile.replace(/[.\s]/g, '')}`} aria-label={`Call ${contact.name} at ${contact.mobile}`}>
+                  <span className={styles.personDetails}>
+                    <span className={styles.personName}>{contact.name}</span>
+                    <span className={styles.personPhone}>{contact.mobile}</span>
+                  </span>
+                  <span className={styles.callIcon}><Phone size={17} strokeWidth={1.8} aria-hidden="true" /></span>
+                </a>
+              </li>
             ))}
-          </div>
-        )}
-      </div>
-    </section>
+          </ul>
+          <a href={`mailto:${team.email}`} className={styles.email}>
+            <Mail size={18} strokeWidth={1.7} aria-hidden="true" />
+            <span>{team.email}</span>
+          </a>
+        </section>
+      ))}
+    </aside>
   )
 }

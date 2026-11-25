@@ -17,7 +17,6 @@ export function TotalLogistics({ onNavigateHome }: TotalLogisticsProps) {
       title: 'Freight Forwarding & Logistics',
       description: "",
       // description: 'SEATRANS\' professional team with their knowledge & experience are able to perform the full range of services: Accepting and Delivering consignments from Door to Door by Sea, Air, Land (FCL/LCL), Multimodal transportation and other total logistics services.',
-      image: 'https://images.unsplash.com/photo-1759826350352-c5b0b77729bd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsb2dpc3RpY3MlMjB3YXJlaG91c2UlMjBmcmVpZ2h0JTIwZm9yd2FyZGluZ3xlbnwxfHx8fDE3NjUwNzQzMjV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
     },
 
     contacts: {
@@ -96,16 +95,37 @@ export function TotalLogistics({ onNavigateHome }: TotalLogisticsProps) {
       submitButtonText: 'Get Quote',
       submitPath: '/inquiries',
       serviceTypeSlug: 'total-logistics',
-      fields: [
-        { id: 'cargoName', label: 'Cargo name', type: 'text', required: true, placeholder: 'Type of cargo', gridSpan: 2 },
-        { id: 'deliveryTerm', label: 'Delivery term', type: 'select', required: true, placeholder: 'Select delivery term', gridSpan: 1, options: ['CY/CY', 'CY/Door', 'Door/CY', 'Door/Door', 'Port/Port'] },
-        { id: 'container20', label: "Container 20' feet", type: 'number', placeholder: '0 cont', gridSpan: 1 },
-        { id: 'container40', label: "Container 40' feet", type: 'number', placeholder: '0 cont', gridSpan: 1 },
-        { id: 'loadingPort', label: 'Loading port', type: 'port', required: true, gridSpan: 1 },
-        { id: 'dischargingPort', label: 'Discharging port', type: 'port', required: true, gridSpan: 1 },
-        { id: 'shipmentFrom', label: 'SHIPMENT TIME - From date', type: 'date', required: true, gridSpan: 1 },
-        { id: 'shipmentTo', label: 'SHIPMENT TIME - To date', type: 'date', required: true, gridSpan: 1 },
-        { id: 'additionalInfo', label: 'Additional Information', type: 'textarea', placeholder: 'Special requirements, timeline, etc...', gridSpan: 2 }
+      fields: [],
+      sections: [
+        {
+          title: 'Cargo',
+          fields: [
+            { id: 'cargoName', label: 'Cargo name', type: 'text', required: true, placeholder: 'Type of cargo', gridSpan: 2 },
+            { id: 'deliveryTerm', label: 'Delivery term', type: 'select', required: true, placeholder: 'Select delivery term', gridSpan: 1, options: ['CY/CY', 'CY/Door', 'Door/CY', 'Door/Door', 'Port/Port'] },
+            { id: 'container20', label: "Container 20' feet", type: 'number', placeholder: '0 cont', gridSpan: 1 },
+            { id: 'container40', label: "Container 40' feet", type: 'number', placeholder: '0 cont', gridSpan: 1 },
+          ],
+        },
+        {
+          title: 'Route',
+          fields: [
+            { id: 'loadingPort', label: 'Loading port', type: 'port', required: true, gridSpan: 1 },
+            { id: 'dischargingPort', label: 'Discharging port', type: 'port', required: true, gridSpan: 1 },
+          ],
+        },
+        {
+          title: 'Shipment dates',
+          fields: [
+            { id: 'shipmentFrom', label: 'SHIPMENT TIME - From date', type: 'date', required: true, gridSpan: 1 },
+            { id: 'shipmentTo', label: 'SHIPMENT TIME - To date', type: 'date', required: true, gridSpan: 1 },
+          ],
+        },
+        {
+          title: 'Additional details',
+          fields: [
+            { id: 'additionalInfo', label: 'Additional Information', type: 'textarea', placeholder: 'Special requirements, timeline, etc...', gridSpan: 2 }
+          ],
+        },
       ],
       onSubmit: (data) => {
         console.log('Freight quote request submitted:', data)

@@ -161,17 +161,23 @@ export function Partners() {
 
   return (
     <div ref={ref}>
-      <section className="py-20 pb-[70px] bg-background">
+      <section className="landing-section pb-24">
         <div className="container">
-          <div className={`section-heading ${isInView ? 'fade-rise' : 'opacity-0'}`}>
-            <h2> <span className="text-primary">Global</span> Partners & Integrations</h2>
-            <p>
-              Trusted partnerships with leading shipping lines and logistics providers worldwide.
+          <div
+            className={`mb-12 md:mb-14 text-center max-w-2xl mx-auto space-y-4 ${isInView ? 'fade-rise' : 'opacity-0'}`}
+          >
+            <p className="landing-eyebrow">Alliances</p>
+            <h2 className="landing-display">
+              Lines we work with <span className="text-primary">every day</span>
+            </h2>
+            <p className="text-lg text-muted-foreground leading-relaxed text-pretty">
+              Carrier and terminal relationships that keep your bookings and port calls on schedule.
             </p>
           </div>
 
-          {/* Partner Logos Carousel */}
-          <div className={`relative py-12 flex justify-center ${isInView ? 'fade-rise stagger-1' : 'opacity-0'}`}>
+          <div
+            className={`relative rounded-2xl border border-border/60 bg-card/50 py-10 md:py-12 landing-card-shadow ${isInView ? 'fade-rise stagger-1' : 'opacity-0'}`}
+          >
             <LogoCarousel columnCount={4} logos={partnersLogos} />
           </div>
         </div>
